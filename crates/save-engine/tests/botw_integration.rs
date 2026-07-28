@@ -8,6 +8,7 @@ fn fixture_bytes() -> Vec<u8> {
 fn load_botw() -> save_engine::botw::BotwSave {
     match Save::detect(fixture_bytes()).expect("should detect a known BOTW save") {
         Save::Botw(save) => save,
+        Save::Totk(_) => panic!("BOTW fixture was misdetected as TOTK"),
     }
 }
 

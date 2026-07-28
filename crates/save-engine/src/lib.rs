@@ -8,16 +8,21 @@ pub use error::SaveError;
 
 pub enum Save {
     Botw(botw::BotwSave),
+    Totk(totk::TotkSave),
 }
 
 impl Save {
     pub fn detect(bytes: Vec<u8>) -> Result<Save, SaveError> {
-        botw::BotwSave::load(bytes).map(Save::Botw)
+        if let Ok(save) = botw::BotwSave::load(bytes.clone()) {
+            return Ok(Save::Botw(save));
+        }
+        totk::TotkSave::load(bytes).map(Save::Totk)
     }
 
     pub fn to_bytes(self) -> Vec<u8> {
         match self {
             Save::Botw(save) => save.to_bytes(),
+            Save::Totk(save) => save.to_bytes(),
         }
     }
 }
