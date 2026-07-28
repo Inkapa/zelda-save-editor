@@ -79,121 +79,116 @@ impl BotwSave {
     // --- scalar stats ---
 
     pub fn rupees(&self) -> Result<u32, SaveError> {
-        Ok(self.buf.read_u32(self.offset("RUPEES")?))
+        self.buf.read_u32(self.offset("RUPEES")?)
     }
     pub fn set_rupees(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("RUPEES")?;
-        self.buf.write_u32(o, val);
-        Ok(())
+        self.buf.write_u32(o, val)
     }
 
     pub fn mons(&self) -> Result<u32, SaveError> {
-        Ok(self.buf.read_u32(self.offset("MONS")?))
+        self.buf.read_u32(self.offset("MONS")?)
     }
     pub fn set_mons(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("MONS")?;
-        self.buf.write_u32(o, val);
-        Ok(())
+        self.buf.write_u32(o, val)
     }
 
     pub fn max_hearts(&self) -> Result<u32, SaveError> {
-        Ok(self.buf.read_u32(self.offset("MAX_HEARTS")?))
+        self.buf.read_u32(self.offset("MAX_HEARTS")?)
     }
     pub fn set_max_hearts(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("MAX_HEARTS")?;
-        self.buf.write_u32(o, val);
-        Ok(())
+        self.buf.write_u32(o, val)
     }
 
     pub fn max_stamina(&self) -> Result<u32, SaveError> {
-        Ok(self.buf.read_u32(self.offset("MAX_STAMINA")?))
+        self.buf.read_u32(self.offset("MAX_STAMINA")?)
     }
     pub fn set_max_stamina(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("MAX_STAMINA")?;
-        self.buf.write_u32(o, val);
-        Ok(())
+        self.buf.write_u32(o, val)
     }
 
     pub fn relic_gerudo(&self) -> Result<u32, SaveError> {
-        Ok(self.buf.read_u32(self.offset("RELIC_GERUDO")?))
+        self.buf.read_u32(self.offset("RELIC_GERUDO")?)
     }
     pub fn set_relic_gerudo(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("RELIC_GERUDO")?;
-        self.buf.write_u32(o, val);
-        Ok(())
+        self.buf.write_u32(o, val)
     }
 
     pub fn relic_goron(&self) -> Result<u32, SaveError> {
-        Ok(self.buf.read_u32(self.offset("RELIC_GORON")?))
+        self.buf.read_u32(self.offset("RELIC_GORON")?)
     }
     pub fn set_relic_goron(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("RELIC_GORON")?;
-        self.buf.write_u32(o, val);
-        Ok(())
+        self.buf.write_u32(o, val)
     }
 
     pub fn relic_rito(&self) -> Result<u32, SaveError> {
-        Ok(self.buf.read_u32(self.offset("RELIC_RITO")?))
+        self.buf.read_u32(self.offset("RELIC_RITO")?)
     }
     pub fn set_relic_rito(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("RELIC_RITO")?;
-        self.buf.write_u32(o, val);
-        Ok(())
+        self.buf.write_u32(o, val)
     }
 
     pub fn korok_seed_counter(&self) -> Result<u32, SaveError> {
-        Ok(self.buf.read_u32(self.offset("KOROK_SEED_COUNTER")?))
+        self.buf.read_u32(self.offset("KOROK_SEED_COUNTER")?)
     }
     pub fn set_korok_seed_counter(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("KOROK_SEED_COUNTER")?;
-        self.buf.write_u32(o, val);
-        Ok(())
+        self.buf.write_u32(o, val)
     }
 
     pub fn defeated_hinox_counter(&self) -> Result<u32, SaveError> {
-        Ok(self.buf.read_u32(self.offset("DEFEATED_HINOX_COUNTER")?))
+        self.buf.read_u32(self.offset("DEFEATED_HINOX_COUNTER")?)
     }
     pub fn set_defeated_hinox_counter(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("DEFEATED_HINOX_COUNTER")?;
-        self.buf.write_u32(o, val);
-        Ok(())
+        self.buf.write_u32(o, val)
     }
 
     pub fn defeated_talus_counter(&self) -> Result<u32, SaveError> {
-        Ok(self.buf.read_u32(self.offset("DEFEATED_TALUS_COUNTER")?))
+        self.buf.read_u32(self.offset("DEFEATED_TALUS_COUNTER")?)
     }
     pub fn set_defeated_talus_counter(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("DEFEATED_TALUS_COUNTER")?;
-        self.buf.write_u32(o, val);
-        Ok(())
+        self.buf.write_u32(o, val)
     }
 
     pub fn defeated_molduga_counter(&self) -> Result<u32, SaveError> {
-        Ok(self.buf.read_u32(self.offset("DEFEATED_MOLDUGA_COUNTER")?))
+        self.buf.read_u32(self.offset("DEFEATED_MOLDUGA_COUNTER")?)
     }
     pub fn set_defeated_molduga_counter(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("DEFEATED_MOLDUGA_COUNTER")?;
-        self.buf.write_u32(o, val);
-        Ok(())
+        self.buf.write_u32(o, val)
     }
 
     /// Raw seconds. Formatting into `H:MM:SS` (`_timeToString` upstream) is a UI concern.
     pub fn playtime_seconds(&self) -> Result<u32, SaveError> {
-        Ok(self.buf.read_u32(self.offset("PLAYTIME")?))
+        self.buf.read_u32(self.offset("PLAYTIME")?)
     }
     pub fn set_playtime_seconds(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("PLAYTIME")?;
-        self.buf.write_u32(o, val);
-        Ok(())
+        self.buf.write_u32(o, val)
     }
 
-    /// Not present in every save version, hence `Option` rather than `Result`.
+    /// Not present in every save version, hence `Option` rather than `Result`. The single
+    /// read/write below is at a hash-verified offset, which `scan_offsets` already
+    /// guarantees is `offset + 4 <= len` — bounds-safe by construction, so a bounds
+    /// failure here would indicate a bug in `scan_offsets`, not untrusted input.
     pub fn motorcycle(&self) -> Option<bool> {
-        self.offsets.get("MOTORCYCLE").map(|&o| self.buf.read_u32(o) != 0)
+        self.offsets
+            .get("MOTORCYCLE")
+            .map(|&o| self.buf.read_u32(o).expect("hash-verified offset is in bounds") != 0)
     }
     pub fn set_motorcycle(&mut self, val: bool) {
         if let Some(&o) = self.offsets.get("MOTORCYCLE") {
-            self.buf.write_u32(o, if val { 1 } else { 0 });
+            self.buf
+                .write_u32(o, if val { 1 } else { 0 })
+                .expect("hash-verified offset is in bounds");
         }
     }
 
@@ -201,46 +196,44 @@ impl BotwSave {
 
     pub fn player_position(&self) -> Result<(f32, f32, f32), SaveError> {
         let o = self.offset("PLAYER_POSITION")?;
-        Ok((self.buf.read_f32(o), self.buf.read_f32(o + 8), self.buf.read_f32(o + 16)))
+        Ok((self.buf.read_f32(o)?, self.buf.read_f32(o + 8)?, self.buf.read_f32(o + 16)?))
     }
     pub fn set_player_position(&mut self, x: f32, y: f32, z: f32) -> Result<(), SaveError> {
         let o = self.offset("PLAYER_POSITION")?;
-        self.buf.write_f32(o, x);
-        self.buf.write_f32(o + 8, y);
-        self.buf.write_f32(o + 16, z);
+        self.buf.write_f32(o, x)?;
+        self.buf.write_f32(o + 8, y)?;
+        self.buf.write_f32(o + 16, z)?;
         Ok(())
     }
 
     pub fn horse_position(&self) -> Result<(f32, f32, f32), SaveError> {
         let o = self.offset("HORSE_POSITION")?;
-        Ok((self.buf.read_f32(o), self.buf.read_f32(o + 8), self.buf.read_f32(o + 16)))
+        Ok((self.buf.read_f32(o)?, self.buf.read_f32(o + 8)?, self.buf.read_f32(o + 16)?))
     }
     pub fn set_horse_position(&mut self, x: f32, y: f32, z: f32) -> Result<(), SaveError> {
         let o = self.offset("HORSE_POSITION")?;
-        self.buf.write_f32(o, x);
-        self.buf.write_f32(o + 8, y);
-        self.buf.write_f32(o + 16, z);
+        self.buf.write_f32(o, x)?;
+        self.buf.write_f32(o + 8, y)?;
+        self.buf.write_f32(o + 16, z)?;
         Ok(())
     }
 
     pub fn map(&self) -> Result<String, SaveError> {
         let o = self.offset("MAP")?;
-        Ok(strings::read_padded_string(&self.buf, o, 8))
+        strings::read_padded_string(&self.buf, o, 8)
     }
     pub fn set_map(&mut self, value: &str) -> Result<(), SaveError> {
         let o = self.offset("MAP")?;
-        strings::write_padded_string(&mut self.buf, o, value, 8);
-        Ok(())
+        strings::write_padded_string(&mut self.buf, o, value, 8)
     }
 
     pub fn map_type(&self) -> Result<String, SaveError> {
         let o = self.offset("MAPTYPE")?;
-        Ok(strings::read_padded_string(&self.buf, o, 8))
+        strings::read_padded_string(&self.buf, o, 8)
     }
     pub fn set_map_type(&mut self, value: &str) -> Result<(), SaveError> {
         let o = self.offset("MAPTYPE")?;
-        strings::write_padded_string(&mut self.buf, o, value, 8);
-        Ok(())
+        strings::write_padded_string(&mut self.buf, o, value, 8)
     }
 }
 
@@ -296,11 +289,11 @@ impl BotwSave {
         let qty_offset = self.offset("ITEMS_QUANTITY")?;
         let mut result = Vec::new();
         for i in 0..MAX_ITEMS {
-            let name = strings::read_string64(&self.buf, items_offset, i);
+            let name = strings::read_string64(&self.buf, items_offset, i)?;
             if name.is_empty() {
                 break;
             }
-            let quantity = self.buf.read_u32(qty_offset + i * 8);
+            let quantity = self.buf.read_u32(qty_offset + i * 8)?;
             result.push(BotwItem { name, quantity });
         }
         Ok(result)
@@ -312,8 +305,8 @@ impl BotwSave {
         }
         let items_offset = self.offset("ITEMS")?;
         let qty_offset = self.offset("ITEMS_QUANTITY")?;
-        strings::write_string64(&mut self.buf, items_offset, index, name);
-        self.buf.write_u32(qty_offset + index * 8, quantity);
+        strings::write_string64(&mut self.buf, items_offset, index, name)?;
+        self.buf.write_u32(qty_offset + index * 8, quantity)?;
         Ok(())
     }
 
@@ -364,8 +357,8 @@ impl BotwSave {
         let mut out = Vec::with_capacity(count);
         for i in 0..count {
             out.push(ItemModifier {
-                modifier: self.buf.read_u32(flag_offset + i * 8),
-                value: self.buf.read_u32(value_offset + i * 8),
+                modifier: self.buf.read_u32(flag_offset + i * 8)?,
+                value: self.buf.read_u32(value_offset + i * 8)?,
             });
         }
         Ok(out)
@@ -388,8 +381,8 @@ impl BotwSave {
         };
         let flag_offset = self.offset(flag_hash)?;
         let value_offset = self.offset(value_hash)?;
-        self.buf.write_u32(flag_offset + index * 8, modifier);
-        self.buf.write_u32(value_offset + index * 8, value);
+        self.buf.write_u32(flag_offset + index * 8, modifier)?;
+        self.buf.write_u32(value_offset + index * 8, value)?;
         Ok(())
     }
 }
@@ -413,12 +406,12 @@ impl BotwSave {
 
         let mut out = Vec::with_capacity(NUM_HORSE_SLOTS);
         for i in 0..NUM_HORSE_SLOTS {
-            let horse_type = strings::read_string64(&self.buf, types_offset, i);
+            let horse_type = strings::read_string64(&self.buf, types_offset, i)?;
             if i < 5 {
                 out.push(BotwHorse {
-                    name: Some(strings::read_string64(&self.buf, names_offset, i)),
-                    saddle: Some(strings::read_string64(&self.buf, saddles_offset, i)),
-                    reins: Some(strings::read_string64(&self.buf, reins_offset, i)),
+                    name: Some(strings::read_string64(&self.buf, names_offset, i)?),
+                    saddle: Some(strings::read_string64(&self.buf, saddles_offset, i)?),
+                    reins: Some(strings::read_string64(&self.buf, reins_offset, i)?),
                     horse_type,
                 });
             } else {
@@ -438,8 +431,7 @@ impl BotwSave {
             return Err(SaveError::IndexOutOfRange { index, max: 5 });
         }
         let o = self.offset("HORSE_NAMES")?;
-        strings::write_string64(&mut self.buf, o, index, value);
-        Ok(())
+        strings::write_string64(&mut self.buf, o, index, value)
     }
 
     pub fn set_horse_saddle(&mut self, index: usize, value: &str) -> Result<(), SaveError> {
@@ -447,8 +439,7 @@ impl BotwSave {
             return Err(SaveError::IndexOutOfRange { index, max: 5 });
         }
         let o = self.offset("HORSE_SADDLES")?;
-        strings::write_string64(&mut self.buf, o, index, value);
-        Ok(())
+        strings::write_string64(&mut self.buf, o, index, value)
     }
 
     pub fn set_horse_reins(&mut self, index: usize, value: &str) -> Result<(), SaveError> {
@@ -456,8 +447,7 @@ impl BotwSave {
             return Err(SaveError::IndexOutOfRange { index, max: 5 });
         }
         let o = self.offset("HORSE_REINS")?;
-        strings::write_string64(&mut self.buf, o, index, value);
-        Ok(())
+        strings::write_string64(&mut self.buf, o, index, value)
     }
 
     pub fn set_horse_type(&mut self, index: usize, value: &str) -> Result<(), SaveError> {
@@ -465,7 +455,6 @@ impl BotwSave {
             return Err(SaveError::IndexOutOfRange { index, max: NUM_HORSE_SLOTS });
         }
         let o = self.offset("HORSE_TYPES")?;
-        strings::write_string64(&mut self.buf, o, index, value);
-        Ok(())
+        strings::write_string64(&mut self.buf, o, index, value)
     }
 }

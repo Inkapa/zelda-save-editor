@@ -5,6 +5,7 @@ pub enum SaveError {
     UnknownFormat,
     MissingField(&'static str),
     IndexOutOfRange { index: usize, max: usize },
+    Truncated { offset: usize, len: usize },
 }
 
 impl fmt::Display for SaveError {
@@ -16,6 +17,9 @@ impl fmt::Display for SaveError {
             }
             SaveError::IndexOutOfRange { index, max } => {
                 write!(f, "index {index} out of range (max {max})")
+            }
+            SaveError::Truncated { offset, len } => {
+                write!(f, "attempted to read/write past end of buffer (offset {offset}, buffer is {len} bytes)")
             }
         }
     }
