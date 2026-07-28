@@ -12,7 +12,7 @@ pub fn scan_offsets(buf: &SaveBuffer, hashes: &[(u32, &'static str)]) -> HashMap
     for &(hash, name) in hashes {
         let mut j = start;
         while j + 8 <= buf.len() {
-            if buf.read_u32(j) == hash {
+            if buf.read_u32(j).expect("bounds checked by the loop guard immediately above") == hash {
                 offsets.insert(name, j + 4);
                 start = j + 8;
                 break;
@@ -41,9 +41,9 @@ mod tests {
         let buf = buffer_with_slots(&[(0x1111, 10), (0x2222, 20), (0x3333, 30)]);
         let offsets = scan_offsets(&buf, &[(0x1111, "A"), (0x2222, "B"), (0x3333, "C")]);
         assert_eq!(offsets.len(), 3);
-        assert_eq!(buf.read_u32(offsets["A"]), 10);
-        assert_eq!(buf.read_u32(offsets["B"]), 20);
-        assert_eq!(buf.read_u32(offsets["C"]), 30);
+        assert_eq!(buf.read_u32(offsets["A"]).unwrap(), 10);
+        assert_eq!(buf.read_u32(offsets["B"]).unwrap(), 20);
+        assert_eq!(buf.read_u32(offsets["C"]).unwrap(), 30);
     }
 
     #[test]
@@ -52,6 +52,6 @@ mod tests {
         let offsets = scan_offsets(&buf, &[(0x1111, "A"), (0x2222, "B"), (0x3333, "C")]);
         assert_eq!(offsets.len(), 2);
         assert!(!offsets.contains_key("B"));
-        assert_eq!(buf.read_u32(offsets["C"]), 30);
+        assert_eq!(buf.read_u32(offsets["C"]).unwrap(), 30);
     }
 }
