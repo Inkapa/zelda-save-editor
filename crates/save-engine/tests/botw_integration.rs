@@ -1,5 +1,5 @@
 use save_engine::botw::ModifierCategory;
-use save_engine::Save;
+use save_engine::{Save, SaveError};
 
 fn fixture_bytes() -> Vec<u8> {
     std::fs::read("tests/fixtures/botw/game_data.sav").expect("fixture present")
@@ -102,4 +102,25 @@ fn horses_returns_six_slots_with_last_slot_nameless() {
     assert_eq!(horses.len(), save_engine::botw::NUM_HORSE_SLOTS);
     assert!(horses[5].name.is_none());
     assert!(horses[0].name.is_some());
+}
+
+#[test]
+fn set_item_out_of_range_returns_error() {
+    let mut save = load_botw();
+    let result = save.set_item(save_engine::botw::MAX_ITEMS, "Weapon_Sword_070", 1);
+    assert!(matches!(result, Err(SaveError::IndexOutOfRange { .. })));
+}
+
+#[test]
+fn set_horse_name_out_of_range_returns_error() {
+    let mut save = load_botw();
+    let result = save.set_horse_name(5, "Epona");
+    assert!(matches!(result, Err(SaveError::IndexOutOfRange { .. })));
+}
+
+#[test]
+fn set_horse_type_out_of_range_returns_error() {
+    let mut save = load_botw();
+    let result = save.set_horse_type(save_engine::botw::NUM_HORSE_SLOTS, "HorseType");
+    assert!(matches!(result, Err(SaveError::IndexOutOfRange { .. })));
 }

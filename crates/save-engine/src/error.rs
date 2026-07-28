@@ -4,6 +4,7 @@ use std::fmt;
 pub enum SaveError {
     UnknownFormat,
     MissingField(&'static str),
+    IndexOutOfRange { index: usize, max: usize },
 }
 
 impl fmt::Display for SaveError {
@@ -12,6 +13,9 @@ impl fmt::Display for SaveError {
             SaveError::UnknownFormat => write!(f, "unrecognized save file format"),
             SaveError::MissingField(name) => {
                 write!(f, "expected field not found in hash table: {name}")
+            }
+            SaveError::IndexOutOfRange { index, max } => {
+                write!(f, "index {index} out of range (max {max})")
             }
         }
     }

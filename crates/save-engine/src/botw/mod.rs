@@ -307,6 +307,9 @@ impl BotwSave {
     }
 
     pub fn set_item(&mut self, index: usize, name: &str, quantity: u32) -> Result<(), SaveError> {
+        if index >= MAX_ITEMS {
+            return Err(SaveError::IndexOutOfRange { index, max: MAX_ITEMS });
+        }
         let items_offset = self.offset("ITEMS")?;
         let qty_offset = self.offset("ITEMS_QUANTITY")?;
         strings::write_string64(&mut self.buf, items_offset, index, name);
@@ -375,6 +378,9 @@ impl BotwSave {
         modifier: u32,
         value: u32,
     ) -> Result<(), SaveError> {
+        if index >= MAX_ITEMS {
+            return Err(SaveError::IndexOutOfRange { index, max: MAX_ITEMS });
+        }
         let (flag_hash, value_hash) = match category {
             ModifierCategory::Weapon => ("FLAGS_WEAPON", "FLAGSV_WEAPON"),
             ModifierCategory::Bow => ("FLAGS_BOW", "FLAGSV_BOW"),
@@ -429,7 +435,7 @@ impl BotwSave {
 
     pub fn set_horse_name(&mut self, index: usize, value: &str) -> Result<(), SaveError> {
         if index >= 5 {
-            return Ok(());
+            return Err(SaveError::IndexOutOfRange { index, max: 5 });
         }
         let o = self.offset("HORSE_NAMES")?;
         strings::write_string64(&mut self.buf, o, index, value);
@@ -438,7 +444,7 @@ impl BotwSave {
 
     pub fn set_horse_saddle(&mut self, index: usize, value: &str) -> Result<(), SaveError> {
         if index >= 5 {
-            return Ok(());
+            return Err(SaveError::IndexOutOfRange { index, max: 5 });
         }
         let o = self.offset("HORSE_SADDLES")?;
         strings::write_string64(&mut self.buf, o, index, value);
@@ -447,7 +453,7 @@ impl BotwSave {
 
     pub fn set_horse_reins(&mut self, index: usize, value: &str) -> Result<(), SaveError> {
         if index >= 5 {
-            return Ok(());
+            return Err(SaveError::IndexOutOfRange { index, max: 5 });
         }
         let o = self.offset("HORSE_REINS")?;
         strings::write_string64(&mut self.buf, o, index, value);
@@ -456,7 +462,7 @@ impl BotwSave {
 
     pub fn set_horse_type(&mut self, index: usize, value: &str) -> Result<(), SaveError> {
         if index >= NUM_HORSE_SLOTS {
-            return Ok(());
+            return Err(SaveError::IndexOutOfRange { index, max: NUM_HORSE_SLOTS });
         }
         let o = self.offset("HORSE_TYPES")?;
         strings::write_string64(&mut self.buf, o, index, value);
