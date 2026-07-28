@@ -34,6 +34,12 @@ pub fn run() {
             commands::botw::set_horse_position,
             commands::botw::set_map,
             commands::botw::set_map_type,
+            commands::botw::set_item,
+            commands::botw::set_modifier,
+            commands::botw::set_horse_name,
+            commands::botw::set_horse_saddle,
+            commands::botw::set_horse_reins,
+            commands::botw::set_horse_type,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -1,6 +1,6 @@
 use tauri::State;
 
-use crate::dto::BotwState;
+use crate::dto::{BotwState, ModifierCategoryDto};
 use crate::error::ShellError;
 use crate::state::AppState;
 use save_engine::botw::BotwSave;
@@ -9,6 +9,7 @@ use save_engine::{Save, SaveError};
 /// Builds the DTO from a loaded `BotwSave`. Pure and Tauri-free — directly unit-testable
 /// against a real fixture, and reused (extended) by Task 4 once the list-shaped fields exist.
 pub fn read_state(save: &BotwSave) -> Result<BotwState, ShellError> {
+    let (weapon_modifiers, bow_modifiers, shield_modifiers) = save.modifiers()?;
     Ok(BotwState {
         rupees: save.rupees()?,
         mons: save.mons()?,
@@ -27,6 +28,11 @@ pub fn read_state(save: &BotwSave) -> Result<BotwState, ShellError> {
         horse_position: save.horse_position()?,
         map: save.map()?,
         map_type: save.map_type()?,
+        items: save.items()?.into_iter().map(crate::dto::BotwItemDto::from).collect(),
+        weapon_modifiers: weapon_modifiers.into_iter().map(crate::dto::ItemModifierDto::from).collect(),
+        bow_modifiers: bow_modifiers.into_iter().map(crate::dto::ItemModifierDto::from).collect(),
+        shield_modifiers: shield_modifiers.into_iter().map(crate::dto::ItemModifierDto::from).collect(),
+        horses: save.horses()?.into_iter().map(crate::dto::BotwHorseDto::from).collect(),
     })
 }
 
@@ -159,6 +165,47 @@ pub fn set_map_type(state: State<'_, AppState>, value: String) -> Result<(), She
     with_botw(state.inner(), |save| save.set_map_type(&value))
 }
 
+#[tauri::command]
+pub fn set_item(
+    state: State<'_, AppState>,
+    index: usize,
+    name: String,
+    quantity: u32,
+) -> Result<(), ShellError> {
+    with_botw(state.inner(), |save| save.set_item(index, &name, quantity))
+}
+
+#[tauri::command]
+pub fn set_modifier(
+    state: State<'_, AppState>,
+    category: ModifierCategoryDto,
+    index: usize,
+    modifier: u32,
+    value: u32,
+) -> Result<(), ShellError> {
+    with_botw(state.inner(), |save| save.set_modifier(category.into(), index, modifier, value))
+}
+
+#[tauri::command]
+pub fn set_horse_name(state: State<'_, AppState>, index: usize, value: String) -> Result<(), ShellError> {
+    with_botw(state.inner(), |save| save.set_horse_name(index, &value))
+}
+
+#[tauri::command]
+pub fn set_horse_saddle(state: State<'_, AppState>, index: usize, value: String) -> Result<(), ShellError> {
+    with_botw(state.inner(), |save| save.set_horse_saddle(index, &value))
+}
+
+#[tauri::command]
+pub fn set_horse_reins(state: State<'_, AppState>, index: usize, value: String) -> Result<(), ShellError> {
+    with_botw(state.inner(), |save| save.set_horse_reins(index, &value))
+}
+
+#[tauri::command]
+pub fn set_horse_type(state: State<'_, AppState>, index: usize, value: String) -> Result<(), ShellError> {
+    with_botw(state.inner(), |save| save.set_horse_type(index, &value))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -245,5 +292,32 @@ mod tests {
         } else {
             assert_eq!(after_motorcycle, None);
         }
+    }
+
+    #[test]
+    fn get_botw_state_impl_includes_items_modifiers_and_horses() {
+        let app_state = loaded_app_state();
+        let dto = get_botw_state_impl(&app_state).unwrap();
+        assert!(!dto.items.is_empty());
+        assert_eq!(dto.horses.len(), save_engine::botw::NUM_HORSE_SLOTS);
+    }
+
+    #[test]
+    fn set_item_round_trips_through_with_botw() {
+        let app_state = loaded_app_state();
+        let items_before = get_botw_state_impl(&app_state).unwrap().items;
+        let last_index = items_before.len() - 1;
+        with_botw(&app_state, |save| save.set_item(last_index, "Weapon_Sword_070", 1)).unwrap();
+        let items_after = get_botw_state_impl(&app_state).unwrap().items;
+        assert_eq!(items_after[last_index].name, "Weapon_Sword_070");
+        assert_eq!(items_after[last_index].quantity, 1);
+    }
+
+    #[test]
+    fn set_horse_name_round_trips_through_with_botw() {
+        let app_state = loaded_app_state();
+        with_botw(&app_state, |save| save.set_horse_name(0, "Epona")).unwrap();
+        let horses = get_botw_state_impl(&app_state).unwrap().horses;
+        assert_eq!(horses[0].name, Some("Epona".to_string()));
     }
 }
