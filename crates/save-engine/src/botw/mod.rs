@@ -387,3 +387,79 @@ impl BotwSave {
         Ok(())
     }
 }
+
+pub const NUM_HORSE_SLOTS: usize = 6;
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct BotwHorse {
+    pub name: Option<String>,
+    pub saddle: Option<String>,
+    pub reins: Option<String>,
+    pub horse_type: String,
+}
+
+impl BotwSave {
+    pub fn horses(&self) -> Result<Vec<BotwHorse>, SaveError> {
+        let names_offset = self.offset("HORSE_NAMES")?;
+        let saddles_offset = self.offset("HORSE_SADDLES")?;
+        let reins_offset = self.offset("HORSE_REINS")?;
+        let types_offset = self.offset("HORSE_TYPES")?;
+
+        let mut out = Vec::with_capacity(NUM_HORSE_SLOTS);
+        for i in 0..NUM_HORSE_SLOTS {
+            let horse_type = strings::read_string64(&self.buf, types_offset, i);
+            if i < 5 {
+                out.push(BotwHorse {
+                    name: Some(strings::read_string64(&self.buf, names_offset, i)),
+                    saddle: Some(strings::read_string64(&self.buf, saddles_offset, i)),
+                    reins: Some(strings::read_string64(&self.buf, reins_offset, i)),
+                    horse_type,
+                });
+            } else {
+                out.push(BotwHorse {
+                    name: None,
+                    saddle: None,
+                    reins: None,
+                    horse_type,
+                });
+            }
+        }
+        Ok(out)
+    }
+
+    pub fn set_horse_name(&mut self, index: usize, value: &str) -> Result<(), SaveError> {
+        if index >= 5 {
+            return Ok(());
+        }
+        let o = self.offset("HORSE_NAMES")?;
+        strings::write_string64(&mut self.buf, o, index, value);
+        Ok(())
+    }
+
+    pub fn set_horse_saddle(&mut self, index: usize, value: &str) -> Result<(), SaveError> {
+        if index >= 5 {
+            return Ok(());
+        }
+        let o = self.offset("HORSE_SADDLES")?;
+        strings::write_string64(&mut self.buf, o, index, value);
+        Ok(())
+    }
+
+    pub fn set_horse_reins(&mut self, index: usize, value: &str) -> Result<(), SaveError> {
+        if index >= 5 {
+            return Ok(());
+        }
+        let o = self.offset("HORSE_REINS")?;
+        strings::write_string64(&mut self.buf, o, index, value);
+        Ok(())
+    }
+
+    pub fn set_horse_type(&mut self, index: usize, value: &str) -> Result<(), SaveError> {
+        if index >= NUM_HORSE_SLOTS {
+            return Ok(());
+        }
+        let o = self.offset("HORSE_TYPES")?;
+        strings::write_string64(&mut self.buf, o, index, value);
+        Ok(())
+    }
+}
