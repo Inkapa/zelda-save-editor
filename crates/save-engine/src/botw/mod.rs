@@ -243,3 +243,147 @@ impl BotwSave {
         Ok(())
     }
 }
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct BotwItem {
+    pub name: String,
+    pub quantity: u32,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+enum ItemKind {
+    Weapon,
+    Bow,
+    Shield,
+    Other,
+}
+
+/// Classifies an item name id exactly enough to reproduce the upstream modifier-slot
+/// counting logic. Display categorization (armor/materials/food/other) is a UI concern
+/// and is intentionally not reproduced here.
+fn classify(name: &str) -> ItemKind {
+    if name.starts_with("Weapon_Sword_") || name.starts_with("Weapon_Lsword_") || name.starts_with("Weapon_Spear_") {
+        ItemKind::Weapon
+    } else if name.starts_with("Weapon_Bow_")
+        || matches!(name, "NormalArrow" | "FireArrow" | "IceArrow" | "ElectricArrow" | "BombArrow_A" | "AncientArrow")
+    {
+        ItemKind::Bow
+    } else if name.starts_with("Weapon_Shield_") {
+        ItemKind::Shield
+    } else {
+        ItemKind::Other
+    }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct ItemModifier {
+    pub modifier: u32,
+    pub value: u32,
+}
+
+#[derive(Clone, Copy, Debug)]
+pub enum ModifierCategory {
+    Weapon,
+    Bow,
+    Shield,
+}
+
+impl BotwSave {
+    /// Reads item slots until the first empty name (or `MAX_ITEMS`), mirroring `load()`'s
+    /// item loop.
+    pub fn items(&self) -> Result<Vec<BotwItem>, SaveError> {
+        let items_offset = self.offset("ITEMS")?;
+        let qty_offset = self.offset("ITEMS_QUANTITY")?;
+        let mut result = Vec::new();
+        for i in 0..MAX_ITEMS {
+            let name = strings::read_string64(&self.buf, items_offset, i);
+            if name.is_empty() {
+                break;
+            }
+            let quantity = self.buf.read_u32(qty_offset + i * 8);
+            result.push(BotwItem { name, quantity });
+        }
+        Ok(result)
+    }
+
+    pub fn set_item(&mut self, index: usize, name: &str, quantity: u32) -> Result<(), SaveError> {
+        let items_offset = self.offset("ITEMS")?;
+        let qty_offset = self.offset("ITEMS_QUANTITY")?;
+        strings::write_string64(&mut self.buf, items_offset, index, name);
+        self.buf.write_u32(qty_offset + index * 8, quantity);
+        Ok(())
+    }
+
+    /// Returns (weapon, bow, shield) modifier lists. Slot counts are derived by walking
+    /// the item list and tracking which contiguous category block is currently active —
+    /// ported 1:1 from the upstream `search` state machine in `load()`.
+    pub fn modifiers(&self) -> Result<(Vec<ItemModifier>, Vec<ItemModifier>, Vec<ItemModifier>), SaveError> {
+        let items = self.items()?;
+        let mut counts = [0usize; 3]; // weapon, bow, shield
+        let mut search = 0u8; // 0: weapons, 1: bows, 2: shields, 3: done
+
+        for item in &items {
+            let kind = classify(&item.name);
+            if search == 0 && kind == ItemKind::Bow {
+                search = 1;
+            } else if search == 0 && kind == ItemKind::Shield {
+                search = 2;
+            } else if search == 1 && kind == ItemKind::Shield {
+                search = 2;
+            } else if kind == ItemKind::Other {
+                search = 3;
+            }
+
+            if kind == ItemKind::Weapon && search == 0 {
+                counts[0] += 1;
+            } else if kind == ItemKind::Bow && search == 1 && item.name.starts_with("Weapon_") {
+                counts[1] += 1;
+            } else if kind == ItemKind::Shield && search == 2 {
+                counts[2] += 1;
+            }
+        }
+
+        Ok((
+            self.read_modifier_slots("FLAGS_WEAPON", "FLAGSV_WEAPON", counts[0])?,
+            self.read_modifier_slots("FLAGS_BOW", "FLAGSV_BOW", counts[1])?,
+            self.read_modifier_slots("FLAGS_SHIELD", "FLAGSV_SHIELD", counts[2])?,
+        ))
+    }
+
+    fn read_modifier_slots(
+        &self,
+        flag_hash: &'static str,
+        value_hash: &'static str,
+        count: usize,
+    ) -> Result<Vec<ItemModifier>, SaveError> {
+        let flag_offset = self.offset(flag_hash)?;
+        let value_offset = self.offset(value_hash)?;
+        let mut out = Vec::with_capacity(count);
+        for i in 0..count {
+            out.push(ItemModifier {
+                modifier: self.buf.read_u32(flag_offset + i * 8),
+                value: self.buf.read_u32(value_offset + i * 8),
+            });
+        }
+        Ok(out)
+    }
+
+    pub fn set_modifier(
+        &mut self,
+        category: ModifierCategory,
+        index: usize,
+        modifier: u32,
+        value: u32,
+    ) -> Result<(), SaveError> {
+        let (flag_hash, value_hash) = match category {
+            ModifierCategory::Weapon => ("FLAGS_WEAPON", "FLAGSV_WEAPON"),
+            ModifierCategory::Bow => ("FLAGS_BOW", "FLAGSV_BOW"),
+            ModifierCategory::Shield => ("FLAGS_SHIELD", "FLAGSV_SHIELD"),
+        };
+        let flag_offset = self.offset(flag_hash)?;
+        let value_offset = self.offset(value_hash)?;
+        self.buf.write_u32(flag_offset + index * 8, modifier);
+        self.buf.write_u32(value_offset + index * 8, value);
+        Ok(())
+    }
+}
