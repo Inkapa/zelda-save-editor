@@ -2,6 +2,7 @@ pub mod binary;
 pub mod botw;
 pub mod error;
 pub mod hashtable;
+pub mod totk;
 
 pub use error::SaveError;
 
