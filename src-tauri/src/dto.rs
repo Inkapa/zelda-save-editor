@@ -81,3 +81,18 @@ pub struct BotwState {
     pub shield_modifiers: Vec<ItemModifierDto>,
     pub horses: Vec<BotwHorseDto>,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkState {
+    pub max_life: u32,
+    pub current_rupees: u32,
+    pub max_stamina: u32,
+    pub max_energy: u32,
+    pub playtime: u32,
+    pub horse_inn_member_point: u32,
+    pub save_pos: (f32, f32, f32),
+    pub sequence_current_banc: String,
+    pub pouch_weapon_valid_num: u32,
+    pub pouch_bow_valid_num: u32,
+    pub pouch_shield_valid_num: u32,
+}

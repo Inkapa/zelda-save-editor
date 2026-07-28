@@ -40,6 +40,18 @@ pub fn run() {
             commands::botw::set_horse_saddle,
             commands::botw::set_horse_reins,
             commands::botw::set_horse_type,
+            commands::totk::get_totk_state,
+            commands::totk::totk_set_max_life,
+            commands::totk::totk_set_current_rupees,
+            commands::totk::totk_set_max_stamina,
+            commands::totk::totk_set_max_energy,
+            commands::totk::totk_set_playtime,
+            commands::totk::totk_set_horse_inn_member_point,
+            commands::totk::totk_set_save_pos,
+            commands::totk::totk_set_sequence_current_banc,
+            commands::totk::totk_set_pouch_weapon_valid_num,
+            commands::totk::totk_set_pouch_bow_valid_num,
+            commands::totk::totk_set_pouch_shield_valid_num,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
