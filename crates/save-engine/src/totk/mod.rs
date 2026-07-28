@@ -107,4 +107,49 @@ impl TotkSave {
         let o = self.offset("HORSE_INN_MEMBER_POINT")?;
         self.buf.write_u32(o, val)
     }
+
+    pub fn save_pos(&self) -> Result<(f32, f32, f32), SaveError> {
+        let o = self.offset("SAVE_POS")?;
+        Ok((self.buf.read_f32(o)?, self.buf.read_f32(o + 4)?, self.buf.read_f32(o + 8)?))
+    }
+    pub fn set_save_pos(&mut self, x: f32, y: f32, z: f32) -> Result<(), SaveError> {
+        let o = self.offset("SAVE_POS")?;
+        self.buf.write_f32(o, x)?;
+        self.buf.write_f32(o + 4, y)?;
+        self.buf.write_f32(o + 8, z)?;
+        Ok(())
+    }
+
+    pub fn sequence_current_banc(&self) -> Result<String, SaveError> {
+        let o = self.offset("SEQUENCE_CURRENT_BANC")?;
+        Ok(strings::read_string64(&self.buf, o))
+    }
+    pub fn set_sequence_current_banc(&mut self, value: &str) -> Result<(), SaveError> {
+        let o = self.offset("SEQUENCE_CURRENT_BANC")?;
+        strings::write_string64(&mut self.buf, o, value)
+    }
+
+    pub fn pouch_weapon_valid_num(&self) -> Result<u32, SaveError> {
+        self.buf.read_u32(self.offset("POUCH_WEAPON_VALID_NUM")?)
+    }
+    pub fn set_pouch_weapon_valid_num(&mut self, val: u32) -> Result<(), SaveError> {
+        let o = self.offset("POUCH_WEAPON_VALID_NUM")?;
+        self.buf.write_u32(o, val)
+    }
+
+    pub fn pouch_bow_valid_num(&self) -> Result<u32, SaveError> {
+        self.buf.read_u32(self.offset("POUCH_BOW_VALID_NUM")?)
+    }
+    pub fn set_pouch_bow_valid_num(&mut self, val: u32) -> Result<(), SaveError> {
+        let o = self.offset("POUCH_BOW_VALID_NUM")?;
+        self.buf.write_u32(o, val)
+    }
+
+    pub fn pouch_shield_valid_num(&self) -> Result<u32, SaveError> {
+        self.buf.read_u32(self.offset("POUCH_SHIELD_VALID_NUM")?)
+    }
+    pub fn set_pouch_shield_valid_num(&mut self, val: u32) -> Result<(), SaveError> {
+        let o = self.offset("POUCH_SHIELD_VALID_NUM")?;
+        self.buf.write_u32(o, val)
+    }
 }
