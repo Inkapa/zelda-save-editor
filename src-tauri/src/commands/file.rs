@@ -71,9 +71,13 @@ pub fn save_as(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<(), 
 fn write_current_save(app_state: &AppState, path: &PathBuf) -> Result<(), ShellError> {
     let save = app_state.save.lock().unwrap().take().ok_or_else(ShellError::no_save_loaded)?;
     let bytes = save.to_bytes();
-    std::fs::write(path, &bytes).map_err(ShellError::io)?;
+    let write_result = std::fs::write(path, &bytes);
+    // Re-detect and restore state before propagating any write error — otherwise a disk-write
+    // failure would permanently empty AppState.save, discarding in-memory edits until the user
+    // manually reopens the file.
     let (reloaded, _) = detect_and_build(bytes)?;
     *app_state.save.lock().unwrap() = Some(reloaded);
+    write_result.map_err(ShellError::io)?;
     Ok(())
 }
 
@@ -121,5 +125,28 @@ mod tests {
         assert!(app_state.save.lock().unwrap().is_some(), "state should be reloaded, not left empty");
 
         std::fs::remove_file(&tmp_path).ok();
+    }
+
+    #[test]
+    fn write_current_save_restores_state_even_when_write_fails() {
+        let bytes = std::fs::read("../crates/save-engine/tests/fixtures/botw/game_data.sav")
+            .expect("fixture present");
+        let (save, _) = detect_and_build(bytes).unwrap();
+        let app_state = AppState {
+            save: std::sync::Mutex::new(Some(save)),
+            path: std::sync::Mutex::new(None),
+        };
+        // A path whose parent directory doesn't exist — std::fs::write fails reliably here.
+        let bad_path = std::env::temp_dir()
+            .join("zelda_shell_nonexistent_dir_xyz")
+            .join("test.sav");
+
+        let result = write_current_save(&app_state, &bad_path);
+
+        assert!(result.is_err(), "write to a nonexistent directory should fail");
+        assert!(
+            app_state.save.lock().unwrap().is_some(),
+            "state should still be populated after a failed write, not discarded"
+        );
     }
 }
