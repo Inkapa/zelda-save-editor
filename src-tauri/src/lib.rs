@@ -14,6 +14,7 @@ fn ping() -> String {
 pub fn run() {
     tauri::Builder::default()
         .manage(AppState::default())
+        .plugin(tauri_plugin_dialog::init())
         .invoke_handler(tauri::generate_handler![
             ping,
             commands::botw::get_botw_state,
@@ -52,6 +53,9 @@ pub fn run() {
             commands::totk::set_pouch_weapon_valid_num,
             commands::totk::set_pouch_bow_valid_num,
             commands::totk::set_pouch_shield_valid_num,
+            commands::file::open_save,
+            commands::file::save,
+            commands::file::save_as,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

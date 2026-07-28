@@ -96,3 +96,10 @@ pub struct TotkState {
     pub pouch_bow_valid_num: u32,
     pub pouch_shield_valid_num: u32,
 }
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[serde(tag = "kind", rename_all = "snake_case")]
+pub enum OpenResult {
+    Botw { state: BotwState },
+    Totk { state: TotkState },
+}
