@@ -48,62 +48,63 @@ pub fn with_totk<T>(
     }
 }
 
-// Tauri v2's #[tauri::command] macro generates crate-level symbols that collide when
-// multiple modules have functions with the same name (e.g., set_max_stamina in both BOTW
-// and TOTK). Prefixing with "totk_" avoids the collision while keeping the command
-// handlers registered with short names in lib.rs via the fully qualified path.
 #[tauri::command]
-pub fn totk_set_max_life(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
+pub fn set_max_life(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
     with_totk(state.inner(), |save| save.set_max_life(val))
 }
 
 #[tauri::command]
-pub fn totk_set_current_rupees(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
+pub fn set_current_rupees(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
     with_totk(state.inner(), |save| save.set_current_rupees(val))
 }
 
+// Tauri v2's #[tauri::command] macro generates crate-level symbols per literal function
+// name, so a TOTK command sharing a name with a BOTW command collides at compile time
+// (E0428). Only this one name (`set_max_stamina`) actually collides with anything in
+// commands::botw. Every other TOTK setter keeps its plain name matching TotkSave's own
+// method name; renamed only this one instead of prefixing the whole file.
 #[tauri::command]
 pub fn totk_set_max_stamina(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
     with_totk(state.inner(), |save| save.set_max_stamina(val))
 }
 
 #[tauri::command]
-pub fn totk_set_max_energy(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
+pub fn set_max_energy(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
     with_totk(state.inner(), |save| save.set_max_energy(val))
 }
 
 #[tauri::command]
-pub fn totk_set_playtime(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
+pub fn set_playtime(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
     with_totk(state.inner(), |save| save.set_playtime(val))
 }
 
 #[tauri::command]
-pub fn totk_set_horse_inn_member_point(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
+pub fn set_horse_inn_member_point(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
     with_totk(state.inner(), |save| save.set_horse_inn_member_point(val))
 }
 
 #[tauri::command]
-pub fn totk_set_save_pos(state: State<'_, AppState>, x: f32, y: f32, z: f32) -> Result<(), ShellError> {
+pub fn set_save_pos(state: State<'_, AppState>, x: f32, y: f32, z: f32) -> Result<(), ShellError> {
     with_totk(state.inner(), |save| save.set_save_pos(x, y, z))
 }
 
 #[tauri::command]
-pub fn totk_set_sequence_current_banc(state: State<'_, AppState>, value: String) -> Result<(), ShellError> {
+pub fn set_sequence_current_banc(state: State<'_, AppState>, value: String) -> Result<(), ShellError> {
     with_totk(state.inner(), |save| save.set_sequence_current_banc(&value))
 }
 
 #[tauri::command]
-pub fn totk_set_pouch_weapon_valid_num(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
+pub fn set_pouch_weapon_valid_num(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
     with_totk(state.inner(), |save| save.set_pouch_weapon_valid_num(val))
 }
 
 #[tauri::command]
-pub fn totk_set_pouch_bow_valid_num(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
+pub fn set_pouch_bow_valid_num(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
     with_totk(state.inner(), |save| save.set_pouch_bow_valid_num(val))
 }
 
 #[tauri::command]
-pub fn totk_set_pouch_shield_valid_num(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
+pub fn set_pouch_shield_valid_num(state: State<'_, AppState>, val: u32) -> Result<(), ShellError> {
     with_totk(state.inner(), |save| save.set_pouch_shield_valid_num(val))
 }
 
