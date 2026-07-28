@@ -121,20 +121,12 @@ pub fn set_playtime_seconds(state: State<'_, AppState>, val: u32) -> Result<(), 
     with_botw(state.inner(), |save| save.set_playtime_seconds(val))
 }
 
-/// `BotwSave::motorcycle`/`set_motorcycle` don't return `Result` (the field is absent on
-/// some save versions, per the engine's own doc comment) — handled directly rather than
-/// through `with_botw`, which assumes a `Result`-returning closure.
 #[tauri::command]
 pub fn set_motorcycle(state: State<'_, AppState>, val: bool) -> Result<(), ShellError> {
-    let mut guard = state.inner().save.lock().unwrap();
-    match guard.as_mut() {
-        Some(Save::Botw(save)) => {
-            save.set_motorcycle(val);
-            Ok(())
-        }
-        Some(Save::Totk(_)) => Err(ShellError::wrong_game("BOTW")),
-        None => Err(ShellError::no_save_loaded()),
-    }
+    with_botw(state.inner(), |save| {
+        save.set_motorcycle(val);
+        Ok(())
+    })
 }
 
 #[tauri::command]
@@ -231,5 +223,27 @@ mod tests {
         let app_state = AppState { save: std::sync::Mutex::new(Some(save)), path: std::sync::Mutex::new(None) };
         let result = with_botw(&app_state, |save| save.set_rupees(1));
         assert_eq!(result.unwrap_err().kind, "wrong_game");
+    }
+
+    #[test]
+    fn with_botw_edits_motorcycle_and_persists_in_state() {
+        let app_state = loaded_app_state();
+        let initial_motorcycle = get_botw_state_impl(&app_state).unwrap().motorcycle;
+
+        // If the fixture has the motorcycle field, setting it should persist; if not, it stays None.
+        with_botw(&app_state, |save| {
+            save.set_motorcycle(true);
+            Ok(())
+        })
+        .unwrap();
+
+        let after_motorcycle = get_botw_state_impl(&app_state).unwrap().motorcycle;
+        // If the field exists in the save version, it should be updated to true.
+        // If not (None initially), it should remain None.
+        if initial_motorcycle.is_some() {
+            assert_eq!(after_motorcycle, Some(true));
+        } else {
+            assert_eq!(after_motorcycle, None);
+        }
     }
 }
