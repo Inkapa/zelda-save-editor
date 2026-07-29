@@ -1,3 +1,4 @@
+use save_engine::totk::pouch;
 use save_engine::Save;
 
 fn fixture_bytes() -> Vec<u8> {
@@ -73,6 +74,108 @@ fn pouch_valid_num_accessors_round_trip() {
     assert_eq!(save.pouch_weapon_valid_num().unwrap(), 5);
     assert_eq!(save.pouch_bow_valid_num().unwrap(), 3);
     assert_eq!(save.pouch_shield_valid_num().unwrap(), 2);
+}
+
+#[test]
+fn pouch_weapons_reads_real_fixture_contents() {
+    let save = load_totk();
+    let weapons = save.pouch_weapons().unwrap();
+    assert_eq!(weapons.len(), 2);
+    assert_eq!(weapons[0].id, "Weapon_Sword_070"); // Master Sword
+    assert_eq!(weapons[0].durability, 40);
+    assert_eq!(weapons[0].fuse_id, "");
+    assert_eq!(weapons[1].id, "Weapon_Sword_166"); // Gloom Sword
+    assert_eq!(weapons[1].durability, 40);
+    assert_eq!(weapons[1].fuse_id, "Item_Enemy_226");
+}
+
+#[test]
+fn set_pouch_weapons_round_trips_and_updates_valid_num() {
+    let mut save = load_totk();
+    let mut weapons = save.pouch_weapons().unwrap();
+    weapons.push(pouch::WeaponEntry {
+        id: "Weapon_Sword_001".into(),
+        durability: 20,
+        modifier: 0,
+        modifier_value: 0,
+        fuse_id: String::new(),
+        fuse_durability: 0,
+        extra_durability: 0,
+        record_extra_durability: -1,
+    });
+    save.set_pouch_weapons(&weapons).unwrap();
+    assert_eq!(save.pouch_weapon_valid_num().unwrap(), 3);
+    let reloaded = save.pouch_weapons().unwrap();
+    assert_eq!(reloaded.len(), 3);
+    assert_eq!(reloaded[2].id, "Weapon_Sword_001");
+}
+
+#[test]
+fn pouch_bows_reads_real_fixture_contents() {
+    let save = load_totk();
+    let bows = save.pouch_bows().unwrap();
+    assert_eq!(bows.len(), 2);
+    assert_eq!(bows[0].id, "Weapon_Bow_036");
+    assert_eq!(bows[0].durability, 55);
+    assert_eq!(bows[0].modifier, 0xdad10617);
+    assert_eq!(bows[0].modifier_value, 10);
+    assert_eq!(bows[1].id, "Weapon_Bow_013");
+    assert_eq!(bows[1].durability, 17);
+    assert_eq!(bows[1].modifier, 0xb6eede09); // hash32("None"): no modifier
+    assert_eq!(bows[1].modifier_value, 0);
+}
+
+#[test]
+fn set_pouch_bows_round_trips_and_updates_valid_num() {
+    let mut save = load_totk();
+    let mut bows = save.pouch_bows().unwrap();
+    bows.push(pouch::BowEntry {
+        id: "Weapon_Bow_001".into(),
+        durability: 20,
+        modifier: 0,
+        modifier_value: 0,
+    });
+    save.set_pouch_bows(&bows).unwrap();
+    assert_eq!(save.pouch_bow_valid_num().unwrap(), 3);
+    let reloaded = save.pouch_bows().unwrap();
+    assert_eq!(reloaded.len(), 3);
+    assert_eq!(reloaded[2].id, "Weapon_Bow_001");
+}
+
+#[test]
+fn pouch_shields_reads_real_fixture_contents() {
+    let save = load_totk();
+    let shields = save.pouch_shields().unwrap();
+    assert_eq!(shields.len(), 2);
+    assert_eq!(shields[0].id, "Weapon_Shield_057");
+    assert_eq!(shields[0].durability, 90);
+    assert_eq!(shields[0].modifier, 0xb6eede09); // hash32("None"): no modifier
+    assert_eq!(shields[0].fuse_id, "");
+    assert_eq!(shields[0].fuse_durability, -1);
+    assert_eq!(shields[1].id, "Weapon_Shield_022");
+    assert_eq!(shields[1].durability, 29);
+    assert_eq!(shields[1].modifier, 0xb3c94e5);
+    assert_eq!(shields[1].modifier_value, 6);
+}
+
+#[test]
+fn set_pouch_shields_round_trips_and_updates_valid_num() {
+    let mut save = load_totk();
+    let mut shields = save.pouch_shields().unwrap();
+    shields.push(pouch::ShieldEntry {
+        id: "Weapon_Shield_001".into(),
+        durability: 20,
+        modifier: 0,
+        modifier_value: 0,
+        fuse_id: String::new(),
+        fuse_durability: 0,
+        extra_durability: 0,
+    });
+    save.set_pouch_shields(&shields).unwrap();
+    assert_eq!(save.pouch_shield_valid_num().unwrap(), 3);
+    let reloaded = save.pouch_shields().unwrap();
+    assert_eq!(reloaded.len(), 3);
+    assert_eq!(reloaded[2].id, "Weapon_Shield_001");
 }
 
 #[test]

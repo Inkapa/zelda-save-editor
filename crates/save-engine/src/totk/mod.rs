@@ -1,5 +1,6 @@
 pub mod hashtable;
 pub mod murmur3;
+pub mod pouch;
 pub mod strings;
 pub mod versions;
 
@@ -30,6 +31,7 @@ const HASHES: [(u32, &str, bool); 11] = [
 pub struct TotkSave {
     buf: SaveBuffer,
     offsets: HashMap<&'static str, usize>,
+    hash_table_end: usize,
     pub version_label: &'static str,
     pub modded: bool,
 }
@@ -45,6 +47,7 @@ impl TotkSave {
         Ok(TotkSave {
             buf,
             offsets,
+            hash_table_end,
             version_label,
             modded,
         })
@@ -152,5 +155,29 @@ impl TotkSave {
     pub fn set_pouch_shield_valid_num(&mut self, val: u32) -> Result<(), SaveError> {
         let o = self.offset("POUCH_SHIELD_VALID_NUM")?;
         self.buf.write_u32(o, val)
+    }
+
+    pub fn pouch_weapons(&self) -> Result<Vec<pouch::WeaponEntry>, SaveError> {
+        pouch::read_weapons(&self.buf, self.hash_table_end, self.pouch_weapon_valid_num()?)
+    }
+    pub fn set_pouch_weapons(&mut self, entries: &[pouch::WeaponEntry]) -> Result<(), SaveError> {
+        pouch::write_weapons(&mut self.buf, self.hash_table_end, entries)?;
+        self.set_pouch_weapon_valid_num(entries.len() as u32)
+    }
+
+    pub fn pouch_bows(&self) -> Result<Vec<pouch::BowEntry>, SaveError> {
+        pouch::read_bows(&self.buf, self.hash_table_end, self.pouch_bow_valid_num()?)
+    }
+    pub fn set_pouch_bows(&mut self, entries: &[pouch::BowEntry]) -> Result<(), SaveError> {
+        pouch::write_bows(&mut self.buf, self.hash_table_end, entries)?;
+        self.set_pouch_bow_valid_num(entries.len() as u32)
+    }
+
+    pub fn pouch_shields(&self) -> Result<Vec<pouch::ShieldEntry>, SaveError> {
+        pouch::read_shields(&self.buf, self.hash_table_end, self.pouch_shield_valid_num()?)
+    }
+    pub fn set_pouch_shields(&mut self, entries: &[pouch::ShieldEntry]) -> Result<(), SaveError> {
+        pouch::write_shields(&mut self.buf, self.hash_table_end, entries)?;
+        self.set_pouch_shield_valid_num(entries.len() as u32)
     }
 }
