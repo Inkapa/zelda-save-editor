@@ -260,3 +260,15 @@ export function setMapMarkers(entries: TotkMapMarker[]): Promise<void> {
 export function setTeleporters(entries: TotkTeleporter[]): Promise<void> {
   return invoke("set_teleporters", { entries });
 }
+
+export function unlockAllBubbuls(): Promise<number> {
+  return invoke("unlock_all_bubbuls");
+}
+
+export function unlockAllSageWills(): Promise<number> {
+  return invoke("unlock_all_sage_wills");
+}
+
+export function unlockAllAddison(): Promise<number> {
+  return invoke("unlock_all_addison");
+}

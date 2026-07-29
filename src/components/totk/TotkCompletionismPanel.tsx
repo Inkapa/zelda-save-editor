@@ -1,12 +1,19 @@
 import type { TotkState } from "../../api";
+import * as api from "../../api";
 import SectionHeading from "../../theme/SectionHeading";
 import TotkMotif from "../../theme/motifs/TotkMotif";
+import UnlockButton from "../UnlockButton";
 
 interface Props {
   state: TotkState;
+  onError: (message: string) => void;
+  onUnlocked: () => void;
 }
 
-export default function TotkCompletionismPanel({ state }: Props) {
+const GUID_UNLOCK_CONFIRM =
+  "This adds entries to your save's internal tracking data and grows the file slightly, a less common kind of edit than others in this tool. Continue?";
+
+export default function TotkCompletionismPanel({ state, onError, onUnlocked }: Props) {
   return (
     <div>
       <SectionHeading title="Completionism" motif={<TotkMotif />} />
@@ -22,6 +29,27 @@ export default function TotkCompletionismPanel({ state }: Props) {
       <p>Sage wills found: {state.sage_wills_found}</p>
       <p>Old maps found: {state.old_maps_found}</p>
       <p>Addison completed: {state.addison_completed}</p>
+      <UnlockButton
+        label="Unlock All Bubbuls"
+        run={api.unlockAllBubbuls}
+        onError={onError}
+        onUnlocked={onUnlocked}
+        confirmMessage={GUID_UNLOCK_CONFIRM}
+      />
+      <UnlockButton
+        label="Unlock All Sage Wills"
+        run={api.unlockAllSageWills}
+        onError={onError}
+        onUnlocked={onUnlocked}
+        confirmMessage={GUID_UNLOCK_CONFIRM}
+      />
+      <UnlockButton
+        label="Unlock All Addison"
+        run={api.unlockAllAddison}
+        onError={onError}
+        onUnlocked={onUnlocked}
+        confirmMessage={GUID_UNLOCK_CONFIRM}
+      />
     </div>
   );
 }

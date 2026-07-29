@@ -15,6 +15,7 @@ import styles from "./TotkView.module.css";
 interface Props {
   state: TotkState;
   onError: (message: string) => void;
+  onRefresh: () => void;
 }
 
 function NumberField({
@@ -43,7 +44,7 @@ function NumberField({
   );
 }
 
-export default function TotkView({ state, onError }: Props) {
+export default function TotkView({ state, onError, onRefresh }: Props) {
   const [posX, setPosX] = useState(String(state.save_pos[0]));
   const [posY, setPosY] = useState(String(state.save_pos[1]));
   const [posZ, setPosZ] = useState(String(state.save_pos[2]));
@@ -140,7 +141,7 @@ export default function TotkView({ state, onError }: Props) {
 
       <TotkTeleportersTable teleporters={state.teleporters} onError={onError} />
 
-      <TotkCompletionismPanel state={state} />
+      <TotkCompletionismPanel state={state} onError={onError} onUnlocked={onRefresh} />
     </div>
   );
 }

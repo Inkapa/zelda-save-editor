@@ -72,7 +72,9 @@ function App() {
       {loaded?.kind === "botw" && (
         <BotwView state={loaded.state} onError={setError} onRefresh={refreshCurrent} />
       )}
-      {loaded?.kind === "totk" && <TotkView state={loaded.state} onError={setError} />}
+      {loaded?.kind === "totk" && (
+        <TotkView state={loaded.state} onError={setError} onRefresh={refreshCurrent} />
+      )}
       {!loaded && <p className={styles.empty}>Open a save file to begin.</p>}
     </div>
   );
