@@ -1,6 +1,7 @@
 pub mod autobuilder;
 pub mod completism;
 pub mod guids;
+pub mod hashdict;
 pub mod hashtable;
 pub mod horse;
 pub mod mapdata;
