@@ -2,8 +2,8 @@ use tauri::State;
 
 use crate::dto::{
     TotkArmorDto, TotkArrowDto, TotkAutoBuildEntryDto, TotkBowDto, TotkDeviceDto, TotkFoodDto,
-    TotkHorseDto, TotkKeyItemDto, TotkMapPinDto, TotkMaterialDto, TotkShieldDto, TotkState,
-    TotkWeaponDto,
+    TotkHorseDto, TotkKeyItemDto, TotkMapMarkerDto, TotkMapPinDto, TotkMaterialDto, TotkShieldDto,
+    TotkState, TotkTeleporterDto, TotkWeaponDto,
 };
 use crate::error::ShellError;
 use crate::state::AppState;
@@ -45,6 +45,8 @@ pub fn read_state(save: &TotkSave) -> Result<TotkState, ShellError> {
         sage_wills_found: save.sage_wills_found()? as u32,
         autobuilds: save.autobuilds()?.into_iter().map(TotkAutoBuildEntryDto::from).collect(),
         map_pins: save.map_pins()?.into_iter().map(TotkMapPinDto::from).collect(),
+        map_markers: save.map_markers()?.into_iter().map(TotkMapMarkerDto::from).collect(),
+        teleporters: save.teleporters()?.into_iter().map(TotkTeleporterDto::from).collect(),
     })
 }
 
@@ -204,6 +206,18 @@ pub fn set_autobuilds(state: State<'_, AppState>, entries: Vec<TotkAutoBuildEntr
 pub fn set_map_pins(state: State<'_, AppState>, entries: Vec<TotkMapPinDto>) -> Result<(), ShellError> {
     let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
     with_totk(state.inner(), |save| save.set_map_pins(&entries))
+}
+
+#[tauri::command]
+pub fn set_map_markers(state: State<'_, AppState>, entries: Vec<TotkMapMarkerDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_map_markers(&entries))
+}
+
+#[tauri::command]
+pub fn set_teleporters(state: State<'_, AppState>, entries: Vec<TotkTeleporterDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_teleporters(&entries))
 }
 
 #[cfg(test)]
@@ -369,5 +383,26 @@ mod tests {
         .unwrap();
         let after = get_totk_state_impl(&app_state).unwrap().map_pins;
         assert_eq!(after[0].icon, save_engine::totk::mapdata::ICON_NONE);
+    }
+
+    #[test]
+    fn get_totk_state_impl_includes_markers_and_teleporters() {
+        let app_state = loaded_app_state();
+        let dto = get_totk_state_impl(&app_state).unwrap();
+        assert_eq!(dto.map_markers.len(), 6);
+        assert_eq!(dto.teleporters.len(), 3);
+    }
+
+    #[test]
+    fn set_teleporters_round_trips_through_with_totk() {
+        let app_state = loaded_app_state();
+        let mut teleporters = get_totk_state_impl(&app_state).unwrap().teleporters;
+        teleporters[0].pos = (1.0, 2.0, 3.0);
+        with_totk(&app_state, |save| {
+            save.set_teleporters(&teleporters.iter().cloned().map(Into::into).collect::<Vec<_>>())
+        })
+        .unwrap();
+        let after = get_totk_state_impl(&app_state).unwrap().teleporters;
+        assert_eq!(after[0].pos, (1.0, 2.0, 3.0));
     }
 }

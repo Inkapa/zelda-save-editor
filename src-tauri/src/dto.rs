@@ -145,6 +145,8 @@ pub struct TotkState {
     pub sage_wills_found: u32,
     pub autobuilds: Vec<TotkAutoBuildEntryDto>,
     pub map_pins: Vec<TotkMapPinDto>,
+    pub map_markers: Vec<TotkMapMarkerDto>,
+    pub teleporters: Vec<TotkTeleporterDto>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -164,6 +166,45 @@ impl From<save_engine::totk::mapdata::MapPinEntry> for TotkMapPinDto {
 impl From<TotkMapPinDto> for save_engine::totk::mapdata::MapPinEntry {
     fn from(d: TotkMapPinDto) -> Self {
         save_engine::totk::mapdata::MapPinEntry { icon: d.icon, x: d.x, y: d.y, layer: d.layer }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkMapMarkerDto {
+    pub color: u32,
+    pub x: f32,
+    pub y: f32,
+    pub z: f32,
+}
+
+impl From<save_engine::totk::mapdata::MapMarkerEntry> for TotkMapMarkerDto {
+    fn from(e: save_engine::totk::mapdata::MapMarkerEntry) -> Self {
+        TotkMapMarkerDto { color: e.color, x: e.x, y: e.y, z: e.z }
+    }
+}
+
+impl From<TotkMapMarkerDto> for save_engine::totk::mapdata::MapMarkerEntry {
+    fn from(d: TotkMapMarkerDto) -> Self {
+        save_engine::totk::mapdata::MapMarkerEntry { color: d.color, x: d.x, y: d.y, z: d.z }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkTeleporterDto {
+    pub index: i32,
+    pub pos: (f32, f32, f32),
+    pub rot: (f32, f32, f32),
+}
+
+impl From<save_engine::totk::mapdata::TeleporterEntry> for TotkTeleporterDto {
+    fn from(e: save_engine::totk::mapdata::TeleporterEntry) -> Self {
+        TotkTeleporterDto { index: e.index, pos: e.pos, rot: e.rot }
+    }
+}
+
+impl From<TotkTeleporterDto> for save_engine::totk::mapdata::TeleporterEntry {
+    fn from(d: TotkTeleporterDto) -> Self {
+        save_engine::totk::mapdata::TeleporterEntry { index: d.index, pos: d.pos, rot: d.rot }
     }
 }
 

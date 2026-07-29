@@ -11,10 +11,12 @@ import type {
   TotkFood,
   TotkHorse,
   TotkKeyItem,
+  TotkMapMarker,
   TotkMapPin,
   TotkMaterial,
   TotkShield,
   TotkState,
+  TotkTeleporter,
   TotkWeapon,
 } from "./types";
 
@@ -249,4 +251,12 @@ export function setAutobuilds(entries: TotkAutoBuildEntry[]): Promise<void> {
 
 export function setMapPins(entries: TotkMapPin[]): Promise<void> {
   return invoke("set_map_pins", { entries });
+}
+
+export function setMapMarkers(entries: TotkMapMarker[]): Promise<void> {
+  return invoke("set_map_markers", { entries });
+}
+
+export function setTeleporters(entries: TotkTeleporter[]): Promise<void> {
+  return invoke("set_teleporters", { entries });
 }

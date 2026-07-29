@@ -150,6 +150,19 @@ export interface TotkMapPin {
   layer: number;
 }
 
+export interface TotkMapMarker {
+  color: number;
+  x: number;
+  y: number;
+  z: number;
+}
+
+export interface TotkTeleporter {
+  index: number;
+  pos: [number, number, number];
+  rot: [number, number, number];
+}
+
 export interface TotkState {
   max_life: number;
   current_rupees: number;
@@ -184,6 +197,8 @@ export interface TotkState {
   sage_wills_found: number;
   autobuilds: TotkAutoBuildEntry[];
   map_pins: TotkMapPin[];
+  map_markers: TotkMapMarker[];
+  teleporters: TotkTeleporter[];
 }
 
 export type OpenResult =

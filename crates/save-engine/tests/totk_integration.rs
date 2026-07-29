@@ -591,3 +591,51 @@ fn guid_completism_counts_match_real_fixture_contents() {
     assert_eq!(save.defeated_bubbuls().unwrap(), 104);
     assert_eq!(save.sage_wills_found().unwrap(), 18);
 }
+
+#[test]
+fn map_markers_read_real_fixture_contents() {
+    let save = load_totk();
+    let markers = save.map_markers().unwrap();
+    assert_eq!(markers.len(), 6);
+    assert!((markers[0].x - 3650.0803).abs() < 0.01);
+}
+
+#[test]
+fn set_map_markers_round_trips_and_rejects_wrong_entry_count() {
+    let mut save = load_totk();
+    let mut markers = save.map_markers().unwrap();
+    markers[0].color = save_engine::totk::mapdata::ICON_NONE;
+    markers[0].x = 0.0;
+    save.set_map_markers(&markers).unwrap();
+    let reloaded = save.map_markers().unwrap();
+    assert!(reloaded[0].is_free());
+
+    markers.pop();
+    let result = save.set_map_markers(&markers);
+    assert!(matches!(result, Err(save_engine::SaveError::SizeMismatch { .. })));
+}
+
+#[test]
+fn teleporters_read_real_fixture_contents() {
+    let save = load_totk();
+    let teleporters = save.teleporters().unwrap();
+    assert_eq!(teleporters.len(), 3);
+    assert_eq!(teleporters[0].index, 1);
+    assert!((teleporters[0].pos.0 - 3075.8567).abs() < 0.01);
+}
+
+#[test]
+fn set_teleporters_round_trips_and_rejects_wrong_entry_count() {
+    let mut save = load_totk();
+    let mut teleporters = save.teleporters().unwrap();
+    teleporters[0].pos = (1.0, 2.0, 3.0);
+    teleporters[0].rot = (4.0, 5.0, 6.0);
+    save.set_teleporters(&teleporters).unwrap();
+    let reloaded = save.teleporters().unwrap();
+    assert_eq!(reloaded[0].pos, (1.0, 2.0, 3.0));
+    assert_eq!(reloaded[0].rot, (4.0, 5.0, 6.0));
+
+    teleporters.pop();
+    let result = save.set_teleporters(&teleporters);
+    assert!(matches!(result, Err(save_engine::SaveError::SizeMismatch { .. })));
+}

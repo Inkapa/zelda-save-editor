@@ -64,6 +64,8 @@ pub fn run() {
             commands::totk::set_horses,
             commands::totk::set_autobuilds,
             commands::totk::set_map_pins,
+            commands::totk::set_map_markers,
+            commands::totk::set_teleporters,
             commands::file::open_save,
             commands::file::save,
             commands::file::save_as,

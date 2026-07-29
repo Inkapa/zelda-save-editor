@@ -134,6 +134,8 @@ const mocks = {
         },
       ],
       map_pins: [{ icon: 0x51b0bed0, x: 100, y: 200, layer: 0x24950135 }],
+      map_markers: [{ color: 0x7e3d1e46, x: 0, y: 0, z: 0 }],
+      teleporters: [{ index: 0, pos: [0, 0, 0], rot: [0, 0, 0] }],
     },
   },
 };

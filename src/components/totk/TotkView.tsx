@@ -5,6 +5,8 @@ import TotkPouchTables from "./TotkPouchTables";
 import TotkHorsesTable from "./TotkHorsesTable";
 import TotkAutoBuildTable from "./TotkAutoBuildTable";
 import TotkMapPinsTable from "./TotkMapPinsTable";
+import TotkMapMarkersTable from "./TotkMapMarkersTable";
+import TotkTeleportersTable from "./TotkTeleportersTable";
 import TotkCompletionismPanel from "./TotkCompletionismPanel";
 import SectionHeading from "../../theme/SectionHeading";
 import TotkMotif from "../../theme/motifs/TotkMotif";
@@ -133,6 +135,10 @@ export default function TotkView({ state, onError }: Props) {
       <TotkAutoBuildTable autobuilds={state.autobuilds} onError={onError} />
 
       <TotkMapPinsTable mapPins={state.map_pins} onError={onError} />
+
+      <TotkMapMarkersTable mapMarkers={state.map_markers} onError={onError} />
+
+      <TotkTeleportersTable teleporters={state.teleporters} onError={onError} />
 
       <TotkCompletionismPanel state={state} />
     </div>

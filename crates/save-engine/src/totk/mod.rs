@@ -285,4 +285,18 @@ impl TotkSave {
     pub fn set_map_pins(&mut self, entries: &[mapdata::MapPinEntry]) -> Result<(), SaveError> {
         mapdata::write_map_pins(&mut self.buf, self.hash_table_end, entries)
     }
+
+    pub fn map_markers(&self) -> Result<Vec<mapdata::MapMarkerEntry>, SaveError> {
+        mapdata::read_map_markers(&self.buf, self.hash_table_end)
+    }
+    pub fn set_map_markers(&mut self, entries: &[mapdata::MapMarkerEntry]) -> Result<(), SaveError> {
+        mapdata::write_map_markers(&mut self.buf, self.hash_table_end, entries)
+    }
+
+    pub fn teleporters(&self) -> Result<Vec<mapdata::TeleporterEntry>, SaveError> {
+        mapdata::read_teleporters(&self.buf, self.hash_table_end)
+    }
+    pub fn set_teleporters(&mut self, entries: &[mapdata::TeleporterEntry]) -> Result<(), SaveError> {
+        mapdata::write_teleporters(&mut self.buf, self.hash_table_end, entries)
+    }
 }
