@@ -222,6 +222,21 @@ pub fn set_teleporters(state: State<'_, AppState>, entries: Vec<TotkTeleporterDt
     with_totk(state.inner(), |save| save.set_teleporters(&entries))
 }
 
+#[tauri::command]
+pub fn unlock_all_bubbuls(state: State<'_, AppState>) -> Result<usize, ShellError> {
+    with_totk(state.inner(), |save| save.unlock_all_bubbuls())
+}
+
+#[tauri::command]
+pub fn unlock_all_sage_wills(state: State<'_, AppState>) -> Result<usize, ShellError> {
+    with_totk(state.inner(), |save| save.unlock_all_sage_wills())
+}
+
+#[tauri::command]
+pub fn unlock_all_addison(state: State<'_, AppState>) -> Result<usize, ShellError> {
+    with_totk(state.inner(), |save| save.unlock_all_addison())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -410,5 +425,18 @@ mod tests {
         .unwrap();
         let after = get_totk_state_impl(&app_state).unwrap().teleporters;
         assert_eq!(after[0].pos, (1.0, 2.0, 3.0));
+    }
+
+    #[test]
+    fn unlock_all_bubbuls_command_returns_newly_unlocked_count_and_persists() {
+        let app_state = loaded_app_state();
+        let before = get_totk_state_impl(&app_state).unwrap().defeated_bubbuls;
+
+        let count = with_totk(&app_state, |save| save.unlock_all_bubbuls()).unwrap();
+
+        assert!(count > 0);
+        let after = get_totk_state_impl(&app_state).unwrap().defeated_bubbuls;
+        assert_eq!(after, 147);
+        assert!(after > before);
     }
 }
