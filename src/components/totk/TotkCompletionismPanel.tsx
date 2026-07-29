@@ -20,6 +20,8 @@ export default function TotkCompletionismPanel({ state }: Props) {
       <p>Molduga defeated: {state.defeated_molduga}</p>
       <p>Bubbuls defeated: {state.defeated_bubbuls}</p>
       <p>Sage wills found: {state.sage_wills_found}</p>
+      <p>Old maps found: {state.old_maps_found}</p>
+      <p>Addison completed: {state.addison_completed}</p>
     </div>
   );
 }

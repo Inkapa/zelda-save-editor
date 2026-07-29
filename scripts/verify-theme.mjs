@@ -124,6 +124,8 @@ const mocks = {
       defeated_molduga: 1,
       defeated_bubbuls: 42,
       sage_wills_found: 7,
+      old_maps_found: 20,
+      addison_completed: 15,
       autobuilds: [
         {
           index: 0,

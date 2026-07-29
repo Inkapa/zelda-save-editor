@@ -195,6 +195,8 @@ export interface TotkState {
   defeated_molduga: number;
   defeated_bubbuls: number;
   sage_wills_found: number;
+  old_maps_found: number;
+  addison_completed: number;
   autobuilds: TotkAutoBuildEntry[];
   map_pins: TotkMapPin[];
   map_markers: TotkMapMarker[];

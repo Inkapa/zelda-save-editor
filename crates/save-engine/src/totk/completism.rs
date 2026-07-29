@@ -187,6 +187,14 @@ const BOSS_MOLDUGA_HASHES: [u32; 4] = [
     0x64eb3a85, 0x4c446633, 0x362e8f22, 0xa884f7b5,
 ];
 
+/// `CompletismHashes.TREASURE_MAPS_FOUND` ("old maps"): hash-based like shrines/koroks/bosses
+/// above, not GUID-based, despite living next to the GUID categories in the source.
+const TREASURE_MAPS_FOUND_HASHES: [u32; 31] = [
+    0x78351b17, 0xa77d686d, 0x17110169, 0x2b60b4b7, 0x28ae6f1c, 0x7a1d84a5, 0x56aa6296, 0x5a06eebb, 0xdd8a40d8, 0x17aea64c, 0x29889eb8, 0xc576b6bd,
+    0x3044e564, 0xad134aed, 0x5aa6fa9f, 0xfb332413, 0xdfdded1c, 0x00e34536, 0xbb11e8f5, 0xb672271b, 0x7b5a8ac8, 0xeb171a92, 0x05b058c7, 0x91916a39,
+    0x24fd5dc6, 0xde966d31, 0x8a67682c, 0xa2c5ee99, 0x5875357a, 0x840cfa81, 0xe112f9e2,
+];
+
 /// One 64-bit GUID per known bubbul enemy instance in the world (`CompletismHashes.BUBBULS_GUIDS`
 /// in the source), checked against the save's separate discovered-GUIDs array
 /// (`totk::guids::read_discovered_guids`) rather than the normal hash-table field storage.
@@ -227,6 +235,25 @@ const SAGE_WILL_GUIDS: [u64; 20] = [
     14297746811944729045, 10158452085007421266, 14300441561420407308, 3040862838791505171,
     7530653482124541386, 1950552174935191379, 15362114318872927496, 1734683952980485907,
     15149725342529566916, 8433656076063719808, 1984953898143305789, 12826721193418470354,
+];
+
+/// One 64-bit GUID per Addison sign-carrying quest completion (`CompletismHashes.ADDISON_COMPLETED`
+/// in the source).
+const ADDISON_GUIDS: [u64; 81] = [
+    0x70d0ac829afa29d1, 0xac8dfd4892ec1064, 0xf63328e966a44b29, 0x7ce90c4cf9bc1d28, 0xea228bcd84f57195, 0x58066ae9cc5c7e30,
+    0x7dfc58d391aaaa1a, 0xb12f5cc2bc50e436, 0x795394aa6853aacd, 0x1e2ea6eea615f9af, 0xd6e50a904b1498d6, 0x2cdabb21b0740be2,
+    0x2dae0a784e3f3b42, 0x6b63076055d795c2, 0x88ca2b1f6a4c7d78, 0x28fad8cf1e69f736, 0xb3f22d628157d6e1, 0x5a5cbfadd5c96e98,
+    0x36d526832b916afb, 0x7b4ef5bc17c55313, 0x52c54803916367ae, 0x5487c62938ff5305, 0xa9a9392f01d9f7b7, 0x054e0c4e09696316,
+    0x025ad5777d625fd4, 0x18edf5f881bf78b7, 0x992af038c05e340b, 0xef4ab339bd078291, 0x0775a083f6fc7cbb, 0x12670c7211a67e49,
+    0x04e71b3f13f3fb87, 0x90277e182c6f7068, 0xcb4bddf41421132c, 0x898a7779403b7a4d, 0x5cf07a31a80e90db, 0x45ba9e23614ba0ef,
+    0xcff2a66b38719aa5, 0x4e5cf820e38d1059, 0x6ef8c1f46cf25d53, 0x8a51d0b213e3422c, 0xfd0db0d8c3e9ad20, 0x66624a2520ef9987,
+    0xac0c82a7e9005872, 0x78ffced82e203f26, 0x0250007c986f2a38, 0xf474dd13ff28caa7, 0xf3339731c1f40d7c, 0x165306cd7acf32e9,
+    0x9a8c42b4f5700dbc, 0xcdae104e2fbbe2da, 0x9ac24a0527ff904e, 0xefe03484f79019d4, 0xa3f0d7b685f83f79, 0x38d3fe883550084a,
+    0x9e2156178428fc30, 0x6905967649cc682d, 0x96d92450f68a70d4, 0x6262fc9b464b6c8e, 0x50fba6ce25a07b0a, 0x1aa259403014052a,
+    0xaa9aa98e2439914a, 0xc6fda5df0f2a87aa, 0x7c03b68e95da69b9, 0x8c2f9f021e4f14b3, 0xe1c6dcdc73c52ae6, 0x7832f9e29db1022e,
+    0x0aba53552fd141ee, 0x16a9efd110615889, 0xe4661fe1d68bab2c, 0x5d71afde97895b29, 0x7027f477f1bf0c85, 0xadc55a058327fab5,
+    0x11dd08c754771a01, 0xcfbf7fe07769846c, 0x4f2bccad0f7677b0, 0x5b1c6145cab7b62d, 0x26fdbcb5335cb130, 0x6f91ae9d5a01e2a4,
+    0x118aa3c276be57b8, 0xabec660dc1ff14ed, 0x65201b78877fa778,
 ];
 
 /// Counts how many *distinct* locations in `hashes` are present and currently hold `expected`.
@@ -304,6 +331,14 @@ pub fn sage_wills_found(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize
     count_guids(buf, hash_table_end, &SAGE_WILL_GUIDS)
 }
 
+pub fn old_maps_found(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_matching(buf, hash_table_end, &TREASURE_MAPS_FOUND_HASHES, 1)
+}
+
+pub fn addison_completed(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_guids(buf, hash_table_end, &ADDISON_GUIDS)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -325,6 +360,14 @@ mod tests {
         let mut seen = std::collections::HashSet::new();
         for &g in SAGE_WILL_GUIDS.iter() {
             assert!(seen.insert(g), "duplicate sage will guid {g:#x}");
+        }
+        let mut seen = std::collections::HashSet::new();
+        for &g in ADDISON_GUIDS.iter() {
+            assert!(seen.insert(g), "duplicate addison guid {g:#x}");
+        }
+        let mut seen = std::collections::HashSet::new();
+        for &h in TREASURE_MAPS_FOUND_HASHES.iter() {
+            assert!(seen.insert(h), "duplicate old-map hash {h:#x}");
         }
     }
 

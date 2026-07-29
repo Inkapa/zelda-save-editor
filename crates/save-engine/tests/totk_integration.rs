@@ -590,6 +590,8 @@ fn guid_completism_counts_match_real_fixture_contents() {
     let save = load_totk();
     assert_eq!(save.defeated_bubbuls().unwrap(), 104);
     assert_eq!(save.sage_wills_found().unwrap(), 18);
+    assert_eq!(save.old_maps_found().unwrap(), 31);
+    assert_eq!(save.addison_completed().unwrap(), 37);
 }
 
 #[test]

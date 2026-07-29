@@ -267,6 +267,12 @@ impl TotkSave {
     pub fn sage_wills_found(&self) -> Result<usize, SaveError> {
         completism::sage_wills_found(&self.buf, self.hash_table_end)
     }
+    pub fn old_maps_found(&self) -> Result<usize, SaveError> {
+        completism::old_maps_found(&self.buf, self.hash_table_end)
+    }
+    pub fn addison_completed(&self) -> Result<usize, SaveError> {
+        completism::addison_completed(&self.buf, self.hash_table_end)
+    }
 
     // --- AutoBuild ---
 
