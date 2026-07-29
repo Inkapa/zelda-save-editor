@@ -281,6 +281,9 @@ pub fn write_horses(
     let icon_hair_secondary_g_addr = offsets["ICON_HAIR_SECONDARY_G"];
     let icon_hair_secondary_b_addr = offsets["ICON_HAIR_SECONDARY_B"];
     let capacity = array_capacity(buf, id_addr)? as usize;
+    if entries.len() > capacity {
+        return Err(SaveError::IndexOutOfRange { index: entries.len(), max: capacity });
+    }
 
     for (i, entry) in entries.iter().enumerate() {
         write_string64_elem(buf, id_addr, i, &entry.id)?;

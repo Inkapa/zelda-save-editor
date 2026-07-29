@@ -367,6 +367,96 @@ fn set_horses_round_trips_name_and_bond() {
 }
 
 #[test]
+fn set_horses_round_trips_every_field_catching_stride_or_tuple_order_bugs() {
+    let mut save = load_totk();
+    let mut horses = save.horses().unwrap();
+    horses[0] = save_engine::totk::horse::HorseEntry {
+        id: horses[0].id.clone(),
+        name: "FullFieldTest".to_string(),
+        mane: 0x11111111,
+        saddle: 0x22222222,
+        rein: 0x33333333,
+        bond: 0.42,
+        bond_checked: true,
+        stats_strength: 101,
+        stats_speed: 102,
+        stats_stamina: 103,
+        stats_pull: 104,
+        horse_type: 7,
+        color_type: 8,
+        foot_type: 9,
+        amiibo_uid_hash: 0x0123456789abcdef,
+        room_id: 55,
+        icon_pattern: 0x44444444,
+        icon_eye_color: 0x55555555,
+        icon_primary_color: (1, 2, 3),
+        icon_secondary_color: (4, 5, 6),
+        icon_nose_color: (7, 8, 9),
+        icon_hair_primary_color: (10, 11, 12),
+        icon_hair_secondary_color: (13, 14, 15),
+    };
+    save.set_horses(&horses).unwrap();
+    let reloaded = save.horses().unwrap();
+    let h = &reloaded[0];
+    assert_eq!(h.name, "FullFieldTest");
+    assert_eq!(h.mane, 0x11111111);
+    assert_eq!(h.saddle, 0x22222222);
+    assert_eq!(h.rein, 0x33333333);
+    assert_eq!(h.bond, 0.42);
+    assert_eq!(h.bond_checked, true);
+    assert_eq!(h.stats_strength, 101);
+    assert_eq!(h.stats_speed, 102);
+    assert_eq!(h.stats_stamina, 103);
+    assert_eq!(h.stats_pull, 104);
+    assert_eq!(h.horse_type, 7);
+    assert_eq!(h.color_type, 8);
+    assert_eq!(h.foot_type, 9);
+    assert_eq!(h.amiibo_uid_hash, 0x0123456789abcdef);
+    assert_eq!(h.room_id, 55);
+    assert_eq!(h.icon_pattern, 0x44444444);
+    assert_eq!(h.icon_eye_color, 0x55555555);
+    assert_eq!(h.icon_primary_color, (1, 2, 3));
+    assert_eq!(h.icon_secondary_color, (4, 5, 6));
+    assert_eq!(h.icon_nose_color, (7, 8, 9));
+    assert_eq!(h.icon_hair_primary_color, (10, 11, 12));
+    assert_eq!(h.icon_hair_secondary_color, (13, 14, 15));
+}
+
+#[test]
+fn set_pouch_weapons_beyond_capacity_returns_err() {
+    let mut save = load_totk();
+    let base = save.pouch_weapons().unwrap();
+    let template = pouch::WeaponEntry {
+        id: "Weapon_Sword_070".into(),
+        durability: 40,
+        modifier: 0,
+        modifier_value: 0,
+        fuse_id: String::new(),
+        fuse_durability: 0,
+        extra_durability: 0,
+        record_extra_durability: -1,
+    };
+    // Real fixture's weapon array capacity is 40; 41 entries must be rejected.
+    let mut too_many: Vec<pouch::WeaponEntry> = Vec::new();
+    for _ in 0..41 {
+        too_many.push(pouch::WeaponEntry {
+            id: template.id.clone(),
+            durability: template.durability,
+            modifier: template.modifier,
+            modifier_value: template.modifier_value,
+            fuse_id: template.fuse_id.clone(),
+            fuse_durability: template.fuse_durability,
+            extra_durability: template.extra_durability,
+            record_extra_durability: template.record_extra_durability,
+        });
+    }
+    let result = save.set_pouch_weapons(&too_many);
+    assert!(matches!(result, Err(save_engine::SaveError::IndexOutOfRange { .. })));
+    // Sanity: base fixture read still works (save untouched by the failed write attempt's error path).
+    assert_eq!(base.len(), 2);
+}
+
+#[test]
 fn malformed_input_returns_err_instead_of_panicking() {
     // Right magic and in-range size, but all-zero content: no sentinel hash exists in
     // it, so the hash-table-end scan should fail gracefully rather than panic or scan

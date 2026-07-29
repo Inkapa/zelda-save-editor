@@ -162,6 +162,9 @@ pub fn write_weapons(
     let extra_durability_addr = offsets["EXTRA_DURABILITY"];
     let record_extra_durability_addr = offsets["RECORD_EXTRA_DURABILITY"];
     let capacity = array_capacity(buf, name_addr)? as usize;
+    if entries.len() > capacity {
+        return Err(SaveError::IndexOutOfRange { index: entries.len(), max: capacity });
+    }
 
     for (i, entry) in entries.iter().enumerate() {
         write_string64_elem(buf, name_addr, i, &entry.id)?;
@@ -239,6 +242,9 @@ pub fn write_bows(
     let modifier_addr = offsets["MODIFIER"];
     let modifier_value_addr = offsets["MODIFIER_VALUE"];
     let capacity = array_capacity(buf, name_addr)? as usize;
+    if entries.len() > capacity {
+        return Err(SaveError::IndexOutOfRange { index: entries.len(), max: capacity });
+    }
 
     for (i, entry) in entries.iter().enumerate() {
         write_string64_elem(buf, name_addr, i, &entry.id)?;
@@ -328,6 +334,9 @@ pub fn write_shields(
     let fuse_durability_addr = offsets["FUSE_DURABILITY"];
     let extra_durability_addr = offsets["EXTRA_DURABILITY"];
     let capacity = array_capacity(buf, name_addr)? as usize;
+    if entries.len() > capacity {
+        return Err(SaveError::IndexOutOfRange { index: entries.len(), max: capacity });
+    }
 
     for (i, entry) in entries.iter().enumerate() {
         write_string64_elem(buf, name_addr, i, &entry.id)?;
@@ -394,6 +403,9 @@ pub fn write_armor(
     let name_addr = offsets["NAME"];
     let dye_color_addr = offsets["DYE_COLOR"];
     let capacity = array_capacity(buf, name_addr)? as usize;
+    if entries.len() > capacity {
+        return Err(SaveError::IndexOutOfRange { index: entries.len(), max: capacity });
+    }
 
     for (i, entry) in entries.iter().enumerate() {
         write_string64_elem(buf, name_addr, i, &entry.id)?;
@@ -452,6 +464,9 @@ pub fn write_arrows(
     let name_addr = offsets["NAME"];
     let quantity_addr = offsets["QUANTITY"];
     let capacity = array_capacity(buf, name_addr)? as usize;
+    if entries.len() > capacity {
+        return Err(SaveError::IndexOutOfRange { index: entries.len(), max: capacity });
+    }
 
     for (i, entry) in entries.iter().enumerate() {
         write_string64_elem(buf, name_addr, i, &entry.id)?;
@@ -523,6 +538,9 @@ pub fn write_materials(
     let get_order_addr = offsets["GET_ORDER"];
     let use_order_addr = offsets["USE_ORDER"];
     let capacity = array_capacity(buf, name_addr)? as usize;
+    if entries.len() > capacity {
+        return Err(SaveError::IndexOutOfRange { index: entries.len(), max: capacity });
+    }
 
     for (i, entry) in entries.iter().enumerate() {
         write_string64_elem(buf, name_addr, i, &entry.id)?;
@@ -588,6 +606,9 @@ pub fn write_key_items(
     let name_addr = offsets["NAME"];
     let quantity_addr = offsets["QUANTITY"];
     let capacity = array_capacity(buf, name_addr)? as usize;
+    if entries.len() > capacity {
+        return Err(SaveError::IndexOutOfRange { index: entries.len(), max: capacity });
+    }
 
     for (i, entry) in entries.iter().enumerate() {
         write_string64_elem(buf, name_addr, i, &entry.id)?;
@@ -654,6 +675,9 @@ pub fn write_devices(
     let quantity_addr = offsets["QUANTITY"];
     let use_order_addr = offsets["USE_ORDER"];
     let capacity = array_capacity(buf, name_addr)? as usize;
+    if entries.len() > capacity {
+        return Err(SaveError::IndexOutOfRange { index: entries.len(), max: capacity });
+    }
 
     for (i, entry) in entries.iter().enumerate() {
         write_string64_elem(buf, name_addr, i, &entry.id)?;
@@ -768,6 +792,9 @@ pub fn write_food(
     let price_addr = offsets["PRICE"];
     let recipe_addr = offsets["RECIPE"];
     let capacity = array_capacity(buf, name_addr)? as usize;
+    if entries.len() > capacity {
+        return Err(SaveError::IndexOutOfRange { index: entries.len(), max: capacity });
+    }
 
     for (i, entry) in entries.iter().enumerate() {
         write_string64_elem(buf, name_addr, i, &entry.id)?;
