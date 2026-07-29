@@ -2,6 +2,7 @@ pub mod autobuilder;
 pub mod completism;
 pub mod hashtable;
 pub mod horse;
+pub mod mapdata;
 pub mod murmur3;
 pub mod pouch;
 pub mod strings;
@@ -267,5 +268,14 @@ impl TotkSave {
     }
     pub fn set_autobuilds(&mut self, entries: &[autobuilder::AutoBuildEntry]) -> Result<(), SaveError> {
         autobuilder::write_autobuilds(&mut self.buf, self.hash_table_end, entries)
+    }
+
+    // --- Map pins ---
+
+    pub fn map_pins(&self) -> Result<Vec<mapdata::MapPinEntry>, SaveError> {
+        mapdata::read_map_pins(&self.buf, self.hash_table_end)
+    }
+    pub fn set_map_pins(&mut self, entries: &[mapdata::MapPinEntry]) -> Result<(), SaveError> {
+        mapdata::write_map_pins(&mut self.buf, self.hash_table_end, entries)
     }
 }

@@ -131,6 +131,7 @@ const mocks = {
           is_favorite: true,
         },
       ],
+      map_pins: [{ icon: 0x51b0bed0, x: 100, y: 200, layer: 0x24950135 }],
     },
   },
 };

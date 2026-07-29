@@ -143,6 +143,13 @@ export interface TotkAutoBuildEntry {
   is_favorite: boolean;
 }
 
+export interface TotkMapPin {
+  icon: number;
+  x: number;
+  y: number;
+  layer: number;
+}
+
 export interface TotkState {
   max_life: number;
   current_rupees: number;
@@ -174,6 +181,7 @@ export interface TotkState {
   defeated_talus: number;
   defeated_molduga: number;
   autobuilds: TotkAutoBuildEntry[];
+  map_pins: TotkMapPin[];
 }
 
 export type OpenResult =

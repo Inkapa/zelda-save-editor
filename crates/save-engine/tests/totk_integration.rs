@@ -537,3 +537,50 @@ fn set_autobuilds_rejects_wrong_entry_count() {
     let result = save.set_autobuilds(&entries);
     assert!(matches!(result, Err(save_engine::SaveError::SizeMismatch { .. })));
 }
+
+#[test]
+fn map_pins_reads_real_fixture_contents() {
+    use save_engine::totk::mapdata::ICON_NONE;
+
+    let save = load_totk();
+    let pins = save.map_pins().unwrap();
+    assert_eq!(pins.len(), 300);
+
+    let used: Vec<_> = pins.iter().filter(|p| !p.is_free()).collect();
+    assert_eq!(used.len(), 289);
+    assert!(!used.iter().any(|p| p.icon == ICON_NONE));
+
+    // MapPin.ICON_LEAF / MapPin.MAP_MAIN in the source
+    assert_eq!(pins[0].icon, 0x51b0bed0);
+    assert_eq!(pins[0].layer, 0x24950135);
+    assert!((pins[0].x - 3088.6).abs() < 0.1);
+}
+
+#[test]
+fn set_map_pins_round_trips_and_can_clear_a_pin() {
+    use save_engine::totk::mapdata::ICON_NONE;
+
+    let mut save = load_totk();
+    let mut pins = save.map_pins().unwrap();
+    assert!(!pins[0].is_free());
+
+    pins[0].icon = ICON_NONE;
+    pins[0].x = 0.0;
+    pins[0].y = 0.0;
+    let untouched_x = pins[1].x;
+
+    save.set_map_pins(&pins).unwrap();
+
+    let reloaded = save.map_pins().unwrap();
+    assert!(reloaded[0].is_free());
+    assert_eq!(reloaded[1].x, untouched_x);
+}
+
+#[test]
+fn set_map_pins_rejects_wrong_entry_count() {
+    let mut save = load_totk();
+    let mut pins = save.map_pins().unwrap();
+    pins.pop();
+    let result = save.set_map_pins(&pins);
+    assert!(matches!(result, Err(save_engine::SaveError::SizeMismatch { .. })));
+}

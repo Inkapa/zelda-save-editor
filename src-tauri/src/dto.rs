@@ -142,6 +142,27 @@ pub struct TotkState {
     pub defeated_talus: u32,
     pub defeated_molduga: u32,
     pub autobuilds: Vec<TotkAutoBuildEntryDto>,
+    pub map_pins: Vec<TotkMapPinDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkMapPinDto {
+    pub icon: u32,
+    pub x: f32,
+    pub y: f32,
+    pub layer: u32,
+}
+
+impl From<save_engine::totk::mapdata::MapPinEntry> for TotkMapPinDto {
+    fn from(e: save_engine::totk::mapdata::MapPinEntry) -> Self {
+        TotkMapPinDto { icon: e.icon, x: e.x, y: e.y, layer: e.layer }
+    }
+}
+
+impl From<TotkMapPinDto> for save_engine::totk::mapdata::MapPinEntry {
+    fn from(d: TotkMapPinDto) -> Self {
+        save_engine::totk::mapdata::MapPinEntry { icon: d.icon, x: d.x, y: d.y, layer: d.layer }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

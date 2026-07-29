@@ -2,7 +2,8 @@ use tauri::State;
 
 use crate::dto::{
     TotkArmorDto, TotkArrowDto, TotkAutoBuildEntryDto, TotkBowDto, TotkDeviceDto, TotkFoodDto,
-    TotkHorseDto, TotkKeyItemDto, TotkMaterialDto, TotkShieldDto, TotkState, TotkWeaponDto,
+    TotkHorseDto, TotkKeyItemDto, TotkMapPinDto, TotkMaterialDto, TotkShieldDto, TotkState,
+    TotkWeaponDto,
 };
 use crate::error::ShellError;
 use crate::state::AppState;
@@ -41,6 +42,7 @@ pub fn read_state(save: &TotkSave) -> Result<TotkState, ShellError> {
         defeated_talus: save.defeated_talus()? as u32,
         defeated_molduga: save.defeated_molduga()? as u32,
         autobuilds: save.autobuilds()?.into_iter().map(TotkAutoBuildEntryDto::from).collect(),
+        map_pins: save.map_pins()?.into_iter().map(TotkMapPinDto::from).collect(),
     })
 }
 
@@ -196,6 +198,12 @@ pub fn set_autobuilds(state: State<'_, AppState>, entries: Vec<TotkAutoBuildEntr
     with_totk(state.inner(), |save| save.set_autobuilds(&entries))
 }
 
+#[tauri::command]
+pub fn set_map_pins(state: State<'_, AppState>, entries: Vec<TotkMapPinDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_map_pins(&entries))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -331,5 +339,26 @@ mod tests {
         .unwrap();
         let after = get_totk_state_impl(&app_state).unwrap().autobuilds;
         assert_eq!(after[0].is_favorite, flipped);
+    }
+
+    #[test]
+    fn get_totk_state_impl_includes_map_pins() {
+        let app_state = loaded_app_state();
+        let dto = get_totk_state_impl(&app_state).unwrap();
+        assert_eq!(dto.map_pins.len(), 300);
+        assert!(dto.map_pins.iter().any(|p| p.icon != save_engine::totk::mapdata::ICON_NONE));
+    }
+
+    #[test]
+    fn set_map_pins_round_trips_through_with_totk() {
+        let app_state = loaded_app_state();
+        let mut pins = get_totk_state_impl(&app_state).unwrap().map_pins;
+        pins[0].icon = save_engine::totk::mapdata::ICON_NONE;
+        with_totk(&app_state, |save| {
+            save.set_map_pins(&pins.iter().cloned().map(Into::into).collect::<Vec<_>>())
+        })
+        .unwrap();
+        let after = get_totk_state_impl(&app_state).unwrap().map_pins;
+        assert_eq!(after[0].icon, save_engine::totk::mapdata::ICON_NONE);
     }
 }
