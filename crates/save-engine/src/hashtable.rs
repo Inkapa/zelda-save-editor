@@ -23,6 +23,25 @@ pub fn scan_offsets(buf: &SaveBuffer, hashes: &[(u32, &'static str)]) -> HashMap
     offsets
 }
 
+/// Builds a hash -> value-offset map for *every* entry in the hash table, not just a known
+/// subset — mirrors `_searchHash`'s "scan the whole table from the start" lookup used for
+/// hashes outside the small fixed `Hashes` list (completionism flags: koroks, defeated
+/// hinox/talus/molduga, locations). Unlike `scan_offsets`, entries don't need to be sorted or
+/// requested up front: build once, then look up as many arbitrary hashes as needed.
+///
+/// First occurrence wins when a hash repeats, matching `_searchHash` always returning the
+/// first match found scanning forward from the start of the table.
+pub fn build_full_index(buf: &SaveBuffer) -> HashMap<u32, usize> {
+    let mut index = HashMap::new();
+    let mut j = 0x0c;
+    while j + 8 <= buf.len() {
+        let hash = buf.read_u32(j).expect("bounds checked by the loop guard immediately above");
+        index.entry(hash).or_insert(j + 4);
+        j += 8;
+    }
+    index
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -44,6 +63,22 @@ mod tests {
         assert_eq!(buf.read_u32(offsets["A"]).unwrap(), 10);
         assert_eq!(buf.read_u32(offsets["B"]).unwrap(), 20);
         assert_eq!(buf.read_u32(offsets["C"]).unwrap(), 30);
+    }
+
+    #[test]
+    fn build_full_index_resolves_arbitrary_hashes_not_in_a_known_list() {
+        let buf = buffer_with_slots(&[(0x1111, 10), (0x2222, 20), (0x3333, 30)]);
+        let index = build_full_index(&buf);
+        assert_eq!(index.len(), 3);
+        assert_eq!(buf.read_u32(index[&0x2222]).unwrap(), 20);
+        assert!(!index.contains_key(&0x9999));
+    }
+
+    #[test]
+    fn build_full_index_keeps_first_occurrence_of_a_repeated_hash() {
+        let buf = buffer_with_slots(&[(0x1111, 10), (0x1111, 99)]);
+        let index = build_full_index(&buf);
+        assert_eq!(buf.read_u32(index[&0x1111]).unwrap(), 10);
     }
 
     #[test]

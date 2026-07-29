@@ -1,3 +1,4 @@
+pub mod completism;
 pub mod items;
 pub mod strings;
 pub mod versions;
@@ -475,5 +476,55 @@ impl BotwSave {
         }
         let o = self.offset("HORSE_TYPES")?;
         strings::write_string64(&mut self.buf, o, index, value)
+    }
+
+    /// Marks every unfound korok as found. Returns how many were newly found. Also mirrors
+    /// `unlockKoroks`'s two side effects: sets the `HiddenKorok_Complete` flag (always, not
+    /// gated on the count), and — only if an `Obj_KorokNuts` item already exists in the
+    /// inventory — bumps its quantity by the same count, so the pouch total stays consistent
+    /// with the newly-found seeds.
+    pub fn unlock_all_koroks(&mut self) -> Result<usize, SaveError> {
+        let count = completism::unlock_all_koroks(&mut self.buf)? as u32;
+        let current = self.korok_seed_counter()?;
+        self.set_korok_seed_counter(current + count)?;
+        let items = self.items()?;
+        if let Some(index) = items.iter().position(|item| item.name == "Obj_KorokNuts") {
+            self.set_item(index, "Obj_KorokNuts", items[index].quantity + count)?;
+        }
+        Ok(count as usize)
+    }
+
+    /// Marks every undefeated Hinox as defeated and bumps `defeated_hinox_counter` by the
+    /// same amount. Returns how many were newly defeated.
+    pub fn unlock_all_defeated_hinox(&mut self) -> Result<usize, SaveError> {
+        let count = completism::unlock_all_defeated_hinox(&mut self.buf)? as u32;
+        let current = self.defeated_hinox_counter()?;
+        self.set_defeated_hinox_counter(current + count)?;
+        Ok(count as usize)
+    }
+
+    /// Marks every undefeated Talus as defeated and bumps `defeated_talus_counter` by the
+    /// same amount. Returns how many were newly defeated.
+    pub fn unlock_all_defeated_talus(&mut self) -> Result<usize, SaveError> {
+        let count = completism::unlock_all_defeated_talus(&mut self.buf)? as u32;
+        let current = self.defeated_talus_counter()?;
+        self.set_defeated_talus_counter(current + count)?;
+        Ok(count as usize)
+    }
+
+    /// Marks every undefeated Molduga as defeated and bumps `defeated_molduga_counter` by the
+    /// same amount. Returns how many were newly defeated.
+    pub fn unlock_all_defeated_molduga(&mut self) -> Result<usize, SaveError> {
+        let count = completism::unlock_all_defeated_molduga(&mut self.buf)? as u32;
+        let current = self.defeated_molduga_counter()?;
+        self.set_defeated_molduga_counter(current + count)?;
+        Ok(count as usize)
+    }
+
+    /// Marks every unvisited location as visited. Returns how many were newly visited. Unlike
+    /// koroks/hinox/talus/molduga, there's no companion scalar counter to bump — the source's
+    /// `visitAllLocations` doesn't have one either.
+    pub fn unlock_all_locations(&mut self) -> Result<usize, SaveError> {
+        completism::unlock_all_locations(&mut self.buf)
     }
 }

@@ -153,3 +153,62 @@ fn items_with_category_pairs_every_item_in_order_with_real_fixture_categories() 
     assert_eq!(paired[296].0.name, "Obj_DRStone_Get");
     assert_eq!(paired[296].1, ItemCategory::KeyItem);
 }
+
+#[test]
+fn unlock_all_koroks_finds_the_rest_and_bumps_counter_and_inventory() {
+    let mut save = load_botw();
+    let before_counter = save.korok_seed_counter().unwrap();
+    let korok_nuts_before = save
+        .items()
+        .unwrap()
+        .into_iter()
+        .find(|item| item.name == "Obj_KorokNuts")
+        .map(|item| item.quantity);
+
+    let newly_found = save.unlock_all_koroks().unwrap();
+    assert_eq!(newly_found, 524);
+    assert_eq!(save.korok_seed_counter().unwrap(), 900); // every korok now found
+    assert_eq!(before_counter + newly_found as u32, 900);
+
+    if let Some(before_qty) = korok_nuts_before {
+        let after_qty = save
+            .items()
+            .unwrap()
+            .into_iter()
+            .find(|item| item.name == "Obj_KorokNuts")
+            .unwrap()
+            .quantity;
+        assert_eq!(after_qty, before_qty + newly_found as u32);
+    }
+
+    // idempotent: nothing left to unlock
+    assert_eq!(save.unlock_all_koroks().unwrap(), 0);
+}
+
+#[test]
+fn unlock_all_defeated_bosses_bumps_matching_counters_to_the_full_total() {
+    let mut save = load_botw();
+
+    let hinox_found = save.unlock_all_defeated_hinox().unwrap();
+    assert_eq!(hinox_found, 32);
+    assert_eq!(save.defeated_hinox_counter().unwrap(), 40);
+    assert_eq!(save.unlock_all_defeated_hinox().unwrap(), 0);
+
+    let talus_found = save.unlock_all_defeated_talus().unwrap();
+    assert_eq!(talus_found, 35);
+    assert_eq!(save.defeated_talus_counter().unwrap(), 40);
+    assert_eq!(save.unlock_all_defeated_talus().unwrap(), 0);
+
+    let molduga_found = save.unlock_all_defeated_molduga().unwrap();
+    assert_eq!(molduga_found, 3);
+    assert_eq!(save.defeated_molduga_counter().unwrap(), 4);
+    assert_eq!(save.unlock_all_defeated_molduga().unwrap(), 0);
+}
+
+#[test]
+fn unlock_all_locations_is_idempotent_and_has_no_companion_counter() {
+    let mut save = load_botw();
+    let newly_visited = save.unlock_all_locations().unwrap();
+    assert_eq!(newly_visited, 52);
+    assert_eq!(save.unlock_all_locations().unwrap(), 0);
+}
