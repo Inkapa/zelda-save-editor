@@ -84,6 +84,34 @@ pub fn resolve_present_hashes(
     Ok(offsets)
 }
 
+/// Grows the buffer at `insertion_point` by `additional_bytes`, then walks every row of the
+/// hash table (`0x28..hash_table_end`, the *entire* table, not just hashes this crate already
+/// knows by name) and adds `additional_bytes` to any pointer-typed row's stored value that was
+/// `>= insertion_point`, so it still addresses the same logical data after the shift.
+/// `hash_table_end` itself never moves across repeated calls: it's derived from a sentinel row
+/// that lives entirely before the blob heap where all growth happens.
+pub fn insert_and_relocate(
+    buf: &mut SaveBuffer,
+    hash_table_end: usize,
+    insertion_point: usize,
+    additional_bytes: usize,
+) -> Result<(), SaveError> {
+    buf.insert_bytes(insertion_point, additional_bytes)?;
+
+    let mut i = HASH_TABLE_START;
+    while i + 8 <= hash_table_end {
+        let hash = buf.read_u32(i)?;
+        if crate::totk::hashdict::is_pointer(hash) {
+            let value = buf.read_u32(i + 4)?;
+            if value as usize >= insertion_point {
+                buf.write_u32(i + 4, value + additional_bytes as u32)?;
+            }
+        }
+        i += 8;
+    }
+    Ok(())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -148,5 +176,47 @@ mod tests {
     fn errors_when_sentinel_not_found() {
         let buf = buffer_with_slots(&[(0x1111, 42)]);
         assert_eq!(find_hash_table_end(&buf), Err(SaveError::UnknownFormat));
+    }
+
+    #[test]
+    fn insert_and_relocate_shifts_only_pointers_past_the_insertion_point() {
+        use crate::totk::murmur3::hash32;
+
+        // Pouch.Weapon.ValidNum is pointer-indirected (IntArray) in the real dictionary;
+        // PlayerStatus.MaxLife is a direct 4-byte Int, never pointer-indirected.
+        let pointer_hash = hash32("Pouch.Weapon.ValidNum");
+        let direct_hash = hash32("PlayerStatus.MaxLife");
+
+        let mut buf = buffer_with_slots(&[
+            (pointer_hash, 20),  // pointer, before the insertion point: must NOT shift
+            (direct_hash, 500),  // direct scalar with a large raw value: must NOT shift regardless
+        ]);
+        let hash_table_end = buf.len(); // insertion_point == hash_table_end is the only valid offset here
+        let insertion_point = hash_table_end;
+
+        insert_and_relocate(&mut buf, hash_table_end, insertion_point, 8).unwrap();
+
+        let offsets = scan_offsets(
+            &buf,
+            hash_table_end, // the table's own rows don't move; only the buffer past them grows
+            &[(pointer_hash, "POINTER", false), (direct_hash, "DIRECT", false)],
+        )
+        .unwrap();
+        assert_eq!(buf.read_u32(offsets["POINTER"]).unwrap(), 20, "pointer before insertion point must not shift");
+        assert_eq!(buf.read_u32(offsets["DIRECT"]).unwrap(), 500, "direct scalar must never shift, regardless of its value");
+    }
+
+    #[test]
+    fn insert_and_relocate_shifts_pointers_after_the_insertion_point() {
+        use crate::totk::murmur3::hash32;
+
+        let pointer_hash = hash32("Pouch.Weapon.ValidNum");
+        let mut buf = buffer_with_slots(&[(pointer_hash, 999)]); // value past the insertion point
+        let hash_table_end = buf.len();
+
+        insert_and_relocate(&mut buf, hash_table_end, hash_table_end, 8).unwrap();
+
+        let offsets = scan_offsets(&buf, hash_table_end, &[(pointer_hash, "POINTER", false)]).unwrap();
+        assert_eq!(buf.read_u32(offsets["POINTER"]).unwrap(), 1007, "pointer past insertion point must shift by additional_bytes");
     }
 }
