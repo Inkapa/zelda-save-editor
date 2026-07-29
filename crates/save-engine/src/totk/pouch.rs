@@ -343,3 +343,64 @@ pub fn write_shields(
     }
     Ok(())
 }
+
+// ---------------------------------------------------------------------------------------------
+// Armor
+// ---------------------------------------------------------------------------------------------
+
+pub struct ArmorEntry {
+    pub id: String,
+    pub dye_color: u32,
+}
+
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.ARMOR` —
+/// armor has no valid_num entry in the core slice's HASHES table; instead, we scan until empty id.
+fn armor_field_names() -> [(&'static str, &'static str); 2] {
+    [
+        ("Pouch.Armor.Content.Name", "NAME"),
+        ("Pouch.Armor.Content.ColorVariation", "DYE_COLOR"),
+    ]
+}
+
+pub fn read_armor(
+    buf: &SaveBuffer,
+    hash_table_end: usize,
+) -> Result<Vec<ArmorEntry>, SaveError> {
+    let offsets = resolve_category(buf, hash_table_end, &armor_field_names())?;
+    let name_addr = offsets["NAME"];
+    let dye_color_addr = offsets["DYE_COLOR"];
+    let capacity = array_capacity(buf, name_addr)? as usize;
+
+    let mut entries = Vec::new();
+    for i in 0..capacity {
+        let id = read_string64_elem(buf, name_addr, i);
+        if id.is_empty() {
+            break;
+        }
+        entries.push(ArmorEntry {
+            id,
+            dye_color: read_u32_elem(buf, dye_color_addr, i)?,
+        });
+    }
+    Ok(entries)
+}
+
+pub fn write_armor(
+    buf: &mut SaveBuffer,
+    hash_table_end: usize,
+    entries: &[ArmorEntry],
+) -> Result<(), SaveError> {
+    let offsets = resolve_category(buf, hash_table_end, &armor_field_names())?;
+    let name_addr = offsets["NAME"];
+    let dye_color_addr = offsets["DYE_COLOR"];
+    let capacity = array_capacity(buf, name_addr)? as usize;
+
+    for (i, entry) in entries.iter().enumerate() {
+        write_string64_elem(buf, name_addr, i, &entry.id)?;
+        write_u32_elem(buf, dye_color_addr, i, entry.dye_color)?;
+    }
+    for i in entries.len()..capacity {
+        clear_id_elem(buf, name_addr, i)?;
+    }
+    Ok(())
+}

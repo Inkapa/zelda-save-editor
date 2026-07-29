@@ -179,6 +179,16 @@ fn set_pouch_shields_round_trips_and_updates_valid_num() {
 }
 
 #[test]
+fn pouch_armor_reads_real_fixture_contents() {
+    let save = load_totk();
+    let armor = save.armor().unwrap();
+    assert_eq!(armor.len(), 87);
+    assert_eq!(armor[0].id, "Armor_1043_Upper"); // Archaic Tunic
+    assert_eq!(armor[0].dye_color, save_engine::totk::murmur3::hash32("None"));
+    assert_eq!(armor[3].id, "Armor_003_Head");
+}
+
+#[test]
 fn malformed_input_returns_err_instead_of_panicking() {
     // Right magic and in-range size, but all-zero content: no sentinel hash exists in
     // it, so the hash-table-end scan should fail gracefully rather than panic or scan

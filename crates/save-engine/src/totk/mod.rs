@@ -180,4 +180,11 @@ impl TotkSave {
         pouch::write_shields(&mut self.buf, self.hash_table_end, entries)?;
         self.set_pouch_shield_valid_num(entries.len() as u32)
     }
+
+    pub fn armor(&self) -> Result<Vec<pouch::ArmorEntry>, SaveError> {
+        pouch::read_armor(&self.buf, self.hash_table_end)
+    }
+    pub fn set_armor(&mut self, entries: &[pouch::ArmorEntry]) -> Result<(), SaveError> {
+        pouch::write_armor(&mut self.buf, self.hash_table_end, entries)
+    }
 }
