@@ -1,4 +1,5 @@
 pub mod hashtable;
+pub mod horse;
 pub mod murmur3;
 pub mod pouch;
 pub mod strings;
@@ -221,5 +222,12 @@ impl TotkSave {
     }
     pub fn set_food(&mut self, entries: &[pouch::FoodEntry]) -> Result<(), SaveError> {
         pouch::write_food(&mut self.buf, self.hash_table_end, entries)
+    }
+
+    pub fn horses(&self) -> Result<Vec<horse::HorseEntry>, SaveError> {
+        horse::read_horses(&self.buf, self.hash_table_end)
+    }
+    pub fn set_horses(&mut self, entries: &[horse::HorseEntry]) -> Result<(), SaveError> {
+        horse::write_horses(&mut self.buf, self.hash_table_end, entries)
     }
 }

@@ -336,6 +336,37 @@ fn food_round_trips_including_recipe_partition() {
 }
 
 #[test]
+fn horses_reads_real_fixture_records() {
+    let save = load_totk();
+    let horses = save.horses().unwrap();
+    assert_eq!(horses.len(), 6);
+    assert_eq!(horses[0].id, "GameRomHorse04");
+    assert_eq!(horses[0].name, "Max");
+    assert_eq!(horses[0].bond, 1.0);
+    assert_eq!(horses[0].room_id, -1);
+    assert_eq!(horses[0].amiibo_uid_hash, 0);
+
+    assert_eq!(horses[1].name, "Brownie");
+    assert_eq!(horses[3].id, "GameRomHorse01L"); // giant white stallion
+    assert_eq!(horses[3].name, "Zelda");
+    assert!((horses[3].bond - 0.67).abs() < 0.01);
+    assert_eq!(horses[5].id, "GameRomHorseGold");
+    assert_eq!(horses[5].name, "Dorado");
+}
+
+#[test]
+fn set_horses_round_trips_name_and_bond() {
+    let mut save = load_totk();
+    let mut horses = save.horses().unwrap();
+    horses[0].name = "Renamed".to_string();
+    horses[0].bond = 0.5;
+    save.set_horses(&horses).unwrap();
+    let reloaded = save.horses().unwrap();
+    assert_eq!(reloaded[0].name, "Renamed");
+    assert_eq!(reloaded[0].bond, 0.5);
+}
+
+#[test]
 fn malformed_input_returns_err_instead_of_panicking() {
     // Right magic and in-range size, but all-zero content: no sentinel hash exists in
     // it, so the hash-table-end scan should fail gracefully rather than panic or scan

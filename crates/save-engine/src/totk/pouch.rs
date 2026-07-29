@@ -13,22 +13,22 @@ use crate::totk::strings;
 use crate::totk::murmur3::hash32;
 
 /// Reads the `u32` item-capacity prefix at a resolved struct-of-arrays address.
-fn array_capacity(buf: &SaveBuffer, array_addr: usize) -> Result<u32, SaveError> {
+pub(crate) fn array_capacity(buf: &SaveBuffer, array_addr: usize) -> Result<u32, SaveError> {
     buf.read_u32(array_addr)
 }
 
 /// Offset of element `index` in a fixed-`stride`-byte struct-of-arrays blob at `array_addr`.
-fn element_offset(array_addr: usize, index: usize, stride: usize) -> usize {
+pub(crate) fn element_offset(array_addr: usize, index: usize, stride: usize) -> usize {
     array_addr + 4 + index * stride
 }
 
-const STRIDE_STRING64: usize = 0x40;
-const STRIDE_I32: usize = 4;
+pub(crate) const STRIDE_STRING64: usize = 0x40;
+pub(crate) const STRIDE_I32: usize = 4;
 
-fn read_string64_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> String {
+pub(crate) fn read_string64_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> String {
     strings::read_string64(buf, element_offset(array_addr, index, STRIDE_STRING64))
 }
-fn write_string64_elem(
+pub(crate) fn write_string64_elem(
     buf: &mut SaveBuffer,
     array_addr: usize,
     index: usize,
@@ -36,10 +36,10 @@ fn write_string64_elem(
 ) -> Result<(), SaveError> {
     strings::write_string64(buf, element_offset(array_addr, index, STRIDE_STRING64), value)
 }
-fn read_i32_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<i32, SaveError> {
+pub(crate) fn read_i32_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<i32, SaveError> {
     buf.read_i32(element_offset(array_addr, index, STRIDE_I32))
 }
-fn write_i32_elem(
+pub(crate) fn write_i32_elem(
     buf: &mut SaveBuffer,
     array_addr: usize,
     index: usize,
@@ -49,10 +49,10 @@ fn write_i32_elem(
 }
 /// `Enum`-typed fields (modifier, dye color, ...) are raw u32 hashes — same stride as i32,
 /// unsigned read/write, no interpretation (see design spec non-goals).
-fn read_u32_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<u32, SaveError> {
+pub(crate) fn read_u32_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<u32, SaveError> {
     buf.read_u32(element_offset(array_addr, index, STRIDE_I32))
 }
-fn write_u32_elem(
+pub(crate) fn write_u32_elem(
     buf: &mut SaveBuffer,
     array_addr: usize,
     index: usize,
@@ -69,7 +69,7 @@ fn clear_id_elem(buf: &mut SaveBuffer, array_addr: usize, index: usize) -> Resul
 
 /// Builds the `(hash, key, is_pointer=true)` list `scan_offsets` expects from a
 /// `(field_name, key)` table, hashing each field name at call time via `murmur3::hash32`.
-fn resolve_category(
+pub(crate) fn resolve_category(
     buf: &SaveBuffer,
     hash_table_end: usize,
     field_names: &[(&'static str, &'static str)],
