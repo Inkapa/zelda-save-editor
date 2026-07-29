@@ -1,5 +1,20 @@
 import { invoke } from "@tauri-apps/api/core";
-import type { BotwState, ModifierCategory, OpenResult, TotkState } from "./types";
+import type {
+  BotwState,
+  ModifierCategory,
+  OpenResult,
+  TotkArmor,
+  TotkArrow,
+  TotkBow,
+  TotkDevice,
+  TotkFood,
+  TotkHorse,
+  TotkKeyItem,
+  TotkMaterial,
+  TotkShield,
+  TotkState,
+  TotkWeapon,
+} from "./types";
 
 export function openSave(): Promise<OpenResult> {
   return invoke("open_save");
@@ -164,4 +179,44 @@ export function setPouchBowValidNum(val: number): Promise<void> {
 
 export function setPouchShieldValidNum(val: number): Promise<void> {
   return invoke("set_pouch_shield_valid_num", { val });
+}
+
+export function setPouchWeapons(entries: TotkWeapon[]): Promise<void> {
+  return invoke("set_pouch_weapons", { entries });
+}
+
+export function setPouchBows(entries: TotkBow[]): Promise<void> {
+  return invoke("set_pouch_bows", { entries });
+}
+
+export function setPouchShields(entries: TotkShield[]): Promise<void> {
+  return invoke("set_pouch_shields", { entries });
+}
+
+export function setArmor(entries: TotkArmor[]): Promise<void> {
+  return invoke("set_armor", { entries });
+}
+
+export function setArrows(entries: TotkArrow[]): Promise<void> {
+  return invoke("set_arrows", { entries });
+}
+
+export function setMaterials(entries: TotkMaterial[]): Promise<void> {
+  return invoke("set_materials", { entries });
+}
+
+export function setKeyItems(entries: TotkKeyItem[]): Promise<void> {
+  return invoke("set_key_items", { entries });
+}
+
+export function setDevices(entries: TotkDevice[]): Promise<void> {
+  return invoke("set_devices", { entries });
+}
+
+export function setFood(entries: TotkFood[]): Promise<void> {
+  return invoke("set_food", { entries });
+}
+
+export function setHorses(entries: TotkHorse[]): Promise<void> {
+  return invoke("set_horses", { entries });
 }

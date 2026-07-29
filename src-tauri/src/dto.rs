@@ -95,6 +95,339 @@ pub struct TotkState {
     pub pouch_weapon_valid_num: u32,
     pub pouch_bow_valid_num: u32,
     pub pouch_shield_valid_num: u32,
+    pub pouch_weapons: Vec<TotkWeaponDto>,
+    pub pouch_bows: Vec<TotkBowDto>,
+    pub pouch_shields: Vec<TotkShieldDto>,
+    pub armor: Vec<TotkArmorDto>,
+    pub arrows: Vec<TotkArrowDto>,
+    pub materials: Vec<TotkMaterialDto>,
+    pub key_items: Vec<TotkKeyItemDto>,
+    pub devices: Vec<TotkDeviceDto>,
+    pub food: Vec<TotkFoodDto>,
+    pub horses: Vec<TotkHorseDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkWeaponDto {
+    pub id: String,
+    pub durability: i32,
+    pub modifier: u32,
+    pub modifier_value: i32,
+    pub fuse_id: String,
+    pub fuse_durability: i32,
+    pub extra_durability: i32,
+    pub record_extra_durability: i32,
+}
+
+impl From<save_engine::totk::pouch::WeaponEntry> for TotkWeaponDto {
+    fn from(e: save_engine::totk::pouch::WeaponEntry) -> Self {
+        TotkWeaponDto {
+            id: e.id,
+            durability: e.durability,
+            modifier: e.modifier,
+            modifier_value: e.modifier_value,
+            fuse_id: e.fuse_id,
+            fuse_durability: e.fuse_durability,
+            extra_durability: e.extra_durability,
+            record_extra_durability: e.record_extra_durability,
+        }
+    }
+}
+
+impl From<TotkWeaponDto> for save_engine::totk::pouch::WeaponEntry {
+    fn from(d: TotkWeaponDto) -> Self {
+        save_engine::totk::pouch::WeaponEntry {
+            id: d.id,
+            durability: d.durability,
+            modifier: d.modifier,
+            modifier_value: d.modifier_value,
+            fuse_id: d.fuse_id,
+            fuse_durability: d.fuse_durability,
+            extra_durability: d.extra_durability,
+            record_extra_durability: d.record_extra_durability,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkBowDto {
+    pub id: String,
+    pub durability: i32,
+    pub modifier: u32,
+    pub modifier_value: i32,
+}
+
+impl From<save_engine::totk::pouch::BowEntry> for TotkBowDto {
+    fn from(e: save_engine::totk::pouch::BowEntry) -> Self {
+        TotkBowDto { id: e.id, durability: e.durability, modifier: e.modifier, modifier_value: e.modifier_value }
+    }
+}
+
+impl From<TotkBowDto> for save_engine::totk::pouch::BowEntry {
+    fn from(d: TotkBowDto) -> Self {
+        save_engine::totk::pouch::BowEntry { id: d.id, durability: d.durability, modifier: d.modifier, modifier_value: d.modifier_value }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkShieldDto {
+    pub id: String,
+    pub durability: i32,
+    pub modifier: u32,
+    pub modifier_value: i32,
+    pub fuse_id: String,
+    pub fuse_durability: i32,
+    pub extra_durability: i32,
+}
+
+impl From<save_engine::totk::pouch::ShieldEntry> for TotkShieldDto {
+    fn from(e: save_engine::totk::pouch::ShieldEntry) -> Self {
+        TotkShieldDto {
+            id: e.id,
+            durability: e.durability,
+            modifier: e.modifier,
+            modifier_value: e.modifier_value,
+            fuse_id: e.fuse_id,
+            fuse_durability: e.fuse_durability,
+            extra_durability: e.extra_durability,
+        }
+    }
+}
+
+impl From<TotkShieldDto> for save_engine::totk::pouch::ShieldEntry {
+    fn from(d: TotkShieldDto) -> Self {
+        save_engine::totk::pouch::ShieldEntry {
+            id: d.id,
+            durability: d.durability,
+            modifier: d.modifier,
+            modifier_value: d.modifier_value,
+            fuse_id: d.fuse_id,
+            fuse_durability: d.fuse_durability,
+            extra_durability: d.extra_durability,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkArmorDto {
+    pub id: String,
+    pub dye_color: u32,
+}
+
+impl From<save_engine::totk::pouch::ArmorEntry> for TotkArmorDto {
+    fn from(e: save_engine::totk::pouch::ArmorEntry) -> Self {
+        TotkArmorDto { id: e.id, dye_color: e.dye_color }
+    }
+}
+
+impl From<TotkArmorDto> for save_engine::totk::pouch::ArmorEntry {
+    fn from(d: TotkArmorDto) -> Self {
+        save_engine::totk::pouch::ArmorEntry { id: d.id, dye_color: d.dye_color }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkArrowDto {
+    pub id: String,
+    pub quantity: i32,
+}
+
+impl From<save_engine::totk::pouch::ArrowEntry> for TotkArrowDto {
+    fn from(e: save_engine::totk::pouch::ArrowEntry) -> Self {
+        TotkArrowDto { id: e.id, quantity: e.quantity }
+    }
+}
+
+impl From<TotkArrowDto> for save_engine::totk::pouch::ArrowEntry {
+    fn from(d: TotkArrowDto) -> Self {
+        save_engine::totk::pouch::ArrowEntry { id: d.id, quantity: d.quantity }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkMaterialDto {
+    pub id: String,
+    pub quantity: i32,
+    pub get_order: i32,
+    pub use_order: i32,
+}
+
+impl From<save_engine::totk::pouch::MaterialEntry> for TotkMaterialDto {
+    fn from(e: save_engine::totk::pouch::MaterialEntry) -> Self {
+        TotkMaterialDto { id: e.id, quantity: e.quantity, get_order: e.get_order, use_order: e.use_order }
+    }
+}
+
+impl From<TotkMaterialDto> for save_engine::totk::pouch::MaterialEntry {
+    fn from(d: TotkMaterialDto) -> Self {
+        save_engine::totk::pouch::MaterialEntry { id: d.id, quantity: d.quantity, get_order: d.get_order, use_order: d.use_order }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkKeyItemDto {
+    pub id: String,
+    pub quantity: i32,
+}
+
+impl From<save_engine::totk::pouch::KeyItemEntry> for TotkKeyItemDto {
+    fn from(e: save_engine::totk::pouch::KeyItemEntry) -> Self {
+        TotkKeyItemDto { id: e.id, quantity: e.quantity }
+    }
+}
+
+impl From<TotkKeyItemDto> for save_engine::totk::pouch::KeyItemEntry {
+    fn from(d: TotkKeyItemDto) -> Self {
+        save_engine::totk::pouch::KeyItemEntry { id: d.id, quantity: d.quantity }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkDeviceDto {
+    pub id: String,
+    pub quantity: i32,
+    pub use_order: i32,
+}
+
+impl From<save_engine::totk::pouch::DeviceEntry> for TotkDeviceDto {
+    fn from(e: save_engine::totk::pouch::DeviceEntry) -> Self {
+        TotkDeviceDto { id: e.id, quantity: e.quantity, use_order: e.use_order }
+    }
+}
+
+impl From<TotkDeviceDto> for save_engine::totk::pouch::DeviceEntry {
+    fn from(d: TotkDeviceDto) -> Self {
+        save_engine::totk::pouch::DeviceEntry { id: d.id, quantity: d.quantity, use_order: d.use_order }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkFoodDto {
+    pub id: String,
+    pub quantity: i32,
+    pub hearts_heal: i32,
+    pub effect: u32,
+    pub effect_multiplier: i32,
+    pub effect_time: i32,
+    pub price: i32,
+    pub recipe: [String; 5],
+}
+
+impl From<save_engine::totk::pouch::FoodEntry> for TotkFoodDto {
+    fn from(e: save_engine::totk::pouch::FoodEntry) -> Self {
+        TotkFoodDto {
+            id: e.id,
+            quantity: e.quantity,
+            hearts_heal: e.hearts_heal,
+            effect: e.effect,
+            effect_multiplier: e.effect_multiplier,
+            effect_time: e.effect_time,
+            price: e.price,
+            recipe: e.recipe,
+        }
+    }
+}
+
+impl From<TotkFoodDto> for save_engine::totk::pouch::FoodEntry {
+    fn from(d: TotkFoodDto) -> Self {
+        save_engine::totk::pouch::FoodEntry {
+            id: d.id,
+            quantity: d.quantity,
+            hearts_heal: d.hearts_heal,
+            effect: d.effect,
+            effect_multiplier: d.effect_multiplier,
+            effect_time: d.effect_time,
+            price: d.price,
+            recipe: d.recipe,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkHorseDto {
+    pub id: String,
+    pub name: String,
+    pub mane: u32,
+    pub saddle: u32,
+    pub rein: u32,
+    pub bond: f32,
+    pub bond_checked: bool,
+    pub stats_strength: i32,
+    pub stats_speed: i32,
+    pub stats_stamina: i32,
+    pub stats_pull: i32,
+    pub horse_type: i32,
+    pub color_type: i32,
+    pub foot_type: i32,
+    pub amiibo_uid_hash: u64,
+    pub room_id: i32,
+    pub icon_pattern: u32,
+    pub icon_eye_color: u32,
+    pub icon_primary_color: (u32, u32, u32),
+    pub icon_secondary_color: (u32, u32, u32),
+    pub icon_nose_color: (u32, u32, u32),
+    pub icon_hair_primary_color: (u32, u32, u32),
+    pub icon_hair_secondary_color: (u32, u32, u32),
+}
+
+impl From<save_engine::totk::horse::HorseEntry> for TotkHorseDto {
+    fn from(e: save_engine::totk::horse::HorseEntry) -> Self {
+        TotkHorseDto {
+            id: e.id,
+            name: e.name,
+            mane: e.mane,
+            saddle: e.saddle,
+            rein: e.rein,
+            bond: e.bond,
+            bond_checked: e.bond_checked,
+            stats_strength: e.stats_strength,
+            stats_speed: e.stats_speed,
+            stats_stamina: e.stats_stamina,
+            stats_pull: e.stats_pull,
+            horse_type: e.horse_type,
+            color_type: e.color_type,
+            foot_type: e.foot_type,
+            amiibo_uid_hash: e.amiibo_uid_hash,
+            room_id: e.room_id,
+            icon_pattern: e.icon_pattern,
+            icon_eye_color: e.icon_eye_color,
+            icon_primary_color: e.icon_primary_color,
+            icon_secondary_color: e.icon_secondary_color,
+            icon_nose_color: e.icon_nose_color,
+            icon_hair_primary_color: e.icon_hair_primary_color,
+            icon_hair_secondary_color: e.icon_hair_secondary_color,
+        }
+    }
+}
+
+impl From<TotkHorseDto> for save_engine::totk::horse::HorseEntry {
+    fn from(d: TotkHorseDto) -> Self {
+        save_engine::totk::horse::HorseEntry {
+            id: d.id,
+            name: d.name,
+            mane: d.mane,
+            saddle: d.saddle,
+            rein: d.rein,
+            bond: d.bond,
+            bond_checked: d.bond_checked,
+            stats_strength: d.stats_strength,
+            stats_speed: d.stats_speed,
+            stats_stamina: d.stats_stamina,
+            stats_pull: d.stats_pull,
+            horse_type: d.horse_type,
+            color_type: d.color_type,
+            foot_type: d.foot_type,
+            amiibo_uid_hash: d.amiibo_uid_hash,
+            room_id: d.room_id,
+            icon_pattern: d.icon_pattern,
+            icon_eye_color: d.icon_eye_color,
+            icon_primary_color: d.icon_primary_color,
+            icon_secondary_color: d.icon_secondary_color,
+            icon_nose_color: d.icon_nose_color,
+            icon_hair_primary_color: d.icon_hair_primary_color,
+            icon_hair_secondary_color: d.icon_hair_secondary_color,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

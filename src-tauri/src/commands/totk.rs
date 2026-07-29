@@ -1,6 +1,9 @@
 use tauri::State;
 
-use crate::dto::TotkState;
+use crate::dto::{
+    TotkArmorDto, TotkArrowDto, TotkBowDto, TotkDeviceDto, TotkFoodDto, TotkHorseDto,
+    TotkKeyItemDto, TotkMaterialDto, TotkShieldDto, TotkState, TotkWeaponDto,
+};
 use crate::error::ShellError;
 use crate::state::AppState;
 use save_engine::totk::TotkSave;
@@ -19,6 +22,16 @@ pub fn read_state(save: &TotkSave) -> Result<TotkState, ShellError> {
         pouch_weapon_valid_num: save.pouch_weapon_valid_num()?,
         pouch_bow_valid_num: save.pouch_bow_valid_num()?,
         pouch_shield_valid_num: save.pouch_shield_valid_num()?,
+        pouch_weapons: save.pouch_weapons()?.into_iter().map(TotkWeaponDto::from).collect(),
+        pouch_bows: save.pouch_bows()?.into_iter().map(TotkBowDto::from).collect(),
+        pouch_shields: save.pouch_shields()?.into_iter().map(TotkShieldDto::from).collect(),
+        armor: save.armor()?.into_iter().map(TotkArmorDto::from).collect(),
+        arrows: save.arrows()?.into_iter().map(TotkArrowDto::from).collect(),
+        materials: save.materials()?.into_iter().map(TotkMaterialDto::from).collect(),
+        key_items: save.key_items()?.into_iter().map(TotkKeyItemDto::from).collect(),
+        devices: save.devices()?.into_iter().map(TotkDeviceDto::from).collect(),
+        food: save.food()?.into_iter().map(TotkFoodDto::from).collect(),
+        horses: save.horses()?.into_iter().map(TotkHorseDto::from).collect(),
     })
 }
 
@@ -108,6 +121,66 @@ pub fn set_pouch_shield_valid_num(state: State<'_, AppState>, val: u32) -> Resul
     with_totk(state.inner(), |save| save.set_pouch_shield_valid_num(val))
 }
 
+#[tauri::command]
+pub fn set_pouch_weapons(state: State<'_, AppState>, entries: Vec<TotkWeaponDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_pouch_weapons(&entries))
+}
+
+#[tauri::command]
+pub fn set_pouch_bows(state: State<'_, AppState>, entries: Vec<TotkBowDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_pouch_bows(&entries))
+}
+
+#[tauri::command]
+pub fn set_pouch_shields(state: State<'_, AppState>, entries: Vec<TotkShieldDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_pouch_shields(&entries))
+}
+
+#[tauri::command]
+pub fn set_armor(state: State<'_, AppState>, entries: Vec<TotkArmorDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_armor(&entries))
+}
+
+#[tauri::command]
+pub fn set_arrows(state: State<'_, AppState>, entries: Vec<TotkArrowDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_arrows(&entries))
+}
+
+#[tauri::command]
+pub fn set_materials(state: State<'_, AppState>, entries: Vec<TotkMaterialDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_materials(&entries))
+}
+
+#[tauri::command]
+pub fn set_key_items(state: State<'_, AppState>, entries: Vec<TotkKeyItemDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_key_items(&entries))
+}
+
+#[tauri::command]
+pub fn set_devices(state: State<'_, AppState>, entries: Vec<TotkDeviceDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_devices(&entries))
+}
+
+#[tauri::command]
+pub fn set_food(state: State<'_, AppState>, entries: Vec<TotkFoodDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_food(&entries))
+}
+
+#[tauri::command]
+pub fn set_horses(state: State<'_, AppState>, entries: Vec<TotkHorseDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_horses(&entries))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -164,5 +237,50 @@ mod tests {
         with_totk(&app_state, |save| save.set_save_pos(1.0, 2.0, 3.0)).unwrap();
         let after = get_totk_state_impl(&app_state).unwrap();
         assert_eq!(after.save_pos, (1.0, 2.0, 3.0));
+    }
+
+    #[test]
+    fn get_totk_state_impl_includes_pouch_and_horse_entries() {
+        let app_state = loaded_app_state();
+        let dto = get_totk_state_impl(&app_state).unwrap();
+        assert!(!dto.pouch_weapons.is_empty());
+        assert!(!dto.armor.is_empty());
+        assert!(!dto.horses.is_empty());
+        assert_eq!(dto.horses[0].name, "Max");
+    }
+
+    #[test]
+    fn set_pouch_weapons_round_trips_through_with_totk() {
+        let app_state = loaded_app_state();
+        let mut weapons = get_totk_state_impl(&app_state).unwrap().pouch_weapons;
+        weapons.push(crate::dto::TotkWeaponDto {
+            id: "Weapon_Sword_001".into(),
+            durability: 20,
+            modifier: 0,
+            modifier_value: 0,
+            fuse_id: String::new(),
+            fuse_durability: 0,
+            extra_durability: 0,
+            record_extra_durability: -1,
+        });
+        with_totk(&app_state, |save| {
+            save.set_pouch_weapons(&weapons.iter().cloned().map(Into::into).collect::<Vec<_>>())
+        })
+        .unwrap();
+        let after = get_totk_state_impl(&app_state).unwrap().pouch_weapons;
+        assert_eq!(after.last().unwrap().id, "Weapon_Sword_001");
+    }
+
+    #[test]
+    fn set_horses_round_trips_through_with_totk() {
+        let app_state = loaded_app_state();
+        let mut horses = get_totk_state_impl(&app_state).unwrap().horses;
+        horses[0].name = "Renamed".to_string();
+        with_totk(&app_state, |save| {
+            save.set_horses(&horses.iter().cloned().map(Into::into).collect::<Vec<_>>())
+        })
+        .unwrap();
+        let after = get_totk_state_impl(&app_state).unwrap().horses;
+        assert_eq!(after[0].name, "Renamed");
     }
 }

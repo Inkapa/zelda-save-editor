@@ -42,6 +42,99 @@ export interface BotwState {
   horses: BotwHorse[];
 }
 
+export interface TotkWeapon {
+  id: string;
+  durability: number;
+  modifier: number;
+  modifier_value: number;
+  fuse_id: string;
+  fuse_durability: number;
+  extra_durability: number;
+  record_extra_durability: number;
+}
+
+export interface TotkBow {
+  id: string;
+  durability: number;
+  modifier: number;
+  modifier_value: number;
+}
+
+export interface TotkShield {
+  id: string;
+  durability: number;
+  modifier: number;
+  modifier_value: number;
+  fuse_id: string;
+  fuse_durability: number;
+  extra_durability: number;
+}
+
+export interface TotkArmor {
+  id: string;
+  dye_color: number;
+}
+
+export interface TotkArrow {
+  id: string;
+  quantity: number;
+}
+
+export interface TotkMaterial {
+  id: string;
+  quantity: number;
+  get_order: number;
+  use_order: number;
+}
+
+export interface TotkKeyItem {
+  id: string;
+  quantity: number;
+}
+
+export interface TotkDevice {
+  id: string;
+  quantity: number;
+  use_order: number;
+}
+
+export interface TotkFood {
+  id: string;
+  quantity: number;
+  hearts_heal: number;
+  effect: number;
+  effect_multiplier: number;
+  effect_time: number;
+  price: number;
+  recipe: [string, string, string, string, string];
+}
+
+export interface TotkHorse {
+  id: string;
+  name: string;
+  mane: number;
+  saddle: number;
+  rein: number;
+  bond: number;
+  bond_checked: boolean;
+  stats_strength: number;
+  stats_speed: number;
+  stats_stamina: number;
+  stats_pull: number;
+  horse_type: number;
+  color_type: number;
+  foot_type: number;
+  amiibo_uid_hash: number;
+  room_id: number;
+  icon_pattern: number;
+  icon_eye_color: number;
+  icon_primary_color: [number, number, number];
+  icon_secondary_color: [number, number, number];
+  icon_nose_color: [number, number, number];
+  icon_hair_primary_color: [number, number, number];
+  icon_hair_secondary_color: [number, number, number];
+}
+
 export interface TotkState {
   max_life: number;
   current_rupees: number;
@@ -54,6 +147,16 @@ export interface TotkState {
   pouch_weapon_valid_num: number;
   pouch_bow_valid_num: number;
   pouch_shield_valid_num: number;
+  pouch_weapons: TotkWeapon[];
+  pouch_bows: TotkBow[];
+  pouch_shields: TotkShield[];
+  armor: TotkArmor[];
+  arrows: TotkArrow[];
+  materials: TotkMaterial[];
+  key_items: TotkKeyItem[];
+  devices: TotkDevice[];
+  food: TotkFood[];
+  horses: TotkHorse[];
 }
 
 export type OpenResult =
