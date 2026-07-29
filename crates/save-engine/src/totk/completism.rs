@@ -186,15 +186,15 @@ const BOSS_MOLDUGA_HASHES: [u32; 4] = [
     0x64eb3a85, 0x4c446633, 0x362e8f22, 0xa884f7b5,
 ];
 
-/// Counts how many of `hashes` are present *and* currently hold `expected` — the shared shape
-/// behind every count function below (`_count(booleanHashes, valueTrue)` in the source, always
-/// called with a fixed default `valueTrue` per category).
+/// Counts how many *distinct* locations in `hashes` are present and currently hold `expected`
+/// — the shared shape behind every count function below (`_count(booleanHashes, valueTrue)` in
+/// the source, always called with a fixed default `valueTrue` per category).
 ///
-/// Iterates the original `hashes` slice position-by-position rather than the deduplicated
-/// offset map, matching `_count`'s `for(i<booleanHashes.length)` loop exactly: a small number
-/// of entries in `LOCATION_VISITED_HASHES` repeat the same hash value, and the source counts
-/// each occurrence separately (so a single visited location can count more than once toward
-/// the total) — that's the real upstream behavior, not a bug to silently fix here.
+/// `LOCATION_VISITED_HASHES` has 2 entries that repeat an earlier hash value (378 array
+/// entries, 376 distinct locations) — the source's own `_count` iterates the raw array and
+/// would count a repeated, already-visited location twice, inflating the true total. Counting
+/// distinct offsets here (via `resolve_present_hashes`'s deduplicated map) fixes that rather
+/// than reproducing it.
 fn count_matching(
     buf: &SaveBuffer,
     hash_table_end: usize,
@@ -203,11 +203,9 @@ fn count_matching(
 ) -> Result<usize, SaveError> {
     let offsets = resolve_present_hashes(buf, hash_table_end, hashes)?;
     let mut count = 0;
-    for &hash in hashes {
-        if let Some(&offset) = offsets.get(&hash) {
-            if buf.read_u32(offset)? == expected {
-                count += 1;
-            }
+    for &offset in offsets.values() {
+        if buf.read_u32(offset)? == expected {
+            count += 1;
         }
     }
     Ok(count)
@@ -258,5 +256,26 @@ mod tests {
         for &h in KOROK_HIDDEN_HASHES.iter() {
             assert!(seen.insert(h), "duplicate korok hidden hash {h:#x}");
         }
+    }
+
+    fn buffer_with_slots(slots: &[(u32, u32)]) -> SaveBuffer {
+        let mut data = vec![0u8; 0x28];
+        for (hash, value) in slots {
+            data.extend_from_slice(&hash.to_le_bytes());
+            data.extend_from_slice(&value.to_le_bytes());
+        }
+        let mut buf = SaveBuffer::new(data);
+        buf.little_endian = true;
+        buf
+    }
+
+    #[test]
+    fn count_matching_does_not_double_count_a_repeated_hash() {
+        // 0xaaaa appears twice in `hashes`, same underlying slot; a naive per-array-position
+        // count (mirroring the source's `_count`) would count it twice if visited.
+        let buf = buffer_with_slots(&[(0xaaaa, 1), (0xbbbb, 0)]);
+        let hash_table_end = buf.len();
+        let count = count_matching(&buf, hash_table_end, &[0xaaaa, 0xaaaa, 0xbbbb], 1).unwrap();
+        assert_eq!(count, 1);
     }
 }

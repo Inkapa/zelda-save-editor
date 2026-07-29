@@ -474,7 +474,7 @@ fn completism_counts_are_read_only_and_match_real_fixture_contents() {
     assert_eq!(save.shrines_cleared().unwrap(), 144);
     assert_eq!(save.koroks_hidden().unwrap(), 341);
     assert_eq!(save.koroks_carried().unwrap(), 33);
-    assert_eq!(save.locations_visited().unwrap(), 288);
+    assert_eq!(save.locations_visited().unwrap(), 286); // 288 raw array entries minus 2 duplicate hashes
     assert_eq!(save.defeated_hinox().unwrap(), 18);
     assert_eq!(save.defeated_talus().unwrap(), 16);
     assert_eq!(save.defeated_molduga().unwrap(), 1);
