@@ -12,34 +12,11 @@
 use crate::binary::SaveBuffer;
 use crate::error::SaveError;
 use crate::totk::pouch::{
-    array_capacity, element_offset, read_i32_elem, read_string64_elem, read_u32_elem,
-    resolve_category, write_i32_elem, write_string64_elem, write_u32_elem, STRIDE_I32,
+    array_capacity, element_offset, read_bool_elem, read_i32_elem, read_string64_elem,
+    read_u32_elem, resolve_category, write_bool_elem, write_i32_elem, write_string64_elem,
+    write_u32_elem, STRIDE_I32,
 };
 use crate::totk::strings;
-
-/// `OwnedHorseList.IsFamiliarityChecked` is bit-packed: bit `index` lives at
-/// `array_addr + 4 + index/8`, bit position `index % 8` — mirrors `Variable._read`'s
-/// `BoolArray` branch (`tempFile.readU8(offset + floor(bitIndex/8))`, `>> (bitIndex%8) & 1`).
-fn read_bool_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<bool, SaveError> {
-    let byte = buf.read_u8(array_addr + 4 + index / 8)?;
-    Ok(((byte >> (index % 8)) & 1) != 0)
-}
-fn write_bool_elem(
-    buf: &mut SaveBuffer,
-    array_addr: usize,
-    index: usize,
-    value: bool,
-) -> Result<(), SaveError> {
-    let byte_offset = array_addr + 4 + index / 8;
-    let mut byte = buf.read_u8(byte_offset)?;
-    let mask = 1u8 << (index % 8);
-    if value {
-        byte |= mask;
-    } else {
-        byte &= !mask;
-    }
-    buf.write_u8(byte_offset, byte)
-}
 
 /// `OwnedHorseList.UidHash` is a `UInt64Array` — 8-byte stride, not 4.
 fn read_u64_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<u64, SaveError> {

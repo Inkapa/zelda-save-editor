@@ -1,3 +1,4 @@
+pub mod autobuilder;
 pub mod completism;
 pub mod hashtable;
 pub mod horse;
@@ -257,5 +258,14 @@ impl TotkSave {
     }
     pub fn defeated_molduga(&self) -> Result<usize, SaveError> {
         completism::defeated_molduga(&self.buf, self.hash_table_end)
+    }
+
+    // --- AutoBuild ---
+
+    pub fn autobuilds(&self) -> Result<Vec<autobuilder::AutoBuildEntry>, SaveError> {
+        autobuilder::read_autobuilds(&self.buf, self.hash_table_end)
+    }
+    pub fn set_autobuilds(&mut self, entries: &[autobuilder::AutoBuildEntry]) -> Result<(), SaveError> {
+        autobuilder::write_autobuilds(&mut self.buf, self.hash_table_end, entries)
     }
 }

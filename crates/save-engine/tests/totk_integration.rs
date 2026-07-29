@@ -479,3 +479,61 @@ fn completism_counts_are_read_only_and_match_real_fixture_contents() {
     assert_eq!(save.defeated_talus().unwrap(), 16);
     assert_eq!(save.defeated_molduga().unwrap(), 1);
 }
+
+#[test]
+fn autobuilds_reads_real_fixture_contents() {
+    let save = load_totk();
+    let entries = save.autobuilds().unwrap();
+    assert_eq!(entries.len(), 30);
+    assert!(entries.iter().all(|e| e.combined_actor_info.len() == 6688));
+
+    // every slot in this fixture is populated with a distinct in-game schematic index
+    let mut indices: Vec<i32> = entries.iter().map(|e| e.index).collect();
+    indices.sort_unstable();
+    assert_eq!(indices, (0..30).collect::<Vec<i32>>());
+
+    assert_eq!(entries[0].index, 29);
+    assert!(entries[0].is_favorite);
+    assert!((entries[0].camera_pos.1 - 32.223396).abs() < 0.001);
+    assert!(!entries[1].is_favorite);
+
+    let favorite_count = entries.iter().filter(|e| e.is_favorite).count();
+    assert_eq!(favorite_count, 7);
+}
+
+#[test]
+fn set_autobuilds_round_trips_index_camera_and_favorite() {
+    let mut save = load_totk();
+    let mut entries = save.autobuilds().unwrap();
+    entries[0].index = -1;
+    entries[0].camera_pos = (1.0, 2.0, 3.0);
+    entries[0].is_favorite = !entries[0].is_favorite;
+    let new_favorite = entries[0].is_favorite;
+
+    save.set_autobuilds(&entries).unwrap();
+
+    let reloaded = save.autobuilds().unwrap();
+    assert_eq!(reloaded[0].index, -1);
+    assert_eq!(reloaded[0].camera_pos, (1.0, 2.0, 3.0));
+    assert_eq!(reloaded[0].is_favorite, new_favorite);
+    // untouched slots stay untouched
+    assert_eq!(reloaded[1].index, entries[1].index);
+}
+
+#[test]
+fn set_autobuilds_rejects_wrong_combined_actor_info_length() {
+    let mut save = load_totk();
+    let mut entries = save.autobuilds().unwrap();
+    entries[0].combined_actor_info = vec![0u8; 10]; // not 6688
+    let result = save.set_autobuilds(&entries);
+    assert!(matches!(result, Err(save_engine::SaveError::SizeMismatch { .. })));
+}
+
+#[test]
+fn set_autobuilds_rejects_wrong_entry_count() {
+    let mut save = load_totk();
+    let mut entries = save.autobuilds().unwrap();
+    entries.pop();
+    let result = save.set_autobuilds(&entries);
+    assert!(matches!(result, Err(save_engine::SaveError::SizeMismatch { .. })));
+}

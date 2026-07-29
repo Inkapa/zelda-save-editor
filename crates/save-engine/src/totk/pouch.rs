@@ -67,6 +67,31 @@ fn clear_id_elem(buf: &mut SaveBuffer, array_addr: usize, index: usize) -> Resul
     write_string64_elem(buf, array_addr, index, "")
 }
 
+/// Bit-packed `BoolArray`: bit `index` lives at `array_addr + 4 + index/8`, bit position
+/// `index % 8` — mirrors `Variable._read`'s `BoolArray` branch (`tempFile.readU8(offset +
+/// floor(bitIndex/8))`, `>> (bitIndex%8) & 1`). Shared by horses (`IsFamiliarityChecked`) and
+/// AutoBuild (`IsFavorite`).
+pub(crate) fn read_bool_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<bool, SaveError> {
+    let byte = buf.read_u8(array_addr + 4 + index / 8)?;
+    Ok(((byte >> (index % 8)) & 1) != 0)
+}
+pub(crate) fn write_bool_elem(
+    buf: &mut SaveBuffer,
+    array_addr: usize,
+    index: usize,
+    value: bool,
+) -> Result<(), SaveError> {
+    let byte_offset = array_addr + 4 + index / 8;
+    let mut byte = buf.read_u8(byte_offset)?;
+    let mask = 1u8 << (index % 8);
+    if value {
+        byte |= mask;
+    } else {
+        byte &= !mask;
+    }
+    buf.write_u8(byte_offset, byte)
+}
+
 /// Builds the `(hash, key, is_pointer=true)` list `scan_offsets` expects from a
 /// `(field_name, key)` table, hashing each field name at call time via `murmur3::hash32`.
 pub(crate) fn resolve_category(

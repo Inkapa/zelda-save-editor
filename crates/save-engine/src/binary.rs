@@ -96,6 +96,19 @@ impl SaveBuffer {
         self.write_u32(offset + 4, (val >> 32) as u32)
     }
 
+    /// Reads `len` raw bytes starting at `offset` — used for variable-length binary blobs
+    /// (TOTK AutoBuild's `CombinedActorInfo`), unlike every fixed-width primitive above.
+    pub fn read_bytes(&self, offset: usize, len: usize) -> Result<Vec<u8>, SaveError> {
+        self.check_bounds(offset, len)?;
+        Ok(self.data[offset..offset + len].to_vec())
+    }
+
+    pub fn write_bytes(&mut self, offset: usize, bytes: &[u8]) -> Result<(), SaveError> {
+        self.check_bounds(offset, bytes.len())?;
+        self.data[offset..offset + bytes.len()].copy_from_slice(bytes);
+        Ok(())
+    }
+
     /// Mirrors the source project's `MarcFile.readString`: consecutive non-null bytes
     /// starting at `offset`, stopping at the first null byte, `max_len`, or the end of
     /// the buffer.
@@ -175,6 +188,19 @@ mod tests {
         let mut buf = SaveBuffer::new(vec![0u8; 4]);
         buf.write_i32(0, -1).unwrap();
         assert_eq!(buf.read_i32(0).unwrap(), -1);
+    }
+
+    #[test]
+    fn read_bytes_and_write_bytes_round_trip() {
+        let mut buf = SaveBuffer::new(vec![0u8; 8]);
+        buf.write_bytes(2, &[1, 2, 3, 4]).unwrap();
+        assert_eq!(buf.read_bytes(2, 4).unwrap(), vec![1, 2, 3, 4]);
+    }
+
+    #[test]
+    fn read_bytes_out_of_bounds_returns_truncated_error() {
+        let buf = SaveBuffer::new(vec![0u8; 4]);
+        assert_eq!(buf.read_bytes(2, 4), Err(SaveError::Truncated { offset: 2, len: 4 }));
     }
 
     #[test]

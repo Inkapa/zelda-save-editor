@@ -13,6 +13,7 @@ impl From<save_engine::SaveError> for ShellError {
             save_engine::SaveError::MissingField(_) => "missing_field",
             save_engine::SaveError::IndexOutOfRange { .. } => "index_out_of_range",
             save_engine::SaveError::Truncated { .. } => "truncated",
+            save_engine::SaveError::SizeMismatch { .. } => "size_mismatch",
         };
         ShellError { kind: kind.to_string(), message: err.to_string() }
     }
