@@ -61,6 +61,29 @@ pub fn scan_offsets(
     Ok(offsets)
 }
 
+/// Resolves the value-offset for every hash in `hashes` that's actually present, scanning
+/// once from `0x28` to `hash_table_end` — mirrors `_getOffsetsByHashes`, which (unlike
+/// `_getOffsets`/`scan_offsets`) never dereferences a pointer and silently omits any hash not
+/// found rather than erroring. Used for completionism flags (shrines/koroks/bosses/locations),
+/// which aren't part of the small required core field set.
+pub fn resolve_present_hashes(
+    buf: &SaveBuffer,
+    hash_table_end: usize,
+    hashes: &[u32],
+) -> Result<HashMap<u32, usize>, SaveError> {
+    let target: std::collections::HashSet<u32> = hashes.iter().copied().collect();
+    let mut offsets = HashMap::new();
+    let mut i = HASH_TABLE_START;
+    while i + 8 <= hash_table_end {
+        let hash = buf.read_u32(i)?;
+        if target.contains(&hash) {
+            offsets.insert(hash, i + 4);
+        }
+        i += 8;
+    }
+    Ok(offsets)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -93,6 +116,17 @@ mod tests {
         .unwrap();
         assert_eq!(buf.read_u32(offsets["DIRECT"]).unwrap(), 42);
         assert_eq!(offsets["POINTER"], 0x28);
+    }
+
+    #[test]
+    fn resolve_present_hashes_omits_missing_hashes_instead_of_erroring() {
+        let buf = buffer_with_slots(&[(0x1111, 42), (0x3333, 30)]);
+        let hash_table_end = buf.len();
+        let offsets = resolve_present_hashes(&buf, hash_table_end, &[0x1111, 0x2222, 0x3333]).unwrap();
+        assert_eq!(offsets.len(), 2);
+        assert_eq!(buf.read_u32(offsets[&0x1111]).unwrap(), 42);
+        assert_eq!(buf.read_u32(offsets[&0x3333]).unwrap(), 30);
+        assert!(!offsets.contains_key(&0x2222));
     }
 
     #[test]

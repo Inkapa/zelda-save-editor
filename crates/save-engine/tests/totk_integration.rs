@@ -466,3 +466,16 @@ fn malformed_input_returns_err_instead_of_panicking() {
     let result = Save::detect(bytes);
     assert!(result.is_err());
 }
+
+#[test]
+fn completism_counts_are_read_only_and_match_real_fixture_contents() {
+    let save = load_totk();
+    assert_eq!(save.shrines_found().unwrap(), 152); // every shrine found in this fixture
+    assert_eq!(save.shrines_cleared().unwrap(), 144);
+    assert_eq!(save.koroks_hidden().unwrap(), 341);
+    assert_eq!(save.koroks_carried().unwrap(), 33);
+    assert_eq!(save.locations_visited().unwrap(), 288);
+    assert_eq!(save.defeated_hinox().unwrap(), 18);
+    assert_eq!(save.defeated_talus().unwrap(), 16);
+    assert_eq!(save.defeated_molduga().unwrap(), 1);
+}

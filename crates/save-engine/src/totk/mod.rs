@@ -1,3 +1,4 @@
+pub mod completism;
 pub mod hashtable;
 pub mod horse;
 pub mod murmur3;
@@ -229,5 +230,32 @@ impl TotkSave {
     }
     pub fn set_horses(&mut self, entries: &[horse::HorseEntry]) -> Result<(), SaveError> {
         horse::write_horses(&mut self.buf, self.hash_table_end, entries)
+    }
+
+    // --- completionism (read-only: the source tool has no mass-unlock for these) ---
+
+    pub fn shrines_found(&self) -> Result<usize, SaveError> {
+        completism::shrines_found(&self.buf, self.hash_table_end)
+    }
+    pub fn shrines_cleared(&self) -> Result<usize, SaveError> {
+        completism::shrines_cleared(&self.buf, self.hash_table_end)
+    }
+    pub fn koroks_hidden(&self) -> Result<usize, SaveError> {
+        completism::koroks_hidden(&self.buf, self.hash_table_end)
+    }
+    pub fn koroks_carried(&self) -> Result<usize, SaveError> {
+        completism::koroks_carried(&self.buf, self.hash_table_end)
+    }
+    pub fn locations_visited(&self) -> Result<usize, SaveError> {
+        completism::locations_visited(&self.buf, self.hash_table_end)
+    }
+    pub fn defeated_hinox(&self) -> Result<usize, SaveError> {
+        completism::defeated_hinox(&self.buf, self.hash_table_end)
+    }
+    pub fn defeated_talus(&self) -> Result<usize, SaveError> {
+        completism::defeated_talus(&self.buf, self.hash_table_end)
+    }
+    pub fn defeated_molduga(&self) -> Result<usize, SaveError> {
+        completism::defeated_molduga(&self.buf, self.hash_table_end)
     }
 }
