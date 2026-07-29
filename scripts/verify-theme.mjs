@@ -122,6 +122,8 @@ const mocks = {
       defeated_hinox: 3,
       defeated_talus: 2,
       defeated_molduga: 1,
+      defeated_bubbuls: 42,
+      sage_wills_found: 7,
       autobuilds: [
         {
           index: 0,

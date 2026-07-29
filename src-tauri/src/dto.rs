@@ -141,6 +141,8 @@ pub struct TotkState {
     pub defeated_hinox: u32,
     pub defeated_talus: u32,
     pub defeated_molduga: u32,
+    pub defeated_bubbuls: u32,
+    pub sage_wills_found: u32,
     pub autobuilds: Vec<TotkAutoBuildEntryDto>,
     pub map_pins: Vec<TotkMapPinDto>,
 }

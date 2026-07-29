@@ -1,5 +1,6 @@
 pub mod autobuilder;
 pub mod completism;
+pub mod guids;
 pub mod hashtable;
 pub mod horse;
 pub mod mapdata;
@@ -259,6 +260,12 @@ impl TotkSave {
     }
     pub fn defeated_molduga(&self) -> Result<usize, SaveError> {
         completism::defeated_molduga(&self.buf, self.hash_table_end)
+    }
+    pub fn defeated_bubbuls(&self) -> Result<usize, SaveError> {
+        completism::defeated_bubbuls(&self.buf, self.hash_table_end)
+    }
+    pub fn sage_wills_found(&self) -> Result<usize, SaveError> {
+        completism::sage_wills_found(&self.buf, self.hash_table_end)
     }
 
     // --- AutoBuild ---

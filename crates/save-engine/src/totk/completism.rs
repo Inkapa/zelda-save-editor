@@ -10,6 +10,7 @@
 
 use crate::binary::SaveBuffer;
 use crate::error::SaveError;
+use crate::totk::guids::read_discovered_guids;
 use crate::totk::hashtable::resolve_present_hashes;
 use crate::totk::murmur3::hash32;
 
@@ -186,6 +187,48 @@ const BOSS_MOLDUGA_HASHES: [u32; 4] = [
     0x64eb3a85, 0x4c446633, 0x362e8f22, 0xa884f7b5,
 ];
 
+/// One 64-bit GUID per known bubbul enemy instance in the world (`CompletismHashes.BUBBULS_GUIDS`
+/// in the source), checked against the save's separate discovered-GUIDs array
+/// (`totk::guids::read_discovered_guids`) rather than the normal hash-table field storage.
+const BUBBUL_GUIDS: [u64; 147] = [
+    0x4a2ef034a266c318, 0x156516036b5f7fc7, 0x6e50fe88e2738a3c, 0x155fed47fb6077bd, 0x9b41bd191c8bb899, 0xa9ff1552bc313753,
+    0x511159c4323fab13, 0x5bbd526f3daa3081, 0x7b7909c85ad79904, 0x1660d416b82cb91e, 0x50b82b2016f7452d, 0x58654bbba3c8d047,
+    0x1c2a653e0d7517d5, 0xb1cb80868f44056b, 0x97bbbc2bc486219d, 0x23b66324b2fbcd2c, 0x159d350c47a80e2b, 0x7dde1613bbe08fce,
+    0x1b60a95b467464e5, 0x321dc2e01aff8c82, 0xdefd953612e03084, 0x1b88a5b0512f7da7, 0x184db669cf152043, 0xe22736ed43f4a0b1,
+    0xa7ecb0ec036d9b51, 0x34518c9cecd51070, 0x69a87dc5d38237da, 0xb25955eb61a16781, 0xb6e3676cf0a11119, 0xc3552ebff380383b,
+    0xb6e06b49e63866ae, 0xa70272e5417b4a61, 0xdd7742ab1e6ede08, 0xcf9929ffddbfc07a, 0xfb519d90f20dc4ee, 0xc4355d66a6690f54,
+    0xd2ee79393cbbaad9, 0xb8a703d79052b5bc, 0x885e9854c01d1f50, 0x5ac2bd45c3f6e8a3, 0x458c6cef1846e12b, 0xc62e49bdd034722e,
+    0x632df3675d11e8a5, 0x38bd19020ca751c7, 0x31cc9701a074e3b0, 0x050c414f2b5651ca, 0x614231f0d886941b, 0xa2b05f3b5f7adc95,
+    0x7482ff34ebf0b87e, 0x29a44d4b7fd0af2a, 0xe3611f71daf6d5ba, 0x8f2597bea617d6e3, 0xddef122374bae30a, 0xe4c4b48aba3e28a0,
+    0x639b0aae3c2a3ab9, 0xddaa275cff3c1b9d, 0x0d8028a1c5d3e072, 0xaae790dff13c1d4a, 0x3deff0b2c6f35893, 0x2eaec0e8f7736bc1,
+    0x7c1f14d70520c5ac, 0x6d4f284dfe6f6350, 0x32d663740087df2b, 0xc0f95a0f2b1217d9, 0x8a2616dd9ff9a322, 0x05a685a4a4306b65,
+    0xae059d8746d758a6, 0xeb3296c003a30da4, 0xfc0c18ae5b379664, 0x129a6e312ba13e44, 0xe8a252e7e3073d05, 0xecc4ee76c55ec302,
+    0x07b6222221fa43cf, 0x5462549c77949ebb, 0xc5ff4da5c9cbe283, 0x8bc80ac5501a53e2, 0x0e3190ebdc4c448e, 0xb1677475d92742cd,
+    0xdd6da5a8ec813b90, 0x539de1395915eaf9, 0x146889d8bcc6ebb9, 0x01f22fdd1ac86e1b, 0x2cf40b1ba20d4010, 0x31eb915eb9b87e34,
+    0xef574dace04289a3, 0x8b881420387231b3, 0xb214a36c335cf983, 0xb442f2023e8b6895, 0x4c7d8fe80da677fb, 0xae002ffdbf50795c,
+    0x0157e7f59ed6706a, 0x9e6e0d4ee8807b92, 0x05ec4f99e19c1280, 0xef055e0e3b8e0af5, 0x5a7aaa06f4e9c10c, 0x4ea99762c0eafe65,
+    0xd77738ea615e5c1e, 0xcb63483daa6338f9, 0xacb3135d3bce3194, 0xbb2c259ad23f4780, 0xd9cb9c64a5ccc2c0, 0x7f088bcb3a457925,
+    0x45956a5cc5866db6, 0x2d1cf51b8cdcc098, 0x1f71702a095bc012, 0x04fb29137792797f, 0xe73dca57734e79c3, 0x172ed460a0200fe2,
+    0x03abb931e9b1aa2e, 0x18246b7d61b09e14, 0x660aa6a247d78655, 0x6d93e5630f546a65, 0x6cfcecf99438ae66, 0xdd7bee885ecdd646,
+    0x530d92647e6c8791, 0x0cacfa038648c55c, 0x0ad9f3123d0c10e7, 0x84e2e5b45a1ba0cb, 0xfc1296e19576855c, 0xc608bb69be07fecb,
+    0xbbde7a7a61d4fcaf, 0xd4f4c4181d407220, 0xa15f6b4b88baef04, 0xcc0e9a1b4171f855, 0x71bb8b935a627496, 0x09e5bb13bec6243d,
+    0x28a1ee52d72d06ae, 0x072241f662d35cd4, 0x1233a2e566944158, 0xb817aeb2581b040c, 0x4caa26d3ccac26c9, 0x58f8f85f62f83a7c,
+    0xef5aec2cc2af160f, 0x74ce078aec920a9d, 0xd7a7dd2925dc8546, 0xee4636bcc57dd2a7, 0xdc667d3492986314, 0x40faac044e21ecde,
+    0xc159d85ff81e95c0, 0x1ea384237cc3eee4, 0xdbff2f278d4d84e9, 0x0b393196afa554a8, 0xf9afb298ca80e833, 0x81eeb24216b54e96,
+    0x100e8f73ebff5c75, 0x2a818c0b3e6b54d2, 0x06dad54583da93de,
+];
+
+/// One 64-bit GUID per known sage-will pedestal (`CompletismHashes.SAGE_WILLS_FOUND` in the
+/// source, given there as decimal strings rather than hex; converted to hex here for
+/// consistency with `BUBBUL_GUIDS`, same value).
+const SAGE_WILL_GUIDS: [u64; 20] = [
+    17027564096477698406, 16551922775305595721, 8923401910321011575, 7638258738140520749,
+    17834526685843804832, 12415947737911523872, 10777930978159296231, 9878961607953221501,
+    14297746811944729045, 10158452085007421266, 14300441561420407308, 3040862838791505171,
+    7530653482124541386, 1950552174935191379, 15362114318872927496, 1734683952980485907,
+    15149725342529566916, 8433656076063719808, 1984953898143305789, 12826721193418470354,
+];
+
 /// Counts how many *distinct* locations in `hashes` are present and currently hold `expected`.
 /// This is the shared shape behind every count function below (`_count(booleanHashes, valueTrue)`
 /// in the source, always called with a fixed default `valueTrue` per category).
@@ -246,6 +289,21 @@ pub fn defeated_molduga(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize
     count_matching(buf, hash_table_end, &BOSS_MOLDUGA_HASHES, 1)
 }
 
+/// Counts how many of `guids` appear in the save's discovered-GUIDs array, mirroring
+/// `Completism._countGuids`. Shared shape behind `defeated_bubbuls`/`sage_wills_found`.
+fn count_guids(buf: &SaveBuffer, hash_table_end: usize, guids: &[u64]) -> Result<usize, SaveError> {
+    let discovered = read_discovered_guids(buf, hash_table_end)?;
+    Ok(guids.iter().filter(|g| discovered.contains(g)).count())
+}
+
+pub fn defeated_bubbuls(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_guids(buf, hash_table_end, &BUBBUL_GUIDS)
+}
+
+pub fn sage_wills_found(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_guids(buf, hash_table_end, &SAGE_WILL_GUIDS)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -255,6 +313,18 @@ mod tests {
         let mut seen = std::collections::HashSet::new();
         for &h in KOROK_HIDDEN_HASHES.iter() {
             assert!(seen.insert(h), "duplicate korok hidden hash {h:#x}");
+        }
+    }
+
+    #[test]
+    fn guid_lists_have_no_accidental_duplicates() {
+        let mut seen = std::collections::HashSet::new();
+        for &g in BUBBUL_GUIDS.iter() {
+            assert!(seen.insert(g), "duplicate bubbul guid {g:#x}");
+        }
+        let mut seen = std::collections::HashSet::new();
+        for &g in SAGE_WILL_GUIDS.iter() {
+            assert!(seen.insert(g), "duplicate sage will guid {g:#x}");
         }
     }
 

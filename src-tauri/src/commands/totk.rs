@@ -41,6 +41,8 @@ pub fn read_state(save: &TotkSave) -> Result<TotkState, ShellError> {
         defeated_hinox: save.defeated_hinox()? as u32,
         defeated_talus: save.defeated_talus()? as u32,
         defeated_molduga: save.defeated_molduga()? as u32,
+        defeated_bubbuls: save.defeated_bubbuls()? as u32,
+        sage_wills_found: save.sage_wills_found()? as u32,
         autobuilds: save.autobuilds()?.into_iter().map(TotkAutoBuildEntryDto::from).collect(),
         map_pins: save.map_pins()?.into_iter().map(TotkMapPinDto::from).collect(),
     })
@@ -312,11 +314,18 @@ mod tests {
         let app_state = loaded_app_state();
         let dto = get_totk_state_impl(&app_state).unwrap();
         // Cross-check against the engine's own accessors directly, not just "didn't panic".
-        let expected_shrines_found = match Save::detect(totk_fixture_bytes()).unwrap() {
-            Save::Totk(save) => save.shrines_found().unwrap() as u32,
-            Save::Botw(_) => panic!("fixture should be TOTK"),
-        };
+        let (expected_shrines_found, expected_bubbuls, expected_sage_wills) =
+            match Save::detect(totk_fixture_bytes()).unwrap() {
+                Save::Totk(save) => (
+                    save.shrines_found().unwrap() as u32,
+                    save.defeated_bubbuls().unwrap() as u32,
+                    save.sage_wills_found().unwrap() as u32,
+                ),
+                Save::Botw(_) => panic!("fixture should be TOTK"),
+            };
         assert_eq!(dto.shrines_found, expected_shrines_found);
+        assert_eq!(dto.defeated_bubbuls, expected_bubbuls);
+        assert_eq!(dto.sage_wills_found, expected_sage_wills);
     }
 
     #[test]

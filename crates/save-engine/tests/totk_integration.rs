@@ -584,3 +584,10 @@ fn set_map_pins_rejects_wrong_entry_count() {
     let result = save.set_map_pins(&pins);
     assert!(matches!(result, Err(save_engine::SaveError::SizeMismatch { .. })));
 }
+
+#[test]
+fn guid_completism_counts_match_real_fixture_contents() {
+    let save = load_totk();
+    assert_eq!(save.defeated_bubbuls().unwrap(), 104);
+    assert_eq!(save.sage_wills_found().unwrap(), 18);
+}

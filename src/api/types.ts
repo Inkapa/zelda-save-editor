@@ -180,6 +180,8 @@ export interface TotkState {
   defeated_hinox: number;
   defeated_talus: number;
   defeated_molduga: number;
+  defeated_bubbuls: number;
+  sage_wills_found: number;
   autobuilds: TotkAutoBuildEntry[];
   map_pins: TotkMapPin[];
 }
