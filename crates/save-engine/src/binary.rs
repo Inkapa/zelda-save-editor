@@ -73,6 +73,29 @@ impl SaveBuffer {
         self.write_u32(offset, val.to_bits())
     }
 
+    pub fn read_i32(&self, offset: usize) -> Result<i32, SaveError> {
+        Ok(self.read_u32(offset)? as i32)
+    }
+
+    pub fn write_i32(&mut self, offset: usize, val: i32) -> Result<(), SaveError> {
+        self.write_u32(offset, val as u32)
+    }
+
+    /// Reads a 64-bit value as two consecutive 32-bit reads, low word first — mirrors the
+    /// source's `Variable.joinUInt64(readU32(o), readU32(o+4))`. TOTK is the only user of this
+    /// today (horse amiibo UID); it's placed here rather than in `totk/` because it's a generic
+    /// buffer primitive, same as `read_f32`.
+    pub fn read_u64(&self, offset: usize) -> Result<u64, SaveError> {
+        let lower = self.read_u32(offset)? as u64;
+        let upper = self.read_u32(offset + 4)? as u64;
+        Ok((upper << 32) | lower)
+    }
+
+    pub fn write_u64(&mut self, offset: usize, val: u64) -> Result<(), SaveError> {
+        self.write_u32(offset, (val & 0xffffffff) as u32)?;
+        self.write_u32(offset + 4, (val >> 32) as u32)
+    }
+
     /// Mirrors the source project's `MarcFile.readString`: consecutive non-null bytes
     /// starting at `offset`, stopping at the first null byte, `max_len`, or the end of
     /// the buffer.
@@ -145,5 +168,21 @@ mod tests {
         let mut buf = SaveBuffer::new(vec![0u8; 4]);
         assert_eq!(buf.write_u32(1, 0x11223344), Err(SaveError::Truncated { offset: 1, len: 4 }));
         assert_eq!(buf.write_u8(4, 1), Err(SaveError::Truncated { offset: 4, len: 4 }));
+    }
+
+    #[test]
+    fn i32_round_trips_negative_values() {
+        let mut buf = SaveBuffer::new(vec![0u8; 4]);
+        buf.write_i32(0, -1).unwrap();
+        assert_eq!(buf.read_i32(0).unwrap(), -1);
+    }
+
+    #[test]
+    fn u64_round_trips_as_two_u32_words_low_word_first() {
+        let mut buf = SaveBuffer::new(vec![0u8; 8]);
+        buf.write_u64(0, 0x1122334455667788).unwrap();
+        assert_eq!(buf.read_u32(0).unwrap(), 0x55667788); // low word
+        assert_eq!(buf.read_u32(4).unwrap(), 0x11223344); // high word
+        assert_eq!(buf.read_u64(0).unwrap(), 0x1122334455667788);
     }
 }
