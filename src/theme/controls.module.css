@@ -1,0 +1,49 @@
+.field {
+  display: block;
+  margin-bottom: 4px;
+  font-family: var(--font-display);
+}
+
+.input {
+  font-family: system-ui, sans-serif;
+  font-size: inherit;
+  background: var(--bg-panel);
+  color: var(--text);
+  border: 1px solid var(--border);
+  border-radius: 3px;
+  padding: 2px 4px;
+}
+
+.button {
+  font-family: var(--font-display);
+  padding: 6px 12px;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  background: var(--bg-panel);
+  color: var(--text);
+  cursor: pointer;
+}
+.button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 0.9rem;
+  font-family: system-ui, sans-serif;
+}
+.table th,
+.table td {
+  border: 1px solid var(--border);
+  padding: 4px 8px;
+  text-align: left;
+}
+.table th {
+  background: var(--bg-panel);
+  font-weight: 600;
+}
+.table tr:nth-child(even) td {
+  background: color-mix(in srgb, var(--bg-panel) 60%, var(--bg));
+}

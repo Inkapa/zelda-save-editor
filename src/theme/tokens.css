@@ -1,0 +1,71 @@
+:root {
+  --font-display: "Special Elite", cursive;
+}
+
+[data-game="botw"][data-scheme="light"] {
+  --bg: #f4ede1;
+  --text: #2b2620;
+  --accent: #3ea8c9;
+  --accent-secondary: #7fae59;
+  --accent-tertiary: #d98a3d;
+}
+[data-game="botw"][data-scheme="dark"] {
+  --bg: #1b2420;
+  --text: #ece6d6;
+  --accent: #52c7e0;
+  --accent-secondary: #8fce68;
+  --accent-tertiary: #e2a85c;
+}
+
+[data-game="totk"][data-scheme="light"] {
+  --bg: #efe6d3;
+  --text: #2a2018;
+  --accent: #c98a2e;
+  --accent-secondary: #6a9e8f;
+  --accent-tertiary: #6b4c7a;
+}
+[data-game="totk"][data-scheme="dark"] {
+  --bg: #211a14;
+  --text: #ecdfc8;
+  --accent: #e0a63f;
+  --accent-secondary: #7fb8a8;
+  --accent-tertiary: #8a67a0;
+}
+
+[data-game="neutral"][data-scheme="light"] {
+  --bg: #ece4d4;
+  --text: #2c2822;
+  --accent: #6b7a63;
+}
+[data-game="neutral"][data-scheme="dark"] {
+  --bg: #201d18;
+  --text: #e8e1d2;
+  --accent: #8a9782;
+}
+[data-game="neutral"] {
+  --accent-secondary: var(--accent);
+  --accent-tertiary: var(--accent);
+}
+
+:root {
+  --bg-panel: color-mix(in srgb, var(--bg) 85%, var(--text) 15%);
+  --border: color-mix(in srgb, var(--bg) 65%, var(--text) 35%);
+}
+
+[data-scheme="light"] {
+  --danger: #b3261e;
+  --danger-bg: #fbeceb;
+}
+[data-scheme="dark"] {
+  --danger: #ff6b5e;
+  --danger-bg: #3a211f;
+}
+
+html {
+  background: var(--bg);
+  color: var(--text);
+}
+
+body {
+  margin: 0;
+}

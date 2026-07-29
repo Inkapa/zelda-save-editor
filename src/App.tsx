@@ -4,10 +4,13 @@ import * as api from "./api";
 import BotwView from "./components/botw/BotwView";
 import TotkView from "./components/totk/TotkView";
 import ErrorBanner from "./components/ErrorBanner";
+import { useThemeAttributes } from "./theme/useThemeAttributes";
+import styles from "./App.module.css";
 
 function App() {
   const [loaded, setLoaded] = useState<OpenResult | null>(null);
   const [error, setError] = useState<string | null>(null);
+  useThemeAttributes(loaded?.kind ?? "neutral");
 
   const handleOpen = async () => {
     try {
@@ -49,24 +52,28 @@ function App() {
   };
 
   return (
-    <div style={{ padding: 16 }}>
-      <h1>Zelda Save Editor</h1>
+    <div className={styles.app}>
+      <h1 className={styles.title}>Zelda Save Editor</h1>
       <ErrorBanner message={error} onDismiss={() => setError(null)} />
-      <div style={{ marginBottom: 16 }}>
-        <button onClick={handleOpen}>Open...</button>{" "}
-        <button onClick={handleSave} disabled={!loaded}>
+      <div className={styles.toolbar}>
+        <button className={styles.button} onClick={handleOpen}>
+          Open...
+        </button>
+        <button className={styles.button} onClick={handleSave} disabled={!loaded}>
           Save
-        </button>{" "}
-        <button onClick={handleSaveAs} disabled={!loaded}>
+        </button>
+        <button className={styles.button} onClick={handleSaveAs} disabled={!loaded}>
           Save As...
-        </button>{" "}
-        <button onClick={refreshCurrent} disabled={!loaded}>
+        </button>
+        <button className={styles.button} onClick={refreshCurrent} disabled={!loaded}>
           Refresh
         </button>
       </div>
-      {loaded?.kind === "botw" && <BotwView state={loaded.state} onError={setError} />}
+      {loaded?.kind === "botw" && (
+        <BotwView state={loaded.state} onError={setError} onRefresh={refreshCurrent} />
+      )}
       {loaded?.kind === "totk" && <TotkView state={loaded.state} onError={setError} />}
-      {!loaded && <p>Open a save file to begin.</p>}
+      {!loaded && <p className={styles.empty}>Open a save file to begin.</p>}
     </div>
   );
 }

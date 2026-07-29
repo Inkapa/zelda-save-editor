@@ -1,3 +1,5 @@
+import styles from "./ErrorBanner.module.css";
+
 interface Props {
   message: string | null;
   onDismiss: () => void;
@@ -6,9 +8,11 @@ interface Props {
 export default function ErrorBanner({ message, onDismiss }: Props) {
   if (!message) return null;
   return (
-    <div style={{ background: "#fee", border: "1px solid #c00", padding: 8, marginBottom: 8 }}>
+    <div className={styles.banner}>
       {message}{" "}
-      <button onClick={onDismiss}>Dismiss</button>
+      <button className={styles.dismiss} onClick={onDismiss}>
+        Dismiss
+      </button>
     </div>
   );
 }
