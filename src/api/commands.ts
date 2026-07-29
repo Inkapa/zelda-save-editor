@@ -5,6 +5,7 @@ import type {
   OpenResult,
   TotkArmor,
   TotkArrow,
+  TotkAutoBuildEntry,
   TotkBow,
   TotkDevice,
   TotkFood,
@@ -131,6 +132,26 @@ export function setHorseType(index: number, value: string): Promise<void> {
   return invoke("set_horse_type", { index, value });
 }
 
+export function unlockAllKoroks(): Promise<number> {
+  return invoke("unlock_all_koroks");
+}
+
+export function unlockAllDefeatedHinox(): Promise<number> {
+  return invoke("unlock_all_defeated_hinox");
+}
+
+export function unlockAllDefeatedTalus(): Promise<number> {
+  return invoke("unlock_all_defeated_talus");
+}
+
+export function unlockAllDefeatedMolduga(): Promise<number> {
+  return invoke("unlock_all_defeated_molduga");
+}
+
+export function unlockAllLocations(): Promise<number> {
+  return invoke("unlock_all_locations");
+}
+
 // --- TOTK ---
 
 export function getTotkState(): Promise<TotkState> {
@@ -219,4 +240,8 @@ export function setFood(entries: TotkFood[]): Promise<void> {
 
 export function setHorses(entries: TotkHorse[]): Promise<void> {
   return invoke("set_horses", { entries });
+}
+
+export function setAutobuilds(entries: TotkAutoBuildEntry[]): Promise<void> {
+  return invoke("set_autobuilds", { entries });
 }

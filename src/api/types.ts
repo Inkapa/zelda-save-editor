@@ -135,6 +135,14 @@ export interface TotkHorse {
   icon_hair_secondary_color: [number, number, number];
 }
 
+export interface TotkAutoBuildEntry {
+  index: number;
+  combined_actor_info: number[];
+  camera_pos: [number, number, number];
+  camera_at: [number, number, number];
+  is_favorite: boolean;
+}
+
 export interface TotkState {
   max_life: number;
   current_rupees: number;
@@ -157,6 +165,15 @@ export interface TotkState {
   devices: TotkDevice[];
   food: TotkFood[];
   horses: TotkHorse[];
+  shrines_found: number;
+  shrines_cleared: number;
+  koroks_hidden: number;
+  koroks_carried: number;
+  locations_visited: number;
+  defeated_hinox: number;
+  defeated_talus: number;
+  defeated_molduga: number;
+  autobuilds: TotkAutoBuildEntry[];
 }
 
 export type OpenResult =
