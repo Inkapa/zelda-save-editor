@@ -1,3 +1,4 @@
+pub mod items;
 pub mod strings;
 pub mod versions;
 
@@ -308,6 +309,24 @@ impl BotwSave {
         strings::write_string64(&mut self.buf, items_offset, index, name)?;
         self.buf.write_u32(qty_offset + index * 8, quantity)?;
         Ok(())
+    }
+
+    /// Pairs each item from `items()` with its display category (weapons/bows/shields/armor/
+    /// materials/food/key items), 1:1 in the same order — index `i` here is still the same
+    /// slot `set_item(i, ...)` writes to. For armor items, `BotwItem::quantity` is really a dye
+    /// color index rather than a count (same shared storage field, different meaning based on
+    /// category — see `items::categorize` doc); this crate doesn't split that into a separate
+    /// type, mirroring how the source reinterprets the one stored value per category at render
+    /// time rather than storing it differently.
+    pub fn items_with_category(&self) -> Result<Vec<(BotwItem, items::ItemCategory)>, SaveError> {
+        Ok(self
+            .items()?
+            .into_iter()
+            .map(|item| {
+                let category = items::categorize(&item.name);
+                (item, category)
+            })
+            .collect())
     }
 
     /// Returns (weapon, bow, shield) modifier lists. Slot counts are derived by walking

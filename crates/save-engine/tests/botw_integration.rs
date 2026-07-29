@@ -125,3 +125,31 @@ fn set_horse_type_out_of_range_returns_error() {
     let result = save.set_horse_type(save_engine::botw::NUM_HORSE_SLOTS, "HorseType");
     assert!(matches!(result, Err(SaveError::IndexOutOfRange { .. })));
 }
+
+#[test]
+fn items_with_category_pairs_every_item_in_order_with_real_fixture_categories() {
+    use save_engine::botw::items::ItemCategory;
+
+    let save = load_botw();
+    let items = save.items().unwrap();
+    let paired = save.items_with_category().unwrap();
+
+    // same length/order as the plain flat list, so index i still matches set_item(i, ...)
+    assert_eq!(paired.len(), items.len());
+    for (plain, (paired_item, _)) in items.iter().zip(paired.iter()) {
+        assert_eq!(plain, paired_item);
+    }
+
+    assert_eq!(paired[0].0.name, "Weapon_Sword_070"); // Master Sword
+    assert_eq!(paired[0].1, ItemCategory::Weapon);
+    assert_eq!(paired[20].0.name, "Weapon_Bow_001");
+    assert_eq!(paired[20].1, ItemCategory::Bow);
+    assert_eq!(paired[52].0.name, "Armor_043_Upper");
+    assert_eq!(paired[52].1, ItemCategory::Armor);
+    assert_eq!(paired[229].0.name, "Item_Ore_C");
+    assert_eq!(paired[229].1, ItemCategory::Material);
+    assert_eq!(paired[270].0.name, "Item_Cook_D_03");
+    assert_eq!(paired[270].1, ItemCategory::Food);
+    assert_eq!(paired[296].0.name, "Obj_DRStone_Get");
+    assert_eq!(paired[296].1, ItemCategory::KeyItem);
+}
