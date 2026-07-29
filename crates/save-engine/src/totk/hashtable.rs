@@ -9,7 +9,7 @@ const HASH_TABLE_START: usize = 0x28;
 /// Finds the end of the simple hash-value region by scanning for the sentinel hash,
 /// which marks where the "guids array" (discovered-locations tracking, out of scope for
 /// this crate) begins. Returns the offset of the 4 bytes immediately after the sentinel
-/// hash — mirrors `Variable.findHashTableEnd`.
+/// hash, mirroring `Variable.findHashTableEnd`.
 pub fn find_hash_table_end(buf: &SaveBuffer) -> Result<usize, SaveError> {
     let mut i = HASH_TABLE_START;
     while i + 8 <= buf.len() {
@@ -25,7 +25,7 @@ pub fn find_hash_table_end(buf: &SaveBuffer) -> Result<usize, SaveError> {
 /// For direct hashes, records the offset immediately after the hash. For pointer
 /// hashes, dereferences once more: the 4 bytes after the hash are themselves an address
 /// to the actual data. Returns an error naming the first hash not found, mirroring
-/// `_getOffsets`'s `foundAllHashes` gate — every hash in `hashes` must be present for a
+/// `_getOffsets`'s `foundAllHashes` gate: every hash in `hashes` must be present for a
 /// save to be considered valid.
 pub fn scan_offsets(
     buf: &SaveBuffer,
@@ -62,7 +62,7 @@ pub fn scan_offsets(
 }
 
 /// Resolves the value-offset for every hash in `hashes` that's actually present, scanning
-/// once from `0x28` to `hash_table_end` — mirrors `_getOffsetsByHashes`, which (unlike
+/// once from `0x28` to `hash_table_end`, mirroring `_getOffsetsByHashes`, which (unlike
 /// `_getOffsets`/`scan_offsets`) never dereferences a pointer and silently omits any hash not
 /// found rather than erroring. Used for completionism flags (shrines/koroks/bosses/locations),
 /// which aren't part of the small required core field set.
@@ -103,8 +103,8 @@ mod tests {
     fn resolves_direct_and_pointer_hashes() {
         // 0x1111 is direct: its value (42) lives right after the hash.
         // 0x2222 is a pointer: the 4 bytes after its hash (0x28) are the *address* of
-        // the actual data, which happens to be the direct slot's hash position here —
-        // any in-bounds address works for this test, since scan_offsets doesn't care
+        // the actual data, which happens to be the direct slot's hash position here.
+        // Any in-bounds address works for this test, since scan_offsets doesn't care
         // what's stored there, only that it dereferences once.
         let buf = buffer_with_slots(&[(0x1111, 42), (0x2222, 0x28)]);
         let hash_table_end = buf.len();

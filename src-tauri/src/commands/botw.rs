@@ -6,7 +6,7 @@ use crate::state::AppState;
 use save_engine::botw::BotwSave;
 use save_engine::{Save, SaveError};
 
-/// Builds the DTO from a loaded `BotwSave`. Pure and Tauri-free — directly unit-testable
+/// Builds the DTO from a loaded `BotwSave`. Pure and Tauri-free, directly unit-testable
 /// against a real fixture, and reused (extended) by Task 4 once the list-shaped fields exist.
 pub fn read_state(save: &BotwSave) -> Result<BotwState, ShellError> {
     let (weapon_modifiers, bow_modifiers, shield_modifiers) = save.modifiers()?;
@@ -251,7 +251,7 @@ mod tests {
         let dto = get_botw_state_impl(&app_state).unwrap();
 
         // Cross-check against a second, independently loaded instance of the same
-        // fixture calling the engine's own accessor directly — a real assertion that
+        // fixture calling the engine's own accessor directly, a real assertion that
         // the DTO faithfully mirrors `save-engine`, not just that the call didn't panic.
         let expected_rupees = match Save::detect(fixture_bytes()).unwrap() {
             Save::Botw(save) => save.rupees().unwrap(),

@@ -3,7 +3,7 @@ use crate::error::SaveError;
 
 pub const STRING64_SIZE: usize = 0x40;
 
-/// Reads a null-terminated ASCII string from a single fixed 0x40-byte block — TOTK's
+/// Reads a null-terminated ASCII string from a single fixed 0x40-byte block, TOTK's
 /// `String64` type. Simpler than BOTW's 8-byte-strided padded strings: no interleaved
 /// padding here, just one contiguous block.
 pub fn read_string64(buf: &SaveBuffer, offset: usize) -> String {

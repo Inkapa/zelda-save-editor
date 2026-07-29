@@ -179,7 +179,7 @@ impl BotwSave {
 
     /// Not present in every save version, hence `Option` rather than `Result`. The single
     /// read/write below is at a hash-verified offset, which `scan_offsets` already
-    /// guarantees is `offset + 4 <= len` — bounds-safe by construction, so a bounds
+    /// guarantees is `offset + 4 <= len`, which is bounds-safe by construction, so a bounds
     /// failure here would indicate a bug in `scan_offsets`, not untrusted input.
     pub fn motorcycle(&self) -> Option<bool> {
         self.offsets
@@ -313,10 +313,10 @@ impl BotwSave {
     }
 
     /// Pairs each item from `items()` with its display category (weapons/bows/shields/armor/
-    /// materials/food/key items), 1:1 in the same order — index `i` here is still the same
-    /// slot `set_item(i, ...)` writes to. For armor items, `BotwItem::quantity` is really a dye
+    /// materials/food/key items), 1:1 in the same order (index `i` here is still the same
+    /// slot `set_item(i, ...)` writes to). For armor items, `BotwItem::quantity` is really a dye
     /// color index rather than a count (same shared storage field, different meaning based on
-    /// category — see `items::categorize` doc); this crate doesn't split that into a separate
+    /// category, see `items::categorize` doc); this crate doesn't split that into a separate
     /// type, mirroring how the source reinterprets the one stored value per category at render
     /// time rather than storing it differently.
     pub fn items_with_category(&self) -> Result<Vec<(BotwItem, items::ItemCategory)>, SaveError> {
@@ -331,7 +331,7 @@ impl BotwSave {
     }
 
     /// Returns (weapon, bow, shield) modifier lists. Slot counts are derived by walking
-    /// the item list and tracking which contiguous category block is currently active —
+    /// the item list and tracking which contiguous category block is currently active,
     /// ported 1:1 from the upstream `search` state machine in `load()`.
     pub fn modifiers(&self) -> Result<(Vec<ItemModifier>, Vec<ItemModifier>, Vec<ItemModifier>), SaveError> {
         let items = self.items()?;
@@ -480,8 +480,8 @@ impl BotwSave {
 
     /// Marks every unfound korok as found. Returns how many were newly found. Also mirrors
     /// `unlockKoroks`'s two side effects: sets the `HiddenKorok_Complete` flag (always, not
-    /// gated on the count), and — only if an `Obj_KorokNuts` item already exists in the
-    /// inventory — bumps its quantity by the same count, so the pouch total stays consistent
+    /// gated on the count), and bumps its quantity by the same count if an `Obj_KorokNuts` item
+    /// already exists in the inventory, so the pouch total stays consistent
     /// with the newly-found seeds.
     pub fn unlock_all_koroks(&mut self) -> Result<usize, SaveError> {
         let count = completism::unlock_all_koroks(&mut self.buf)? as u32;
@@ -522,7 +522,7 @@ impl BotwSave {
     }
 
     /// Marks every unvisited location as visited. Returns how many were newly visited. Unlike
-    /// koroks/hinox/talus/molduga, there's no companion scalar counter to bump — the source's
+    /// koroks/hinox/talus/molduga, there's no companion scalar counter to bump, since the source's
     /// `visitAllLocations` doesn't have one either.
     pub fn unlock_all_locations(&mut self) -> Result<usize, SaveError> {
         completism::unlock_all_locations(&mut self.buf)

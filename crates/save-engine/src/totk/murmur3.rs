@@ -1,10 +1,10 @@
-//! MurmurHash3 x86_32 (seed 0) — the canonical Austin Appleby algorithm, ported from the
+//! MurmurHash3 x86_32 (seed 0), the canonical Austin Appleby algorithm, ported from the
 //! shape and magic constants in the real `zelda-totk` source's vendored
 //! `lib/murmurhash3js.min.js` (MIT licensed). Unlike the core slice's hashes (already literal
 //! `u32` constants in `zelda-totk.js`), Pouch item and horse field hashes are computed at
 //! runtime from name strings in the source (`zelda-totk.variables.js`'s `Variable` constructor
 //! calls `murmurHash3.x86.hash32(hashText)`), so this crate needs the actual algorithm rather
-//! than a list of pre-computed constants — see the design spec's Background for why, and for
+//! than a list of pre-computed constants. See the design spec's Background for why, and for
 //! the 3 independent cross-checks (already-shipped Rust constants, a community-published
 //! literal hash CSV, and live decoding of the real fixture) that verified this exact port.
 
@@ -57,7 +57,7 @@ mod tests {
     use super::*;
 
     // Cross-check 1: already-shipped literal hash constants in `totk::mod::HASHES`
-    // (crates/save-engine/src/totk/mod.rs) — these were taken directly from
+    // (crates/save-engine/src/totk/mod.rs). These were taken directly from
     // `zelda-totk.js`'s literal `Hashes` array and are independently known-correct.
     #[test]
     fn matches_already_shipped_pouch_valid_num_hashes() {
@@ -79,7 +79,7 @@ mod tests {
 
     // Cross-check 3: this hash, decoded live against the real fixture, resolves to an
     // address whose first 4 bytes (every armor slot's dye color in progress.sav) equal
-    // this exact value — i.e. "no dye applied", the default. See design spec.
+    // this exact value, i.e. "no dye applied", the default. See design spec.
     #[test]
     fn matches_live_fixture_decoded_dye_default() {
         assert_eq!(hash32("None"), 0xb6eede09);

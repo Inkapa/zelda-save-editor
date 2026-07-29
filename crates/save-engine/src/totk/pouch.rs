@@ -1,8 +1,8 @@
 //! Pouch item contents: weapons, bows, shields, armor, arrows, materials, food, key items, and
-//! Zonai devices (save-format prefix `Pouch.SpecialParts.*` — see design spec). Every property
+//! Zonai devices (save-format prefix `Pouch.SpecialParts.*`, see design spec). Every property
 //! is stored as a separate struct-of-arrays blob: `[u32 capacity][element_0][element_1]...`,
 //! resolved through the same pointer-hash mechanism as `SAVE_POS`/`SEQUENCE_CURRENT_BANC`
-//! (`totk::hashtable::scan_offsets`, unchanged) — the hash itself is computed via
+//! (`totk::hashtable::scan_offsets`, unchanged). The hash itself is computed via
 //! `totk::murmur3::hash32` from the field's name string, since (unlike the core slice's
 //! hashes) these aren't literal constants in the source. See the design spec's Background and
 //! "Field tables" section for every hash constant used below and how each was cross-checked.
@@ -47,7 +47,7 @@ pub(crate) fn write_i32_elem(
 ) -> Result<(), SaveError> {
     buf.write_i32(element_offset(array_addr, index, STRIDE_I32), value)
 }
-/// `Enum`-typed fields (modifier, dye color, ...) are raw u32 hashes — same stride as i32,
+/// `Enum`-typed fields (modifier, dye color, ...) are raw u32 hashes: same stride as i32,
 /// unsigned read/write, no interpretation (see design spec non-goals).
 pub(crate) fn read_u32_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<u32, SaveError> {
     buf.read_u32(element_offset(array_addr, index, STRIDE_I32))
@@ -61,14 +61,14 @@ pub(crate) fn write_u32_elem(
     buf.write_u32(element_offset(array_addr, index, STRIDE_I32), value)
 }
 
-/// Blanks (empties) the id field for `index`, marking a pouch slot unused — mirrors
+/// Blanks (empties) the id field for `index`, marking a pouch slot unused, mirroring
 /// `Pouch.prototype.save`'s "remove empty items" loop. Used by every category's `set_*`.
 fn clear_id_elem(buf: &mut SaveBuffer, array_addr: usize, index: usize) -> Result<(), SaveError> {
     write_string64_elem(buf, array_addr, index, "")
 }
 
 /// Bit-packed `BoolArray`: bit `index` lives at `array_addr + 4 + index/8`, bit position
-/// `index % 8` — mirrors `Variable._read`'s `BoolArray` branch (`tempFile.readU8(offset +
+/// `index % 8`, mirroring `Variable._read`'s `BoolArray` branch (`tempFile.readU8(offset +
 /// floor(bitIndex/8))`, `>> (bitIndex%8) & 1`). Shared by horses (`IsFamiliarityChecked`) and
 /// AutoBuild (`IsFavorite`).
 pub(crate) fn read_bool_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<bool, SaveError> {
@@ -121,7 +121,7 @@ pub struct WeaponEntry {
     pub record_extra_durability: i32,
 }
 
-/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.WEAPONS` —
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.WEAPONS`,
 /// hashed at call time via `murmur3::hash32` rather than stored as literal constants (see
 /// design spec Background: these are computed hashes in the source, unlike the core slice's).
 fn weapon_field_names() -> [(&'static str, &'static str); 8] {
@@ -218,8 +218,8 @@ pub struct BowEntry {
     pub modifier_value: i32,
 }
 
-/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.BOWS` —
-/// bows have no fuse fields (`Equipment.prototype.isFusable` excludes bows in the source).
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.BOWS`.
+/// Bows have no fuse fields (`Equipment.prototype.isFusable` excludes bows in the source).
 fn bow_field_names() -> [(&'static str, &'static str); 4] {
     [
         ("Pouch.Bow.Content.Name", "NAME"),
@@ -297,8 +297,8 @@ pub struct ShieldEntry {
     pub extra_durability: i32,
 }
 
-/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.SHIELDS` —
-/// shields are fusable (unlike bows) but have no `RecordExtraLife` field (unlike weapons): 7
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.SHIELDS`.
+/// Shields are fusable (unlike bows) but have no `RecordExtraLife` field (unlike weapons): 7
 /// entries vs weapons' 8.
 fn shield_field_names() -> [(&'static str, &'static str); 7] {
     [
@@ -387,8 +387,8 @@ pub struct ArmorEntry {
     pub dye_color: u32,
 }
 
-/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.ARMOR` —
-/// armor has no valid_num entry in the core slice's HASHES table; instead, we scan until empty id.
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.ARMOR`.
+/// Armor has no valid_num entry in the core slice's HASHES table; instead, we scan until empty id.
 fn armor_field_names() -> [(&'static str, &'static str); 2] {
     [
         ("Pouch.Armor.Content.Name", "NAME"),
@@ -451,8 +451,8 @@ pub struct ArrowEntry {
     pub quantity: i32,
 }
 
-/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.ARROW` —
-/// no valid_num entry in the core slice's HASHES table; scan until empty id (like Armor).
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.ARROW`.
+/// No valid_num entry in the core slice's HASHES table; scan until empty id (like Armor).
 fn arrow_field_names() -> [(&'static str, &'static str); 2] {
     [
         ("Pouch.Arrow.Content.Name", "NAME"),
@@ -514,8 +514,8 @@ pub struct MaterialEntry {
     pub use_order: i32,
 }
 
-/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.MATERIAL` —
-/// no valid_num entry; scan until empty id.
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.MATERIAL`.
+/// No valid_num entry; scan until empty id.
 fn material_field_names() -> [(&'static str, &'static str); 4] {
     [
         ("Pouch.Material.Content.Name", "NAME"),
@@ -585,13 +585,13 @@ pub fn write_materials(
 
 pub struct KeyItemEntry {
     pub id: String,
-    /// Legitimately `-1` for most (non-stackable) key items — that's "not applicable", not
+    /// Legitimately `-1` for most (non-stackable) key items. That's "not applicable", not
     /// an error; don't clamp or reject it.
     pub quantity: i32,
 }
 
-/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.KEYITEM` —
-/// no valid_num entry; scan until empty id.
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.KEYITEM`.
+/// No valid_num entry; scan until empty id.
 fn key_item_field_names() -> [(&'static str, &'static str); 2] {
     [
         ("Pouch.KeyItem.Content.Name", "NAME"),
@@ -655,8 +655,8 @@ pub struct DeviceEntry {
     pub use_order: i32,
 }
 
-/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.SPECIALPARTS`
-/// — the UI category label "devices" (Zonai devices) maps to save-format prefix
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.SPECIALPARTS`.
+/// The UI category label "devices" (Zonai devices) maps to save-format prefix
 /// `Pouch.SpecialParts.*`, not `Pouch.Devices.*` (confirmed against the real fixture: decodes
 /// real device ids like `SpObj_WindGenerator_Capsule_A_01`, see design spec). No valid_num;
 /// scan until empty id.
@@ -732,10 +732,10 @@ pub struct FoodEntry {
     pub recipe: [String; 5],
 }
 
-/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.FOOD` —
-/// no valid_num entry; scan until empty id. `MaterialName` (recipe) resolves through the same
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.FOOD`.
+/// No valid_num entry; scan until empty id. `MaterialName` (recipe) resolves through the same
 /// table as everything else, but addresses into it flat (`item_index * 5 + slot`) since it's one
-/// `item_count * 5`-element `String64Array` rather than a per-item array — see `read_recipe`.
+/// `item_count * 5`-element `String64Array` rather than a per-item array, see `read_recipe`.
 fn food_field_names() -> [(&'static str, &'static str); 8] {
     [
         ("Pouch.Food.Content.Name", "NAME"),

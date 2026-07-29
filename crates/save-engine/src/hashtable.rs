@@ -4,8 +4,8 @@ use crate::binary::SaveBuffer;
 
 /// Scans `buf` once for each `(hash, name)` pair in `hashes`, in order, and records the
 /// byte offset immediately after each match (where that property's value lives).
-/// `hashes` must be sorted in ascending hash order matching the file's own layout —
-/// the search cursor only ever moves forward.
+/// `hashes` must be sorted in ascending hash order matching the file's own layout,
+/// since the search cursor only ever moves forward.
 pub fn scan_offsets(buf: &SaveBuffer, hashes: &[(u32, &'static str)]) -> HashMap<&'static str, usize> {
     let mut offsets = HashMap::new();
     let mut start = 0x0c;
@@ -24,7 +24,7 @@ pub fn scan_offsets(buf: &SaveBuffer, hashes: &[(u32, &'static str)]) -> HashMap
 }
 
 /// Builds a hash -> value-offset map for *every* entry in the hash table, not just a known
-/// subset — mirrors `_searchHash`'s "scan the whole table from the start" lookup used for
+/// subset, mirroring `_searchHash`'s "scan the whole table from the start" lookup used for
 /// hashes outside the small fixed `Hashes` list (completionism flags: koroks, defeated
 /// hinox/talus/molduga, locations). Unlike `scan_offsets`, entries don't need to be sorted or
 /// requested up front: build once, then look up as many arbitrary hashes as needed.

@@ -1,10 +1,10 @@
 //! Completionism counts: shrines, koroks, defeated hinox/talus/molduga, and visited
-//! locations. Read-only — the source tool (`zelda-totk.completism.js`) only ever displays
+//! locations. Read-only: the source tool (`zelda-totk.completism.js`) only ever displays
 //! these counts (plus optional map pins, out of scope here); there's no mass-unlock/write
 //! feature to mirror, unlike BOTW's `unlock_all_*` functions.
 //!
 //! Field hashes here are literal pre-computed constants (ported directly from
-//! `CompletismHashes`), not name-derived like pouch/horse fields — so no `murmur3::hash32` call
+//! `CompletismHashes`), not name-derived like pouch/horse fields, so no `murmur3::hash32` call
 //! is needed to resolve them, only to compute the expected *value* for enum-typed fields
 //! (shrine/korok status, stored as a hash of the string state name, e.g. `hash("Clear")`).
 
@@ -186,12 +186,12 @@ const BOSS_MOLDUGA_HASHES: [u32; 4] = [
     0x64eb3a85, 0x4c446633, 0x362e8f22, 0xa884f7b5,
 ];
 
-/// Counts how many *distinct* locations in `hashes` are present and currently hold `expected`
-/// — the shared shape behind every count function below (`_count(booleanHashes, valueTrue)` in
-/// the source, always called with a fixed default `valueTrue` per category).
+/// Counts how many *distinct* locations in `hashes` are present and currently hold `expected`.
+/// This is the shared shape behind every count function below (`_count(booleanHashes, valueTrue)`
+/// in the source, always called with a fixed default `valueTrue` per category).
 ///
 /// `LOCATION_VISITED_HASHES` has 2 entries that repeat an earlier hash value (378 array
-/// entries, 376 distinct locations) — the source's own `_count` iterates the raw array and
+/// entries, 376 distinct locations). The source's own `_count` iterates the raw array and
 /// would count a repeated, already-visited location twice, inflating the true total. Counting
 /// distinct offsets here (via `resolve_present_hashes`'s deduplicated map) fixes that rather
 /// than reproducing it.
@@ -225,7 +225,7 @@ pub fn koroks_hidden(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, S
     count_matching(buf, hash_table_end, &KOROK_HIDDEN_HASHES, 1)
 }
 
-/// `KOROKS_CARRY` holds a hash of `NotClear`/`Clear` — "delivered to Hestu" means `Clear`.
+/// `KOROKS_CARRY` holds a hash of `NotClear`/`Clear`. "Delivered to Hestu" means `Clear`.
 pub fn koroks_carried(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
     count_matching(buf, hash_table_end, &KOROK_CARRY_HASHES, hash32("Clear"))
 }

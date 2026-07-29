@@ -9,7 +9,7 @@ use crate::state::AppState;
 use save_engine::Save;
 
 /// Detects the save format from raw bytes and builds the DTO to return to the frontend,
-/// without touching `AppState` — the caller is responsible for storing the resulting
+/// without touching `AppState`. The caller is responsible for storing the resulting
 /// `Save` and file path. Pure and Tauri-free: directly unit-testable against real fixtures.
 pub fn detect_and_build(bytes: Vec<u8>) -> Result<(Save, OpenResult), ShellError> {
     let save = Save::detect(bytes)?;
@@ -65,14 +65,14 @@ pub fn save_as(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<(), 
 }
 
 /// Serializes the currently-loaded save, writes it to `path`, then re-detects the freshly
-/// written bytes to put a newly-constructed `Save` back into `AppState` — `Save::to_bytes`
+/// written bytes to put a newly-constructed `Save` back into `AppState`. `Save::to_bytes`
 /// consumes `self`, so this is how editing continues to work after a save without changing
 /// the engine's already-shipped signature (see Global Constraints).
 fn write_current_save(app_state: &AppState, path: &PathBuf) -> Result<(), ShellError> {
     let save = app_state.save.lock().unwrap().take().ok_or_else(ShellError::no_save_loaded)?;
     let bytes = save.to_bytes();
     let write_result = std::fs::write(path, &bytes);
-    // Re-detect and restore state before propagating any write error — otherwise a disk-write
+    // Re-detect and restore state before propagating any write error, otherwise a disk-write
     // failure would permanently empty AppState.save, discarding in-memory edits until the user
     // manually reopens the file.
     let (reloaded, _) = detect_and_build(bytes)?;
@@ -136,7 +136,7 @@ mod tests {
             save: std::sync::Mutex::new(Some(save)),
             path: std::sync::Mutex::new(None),
         };
-        // A path whose parent directory doesn't exist — std::fs::write fails reliably here.
+        // A path whose parent directory doesn't exist. std::fs::write fails reliably here.
         let bad_path = std::env::temp_dir()
             .join("zelda_shell_nonexistent_dir_xyz")
             .join("test.sav");

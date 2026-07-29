@@ -1,5 +1,5 @@
 //! Individual completionism flags: koroks, defeated hinox/talus/molduga, and visited
-//! locations. The source tool only ever exposes these in bulk ("unlock all koroks" etc.) —
+//! locations. The source tool only ever exposes these in bulk ("unlock all koroks" etc.), and
 //! there's no per-entity read/toggle UI for ~1180 individual flags, so this module doesn't add
 //! one either. Each flag lives at its own hash, resolved via `crate::hashtable::build_full_index`
 //! (mirrors `_searchHash`, a full-table scan) rather than the small fixed 33-hash core table,
@@ -125,12 +125,12 @@ const LOCATION_HASHES: [u32; 187] = [
     0xc0e8a6cb, 0x3f3d559e, 0xff6f7ae4, 0xea6e852b, 0x2cd6f581, 0x5c7246c7, 0x4a46741a,
 ];
 
-/// `HiddenKorok_Complete` — set once all koroks are found (hardcoded as a literal hash in the
+/// `HiddenKorok_Complete`: set once all koroks are found (hardcoded as a literal hash in the
 /// source's `unlockKoroks`, not part of `BOTW_Data`'s tables).
 const HIDDEN_KOROK_COMPLETE_HASH: u32 = 0x64622a86;
 
 /// Sets every currently-zero flag in `hashes` to 1, returns how many were newly set.
-/// Silently skips any hash not present in `index` — mirrors `setBooleans`'s
+/// Silently skips any hash not present in `index`, mirroring `setBooleans`'s
 /// `if(offset && !tempFile.readU32(offset+4))` guard (some hashes may be absent on
 /// certain save versions).
 fn unlock_all(buf: &mut SaveBuffer, index: &HashMap<u32, usize>, hashes: &[u32]) -> Result<usize, SaveError> {
@@ -147,7 +147,7 @@ fn unlock_all(buf: &mut SaveBuffer, index: &HashMap<u32, usize>, hashes: &[u32])
 }
 
 /// Sets every unfound korok flag, plus the `HiddenKorok_Complete` completion flag (always
-/// written, regardless of how many were newly found) — mirrors `unlockKoroks` exactly, minus
+/// written, regardless of how many were newly found), mirroring `unlockKoroks` exactly, minus
 /// the Obj_KorokNuts inventory bump, which is the caller's job (`BotwSave::unlock_all_koroks`)
 /// since it needs `items()`/`set_item`, not just flag storage.
 pub(crate) fn unlock_all_koroks(buf: &mut SaveBuffer) -> Result<usize, SaveError> {
@@ -174,7 +174,7 @@ pub(crate) fn unlock_all_defeated_molduga(buf: &mut SaveBuffer) -> Result<usize,
     unlock_all(buf, &index, &DEFEATED_MOLDUGA_HASHES)
 }
 
-/// No companion scalar counter exists for locations (unlike koroks/hinox/talus/molduga) — the
+/// No companion scalar counter exists for locations (unlike koroks/hinox/talus/molduga):
 /// source's `visitAllLocations` calls `setBooleans` with no `counterElement` argument.
 pub(crate) fn unlock_all_locations(buf: &mut SaveBuffer) -> Result<usize, SaveError> {
     let index = build_full_index(buf);

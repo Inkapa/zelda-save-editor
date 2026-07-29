@@ -15,7 +15,7 @@ use crate::error::SaveError;
 /// Hash -> (field name, is_pointer) table, ported from `zelda-totk.js`'s `Hashes` array,
 /// restricted to the 11 hashes this crate exposes (see the design spec's non-goals for
 /// what's deferred: MapData icons, AutoBuilder, and everything else in the source's
-/// 18-entry table). Unlike BOTW's `HASHES`, this table has no ordering requirement —
+/// 18-entry table). Unlike BOTW's `HASHES`, this table has no ordering requirement, since
 /// `hashtable::scan_offsets` looks each hash up in a map, not via a moving cursor.
 const HASHES: [(u32, &str, bool); 11] = [
     (0xfbe01da1, "MAX_LIFE", false),
@@ -97,7 +97,7 @@ impl TotkSave {
     }
 
     /// The source itself marks this hash's meaning as unconfirmed ("unknown key" in its
-    /// own comment) — exposed under its source name rather than asserting false
+    /// own comment). Exposed under its source name rather than asserting false
     /// confidence about what it represents.
     pub fn playtime(&self) -> Result<u32, SaveError> {
         self.buf.read_u32(self.offset("PLAYTIME")?)

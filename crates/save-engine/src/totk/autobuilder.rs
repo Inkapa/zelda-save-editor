@@ -1,5 +1,5 @@
 //! AutoBuild schematics ("Draft" slots): saved Ultrahand structures the player can recall from
-//! the in-game AutoBuild menu. Distinct addressing shape from everything else in this crate —
+//! the in-game AutoBuild menu. Distinct addressing shape from everything else in this crate:
 //! `CombinedActorInfo` is a variable-length-per-element binary array
 //! (`[u32 capacity][len_0][bytes_0][len_1][bytes_1]...`), not a fixed stride like every other
 //! struct-of-arrays field (pouch/horse). `Index`/`CombinedActorInfo`/`CameraPos`/`CameraAt`
@@ -18,7 +18,7 @@ use crate::totk::pouch::{read_bool_elem, write_bool_elem};
 pub struct AutoBuildEntry {
     /// The in-game schematic slot id this entry occupies, or `-1` for an unused Draft slot.
     pub index: i32,
-    /// Raw `CombinedActorInfo` blob — opaque binary game data, not interpreted by this crate.
+    /// Raw `CombinedActorInfo` blob, opaque binary game data, not interpreted by this crate.
     pub combined_actor_info: Vec<u8>,
     pub camera_pos: (f32, f32, f32),
     pub camera_at: (f32, f32, f32),
@@ -56,7 +56,7 @@ fn write_vector3f_elem(
 }
 
 /// Reads element `index` out of a `[u32 capacity][len_0][bytes_0]...` variable-length binary
-/// array — mirrors `readBinaryArray`. Every entry's length must be walked from the start since
+/// array, mirroring `readBinaryArray`. Every entry's length must be walked from the start since
 /// there's no fixed stride.
 fn read_binary_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<Vec<u8>, SaveError> {
     let capacity = buf.read_u32(array_addr)? as usize;
@@ -75,7 +75,7 @@ fn read_binary_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result
     unreachable!("index already bounds-checked against capacity above")
 }
 
-/// Overwrites element `index`'s bytes in place — mirrors `writeBinary`, which never resizes an
+/// Overwrites element `index`'s bytes in place, mirroring `writeBinary`, which never resizes an
 /// entry, only overwrites its existing content. Unlike the source (which writes `data` at the
 /// stored offset regardless of length, silently corrupting the next entry's header if `data` is
 /// longer than the existing slot, or leaving stale trailing bytes if shorter), this rejects a
@@ -122,7 +122,7 @@ pub fn read_autobuilds(buf: &SaveBuffer, hash_table_end: usize) -> Result<Vec<Au
     Ok(entries)
 }
 
-/// Writes back exactly `capacity` entries — unlike pouch/horse categories, AutoBuild's Draft
+/// Writes back exactly `capacity` entries. Unlike pouch/horse categories, AutoBuild's Draft
 /// array has no "unused slot" convention this crate manages (an entry's own `index` field is
 /// the source's signal for "unused", typically `-1`); every slot is always written, none are
 /// blanked. `entries.len()` must equal the slot's fixed capacity exactly.

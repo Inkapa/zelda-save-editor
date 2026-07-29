@@ -38,7 +38,7 @@ fn editing_rupees_only_touches_the_rupee_field() {
 
     assert_eq!(output.len(), original.len());
     // Rupees are usually small, so `+500` may only flip the low 1-2 bytes rather than
-    // all 4 — assert the edit is confined to a single 4-byte window, not an exact count.
+    // all 4, so assert the edit is confined to a single 4-byte window, not an exact count.
     let diff_positions: Vec<usize> = original
         .iter()
         .zip(output.iter())

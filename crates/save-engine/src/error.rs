@@ -6,7 +6,7 @@ pub enum SaveError {
     MissingField(&'static str),
     IndexOutOfRange { index: usize, max: usize },
     Truncated { offset: usize, len: usize },
-    /// A write to a fixed-size slot was given data of the wrong length — currently only
+    /// A write to a fixed-size slot was given data of the wrong length. Currently only
     /// AutoBuild's `CombinedActorInfo` binary blob, whose stored per-slot length is never
     /// resized (matching the source's `writeBinary`), so writing the wrong size would either
     /// leave stale trailing bytes or overwrite the start of the next slot's length header.

@@ -5,7 +5,7 @@ pub const STRING64_SIZE: usize = 0x80;
 
 /// Reads `groups` groups of up to 4 ASCII characters, 8 bytes apart, mirroring
 /// `_readString`. Each group stops early at a null byte but does not affect later
-/// groups — matching the upstream behavior exactly.
+/// groups, matching the upstream behavior exactly.
 pub fn read_padded_string(buf: &SaveBuffer, offset: usize, groups: usize) -> Result<String, SaveError> {
     let mut out = String::new();
     for i in 0..groups {

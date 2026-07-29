@@ -1,4 +1,4 @@
-//! Owned horses (save-format prefix `OwnedHorseList.*` — a separate top-level hash namespace,
+//! Owned horses (save-format prefix `OwnedHorseList.*`, a separate top-level hash namespace,
 //! NOT `Pouch.*`, despite the conceptually similar struct-of-arrays shape; see design spec
 //! Background for how this was confirmed against the real fixture). Resolved through the same
 //! `totk::hashtable::scan_offsets` mechanism as everything else in this crate, with field hashes
@@ -6,7 +6,7 @@
 //!
 //! Reuses `pouch.rs`'s generic struct-of-arrays helpers (`array_capacity`, `element_offset`,
 //! `resolve_category`, the `_elem` readers/writers) since horses share the same
-//! `[u32 capacity][element_0][element_1]...` layout — only the stride/encoding differs for three
+//! `[u32 capacity][element_0][element_1]...` layout. Only the stride/encoding differs for three
 //! fields (bit-packed bool, `u64`, `WString16`), handled by the bespoke helpers below.
 
 use crate::binary::SaveBuffer;
@@ -18,7 +18,7 @@ use crate::totk::pouch::{
 };
 use crate::totk::strings;
 
-/// `OwnedHorseList.UidHash` is a `UInt64Array` — 8-byte stride, not 4.
+/// `OwnedHorseList.UidHash` is a `UInt64Array`: 8-byte stride, not 4.
 fn read_u64_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<u64, SaveError> {
     buf.read_u64(array_addr + 4 + index * 8)
 }
@@ -31,7 +31,7 @@ fn write_u64_elem(
     buf.write_u64(array_addr + 4 + index * 8, value)
 }
 
-/// `OwnedHorseList.Name` is a `WString16Array` — 0x20-byte stride, not 0x40 (String64's stride).
+/// `OwnedHorseList.Name` is a `WString16Array`: 0x20-byte stride, not 0x40 (String64's stride).
 fn read_wstring16_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<String, SaveError> {
     strings::read_wstring16(buf, array_addr + 4 + index * 0x20)
 }
@@ -44,7 +44,7 @@ fn write_wstring16_elem(
     strings::write_wstring16(buf, array_addr + 4 + index * 0x20, value)
 }
 
-/// `Familiarity` is a `FloatArray` — same 4-byte stride as `i32`/`u32`, `f32` encoding.
+/// `Familiarity` is a `FloatArray`: same 4-byte stride as `i32`/`u32`, `f32` encoding.
 fn read_f32_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<f32, SaveError> {
     buf.read_f32(element_offset(array_addr, index, STRIDE_I32))
 }
@@ -83,7 +83,7 @@ pub struct HorseEntry {
     pub icon_hair_secondary_color: (u32, u32, u32),
 }
 
-/// Field names exactly as they appear in the source's `OwnedHorseList.*` hash prefix — hashed at
+/// Field names exactly as they appear in the source's `OwnedHorseList.*` hash prefix, hashed at
 /// call time via `murmur3::hash32` (see design spec's Horses field table for every hash
 /// constant this was cross-checked against).
 fn horse_field_names() -> [(&'static str, &'static str); 33] {
@@ -124,7 +124,7 @@ fn horse_field_names() -> [(&'static str, &'static str); 33] {
     ]
 }
 
-/// Horses have no `*_valid_num` scalar in the core slice's `HASHES` table — scan until `id`
+/// Horses have no `*_valid_num` scalar in the core slice's `HASHES` table, so scan until `id`
 /// (`ActorName`) is empty, same as Armor/Arrows/Materials/Food/Devices.
 pub fn read_horses(buf: &SaveBuffer, hash_table_end: usize) -> Result<Vec<HorseEntry>, SaveError> {
     let offsets = resolve_category(buf, hash_table_end, &horse_field_names())?;

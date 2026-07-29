@@ -81,7 +81,7 @@ impl SaveBuffer {
         self.write_u32(offset, val as u32)
     }
 
-    /// Reads a 64-bit value as two consecutive 32-bit reads, low word first — mirrors the
+    /// Reads a 64-bit value as two consecutive 32-bit reads, low word first, mirroring the
     /// source's `Variable.joinUInt64(readU32(o), readU32(o+4))`. TOTK is the only user of this
     /// today (horse amiibo UID); it's placed here rather than in `totk/` because it's a generic
     /// buffer primitive, same as `read_f32`.
@@ -96,7 +96,7 @@ impl SaveBuffer {
         self.write_u32(offset + 4, (val >> 32) as u32)
     }
 
-    /// Reads `len` raw bytes starting at `offset` — used for variable-length binary blobs
+    /// Reads `len` raw bytes starting at `offset`, used for variable-length binary blobs
     /// (TOTK AutoBuild's `CombinedActorInfo`), unlike every fixed-width primitive above.
     pub fn read_bytes(&self, offset: usize, len: usize) -> Result<Vec<u8>, SaveError> {
         self.check_bounds(offset, len)?;

@@ -1,6 +1,6 @@
 //! Item categorization: which of the 7 display categories (weapons/bows/shields/armor/
 //! materials/food/key items) a given item id belongs to. BOTW stores every inventory item in
-//! one flat array with no per-category storage split — categorization is purely a function of
+//! one flat array with no per-category storage split, so categorization is purely a function of
 //! the item's name id, exactly mirroring the source's `_getItemCategory` (which looks the id up
 //! in `BOTW_Data.Translations`, a set of per-category id->display-name dictionaries; only the id
 //! membership is ported here, not the display names, which are a UI concern).
@@ -9,7 +9,7 @@
 //! (already used by this module's sibling `classify()` in `botw/mod.rs` for modifier-slot
 //! counting); armor/materials/food don't reduce to a prefix rule (materials and food both use
 //! `Item_*` ids), so those 3 categories are ported as literal id sets. Key items are the
-//! source's `other` bucket — its fallback (anything not in another category) — so no id set is
+//! source's `other` bucket, its fallback for anything not in another category, so no id set is
 //! needed for it.
 
 const WEAPON_IDS: [&str; 132] = [
@@ -166,7 +166,7 @@ pub enum ItemCategory {
 
 /// Mirrors `_getItemCategory`: membership in exactly one of the 7 id sets, checked in the same
 /// order as the source's `Translations` table, falling back to `KeyItem` (the source's `other`
-/// bucket) for anything not found — e.g. a modded save with an unrecognized item id.
+/// bucket) for anything not found, e.g. a modded save with an unrecognized item id.
 pub fn categorize(name: &str) -> ItemCategory {
     if WEAPON_IDS.contains(&name) {
         ItemCategory::Weapon

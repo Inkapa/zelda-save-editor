@@ -4,7 +4,7 @@ A unified save editor for *The Legend of Zelda: Breath of the Wild* and *Tears o
 built as a Rust save-parsing core with a Tauri desktop shell.
 
 > **Status: early development.** The save-format engine and its desktop IPC wiring are functional
-> and tested against real save files, but no editor UI has been built yet — see
+> and tested against real save files, but no editor UI has been built yet. See
 > [Status & roadmap](#status--roadmap) below.
 
 ## Features
@@ -66,7 +66,7 @@ The save-format core is complete for both games' most commonly edited data (see 
 and every shipped engine capability is wired through to the Tauri IPC layer with a typed
 command per read/write operation. What's still ahead:
 
-- Editor UI — the frontend currently has no real screens, only the IPC scaffolding
+- Editor UI: the frontend currently has no real screens, only the IPC scaffolding
 - A visual design pass
 - Responsive layout across desktop and mobile form factors
 - Packaging and release automation (installers, Android APK/AAB, CI)
@@ -74,8 +74,8 @@ command per read/write operation. What's still ahead:
 
 ## Credits
 
-The BOTW and TOTK save formats implemented here — hash tables, field offsets, and encoding
-details — were reverse-engineered by studying
+The BOTW and TOTK save formats implemented here (hash tables, field offsets, and encoding
+details) were reverse-engineered by studying
 [marcrobledo/savegame-editors](https://github.com/marcrobledo/savegame-editors) (MIT licensed),
 whose browser-based `zelda-botw` and `zelda-totk` tools were the original prior art for editing
 these save files. This project is an independent Rust reimplementation built on top of that
@@ -88,4 +88,4 @@ and educational use; always keep a backup of your save data before editing it.
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+MIT. See [LICENSE](LICENSE).
