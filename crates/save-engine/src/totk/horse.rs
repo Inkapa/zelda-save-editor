@@ -88,10 +88,10 @@ pub struct HorseEntry {
     pub rein: u32,
     pub bond: f32,
     pub bond_checked: bool,
-    pub toughness: i32,
-    pub speed: i32,
-    pub charge_num: i32,
-    pub horse_power: i32,
+    pub stats_strength: i32,
+    pub stats_speed: i32,
+    pub stats_stamina: i32,
+    pub stats_pull: i32,
     pub horse_type: i32,
     pub color_type: i32,
     pub foot_type: i32,
@@ -118,10 +118,10 @@ fn horse_field_names() -> [(&'static str, &'static str); 33] {
         ("OwnedHorseList.Rein", "REIN"),
         ("OwnedHorseList.Familiarity", "BOND"),
         ("OwnedHorseList.IsFamiliarityChecked", "BOND_CHECKED"),
-        ("OwnedHorseList.Toughness", "TOUGHNESS"),
-        ("OwnedHorseList.Speed", "SPEED"),
-        ("OwnedHorseList.ChargeNum", "CHARGE_NUM"),
-        ("OwnedHorseList.HorsePower", "HORSE_POWER"),
+        ("OwnedHorseList.Toughness", "STATS_STRENGTH"),
+        ("OwnedHorseList.Speed", "STATS_SPEED"),
+        ("OwnedHorseList.ChargeNum", "STATS_STAMINA"),
+        ("OwnedHorseList.HorsePower", "STATS_PULL"),
         ("OwnedHorseList.HorseType", "HORSE_TYPE"),
         ("OwnedHorseList.ColorType", "COLOR_TYPE"),
         ("OwnedHorseList.FootType", "FOOT_TYPE"),
@@ -158,10 +158,10 @@ pub fn read_horses(buf: &SaveBuffer, hash_table_end: usize) -> Result<Vec<HorseE
     let rein_addr = offsets["REIN"];
     let bond_addr = offsets["BOND"];
     let bond_checked_addr = offsets["BOND_CHECKED"];
-    let toughness_addr = offsets["TOUGHNESS"];
-    let speed_addr = offsets["SPEED"];
-    let charge_num_addr = offsets["CHARGE_NUM"];
-    let horse_power_addr = offsets["HORSE_POWER"];
+    let stats_strength_addr = offsets["STATS_STRENGTH"];
+    let stats_speed_addr = offsets["STATS_SPEED"];
+    let stats_stamina_addr = offsets["STATS_STAMINA"];
+    let stats_pull_addr = offsets["STATS_PULL"];
     let horse_type_addr = offsets["HORSE_TYPE"];
     let color_type_addr = offsets["COLOR_TYPE"];
     let foot_type_addr = offsets["FOOT_TYPE"];
@@ -200,10 +200,10 @@ pub fn read_horses(buf: &SaveBuffer, hash_table_end: usize) -> Result<Vec<HorseE
             rein: read_u32_elem(buf, rein_addr, i)?,
             bond: read_f32_elem(buf, bond_addr, i)?,
             bond_checked: read_bool_elem(buf, bond_checked_addr, i)?,
-            toughness: read_i32_elem(buf, toughness_addr, i)?,
-            speed: read_i32_elem(buf, speed_addr, i)?,
-            charge_num: read_i32_elem(buf, charge_num_addr, i)?,
-            horse_power: read_i32_elem(buf, horse_power_addr, i)?,
+            stats_strength: read_i32_elem(buf, stats_strength_addr, i)?,
+            stats_speed: read_i32_elem(buf, stats_speed_addr, i)?,
+            stats_stamina: read_i32_elem(buf, stats_stamina_addr, i)?,
+            stats_pull: read_i32_elem(buf, stats_pull_addr, i)?,
             horse_type: read_i32_elem(buf, horse_type_addr, i)?,
             color_type: read_i32_elem(buf, color_type_addr, i)?,
             foot_type: read_i32_elem(buf, foot_type_addr, i)?,
@@ -254,10 +254,10 @@ pub fn write_horses(
     let rein_addr = offsets["REIN"];
     let bond_addr = offsets["BOND"];
     let bond_checked_addr = offsets["BOND_CHECKED"];
-    let toughness_addr = offsets["TOUGHNESS"];
-    let speed_addr = offsets["SPEED"];
-    let charge_num_addr = offsets["CHARGE_NUM"];
-    let horse_power_addr = offsets["HORSE_POWER"];
+    let stats_strength_addr = offsets["STATS_STRENGTH"];
+    let stats_speed_addr = offsets["STATS_SPEED"];
+    let stats_stamina_addr = offsets["STATS_STAMINA"];
+    let stats_pull_addr = offsets["STATS_PULL"];
     let horse_type_addr = offsets["HORSE_TYPE"];
     let color_type_addr = offsets["COLOR_TYPE"];
     let foot_type_addr = offsets["FOOT_TYPE"];
@@ -290,10 +290,10 @@ pub fn write_horses(
         write_u32_elem(buf, rein_addr, i, entry.rein)?;
         write_f32_elem(buf, bond_addr, i, entry.bond)?;
         write_bool_elem(buf, bond_checked_addr, i, entry.bond_checked)?;
-        write_i32_elem(buf, toughness_addr, i, entry.toughness)?;
-        write_i32_elem(buf, speed_addr, i, entry.speed)?;
-        write_i32_elem(buf, charge_num_addr, i, entry.charge_num)?;
-        write_i32_elem(buf, horse_power_addr, i, entry.horse_power)?;
+        write_i32_elem(buf, stats_strength_addr, i, entry.stats_strength)?;
+        write_i32_elem(buf, stats_speed_addr, i, entry.stats_speed)?;
+        write_i32_elem(buf, stats_stamina_addr, i, entry.stats_stamina)?;
+        write_i32_elem(buf, stats_pull_addr, i, entry.stats_pull)?;
         write_i32_elem(buf, horse_type_addr, i, entry.horse_type)?;
         write_i32_elem(buf, color_type_addr, i, entry.color_type)?;
         write_i32_elem(buf, foot_type_addr, i, entry.foot_type)?;
