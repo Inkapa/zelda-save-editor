@@ -10,6 +10,11 @@ yarn-error.log*
 .pnp.js
 
 .vscode/*
+.idea/*
+!.idea/.gitignore
 
 /target
 .superpowers/
+
+.DS_Store
+Thumbs.db
