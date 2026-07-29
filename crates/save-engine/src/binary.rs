@@ -109,6 +109,18 @@ impl SaveBuffer {
         Ok(())
     }
 
+    /// Grows the buffer by inserting `additional_bytes` zero bytes at `offset`, shifting
+    /// everything at or after `offset` later. The only buffer-growing operation in this crate;
+    /// every other method assumes a fixed-size buffer, and continues to work unchanged
+    /// afterward since `check_bounds` reads `self.data.len()` fresh on every call.
+    pub fn insert_bytes(&mut self, offset: usize, additional_bytes: usize) -> Result<(), SaveError> {
+        if offset > self.data.len() {
+            return Err(SaveError::Truncated { offset, len: self.data.len() });
+        }
+        self.data.splice(offset..offset, std::iter::repeat(0u8).take(additional_bytes));
+        Ok(())
+    }
+
     /// Mirrors the source project's `MarcFile.readString`: consecutive non-null bytes
     /// starting at `offset`, stopping at the first null byte, `max_len`, or the end of
     /// the buffer.
@@ -210,5 +222,26 @@ mod tests {
         assert_eq!(buf.read_u32(0).unwrap(), 0x55667788); // low word
         assert_eq!(buf.read_u32(4).unwrap(), 0x11223344); // high word
         assert_eq!(buf.read_u64(0).unwrap(), 0x1122334455667788);
+    }
+
+    #[test]
+    fn insert_bytes_grows_buffer_and_shifts_trailing_data() {
+        let mut buf = SaveBuffer::new(vec![1, 2, 3, 4, 5]);
+        buf.insert_bytes(2, 3).unwrap();
+        assert_eq!(buf.into_bytes(), vec![1, 2, 0, 0, 0, 3, 4, 5]);
+    }
+
+    #[test]
+    fn insert_bytes_at_end_appends_zeros() {
+        let mut buf = SaveBuffer::new(vec![1, 2, 3]);
+        buf.insert_bytes(3, 2).unwrap();
+        assert_eq!(buf.into_bytes(), vec![1, 2, 3, 0, 0]);
+    }
+
+    #[test]
+    fn insert_bytes_out_of_bounds_offset_returns_truncated_error() {
+        let mut buf = SaveBuffer::new(vec![1, 2, 3]);
+        let result = buf.insert_bytes(10, 4);
+        assert_eq!(result, Err(SaveError::Truncated { offset: 10, len: 3 }));
     }
 }
