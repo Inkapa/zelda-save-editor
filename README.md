@@ -78,10 +78,8 @@ command per read/write operation. What's still ahead:
 ## Credits
 
 The BOTW and TOTK save formats implemented here (hash tables, field offsets, and encoding
-details) were reverse-engineered by studying
-[marcrobledo/savegame-editors](https://github.com/marcrobledo/savegame-editors) (MIT licensed),
-whose browser-based `zelda-botw` and `zelda-totk` tools were the original prior art for editing
-these save files. This project is an independent Rust reimplementation built on top of that
+details) were taken from
+[marcrobledo/savegame-editors](https://github.com/marcrobledo/savegame-editors) (MIT licensed). This project is an independent Rust reimplementation built on top of that
 research, not a fork of its code.
 
 ## Disclaimer
