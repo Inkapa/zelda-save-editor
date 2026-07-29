@@ -3,8 +3,9 @@
 A unified save editor for *The Legend of Zelda: Breath of the Wild* and *Tears of the Kingdom*,
 built as a Rust save-parsing core with a Tauri desktop shell.
 
-> **Status: early development.** The save-format engine and its desktop IPC wiring are functional
-> and tested against real save files, but no editor UI has been built yet. See
+> **Status: early development.** The save-format engine and IPC wiring are functional and tested
+> against real save files, and a plain, unstyled editor UI can open, edit, and save both games,
+> but it doesn't yet cover every field the backend exposes. See
 > [Status & roadmap](#status--roadmap) below.
 
 ## Features
@@ -33,7 +34,8 @@ crates/save-engine/   headless Rust library: binary parsing, hash-table resoluti
                        read/write accessors for both games' save formats. No UI dependencies.
 src-tauri/             Tauri v2 backend: converts save-engine's types to serializable DTOs and
                        exposes them as IPC commands, plus native file open/save dialogs.
-src/                    React + TypeScript frontend (Vite). Not yet built out beyond scaffolding.
+src/                    React + TypeScript frontend (Vite). Plain, unstyled forms and tables,
+                       no design pass yet.
 ```
 
 Everything under `crates/save-engine` builds and tests independently of Tauri, so the parsing
@@ -66,8 +68,9 @@ The save-format core is complete for both games' most commonly edited data (see 
 and every shipped engine capability is wired through to the Tauri IPC layer with a typed
 command per read/write operation. What's still ahead:
 
-- Editor UI: the frontend currently has no real screens, only the IPC scaffolding
-- A visual design pass
+- A visual design pass; the current UI is plain unstyled HTML forms and tables
+- UI coverage for TOTK's pouch/horse/AutoBuild data and both games' completionism actions, which
+  are wired end to end in the backend but not yet exposed in the frontend
 - Responsive layout across desktop and mobile form factors
 - Packaging and release automation (installers, Android APK/AAB, CI)
 - BOTW Master Mode, TOTK map icons/pins, and a handful of other lower-priority save fields

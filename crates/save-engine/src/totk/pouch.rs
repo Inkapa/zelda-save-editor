@@ -1,11 +1,10 @@
 //! Pouch item contents: weapons, bows, shields, armor, arrows, materials, food, key items, and
-//! Zonai devices (save-format prefix `Pouch.SpecialParts.*`, see design spec). Every property
+//! Zonai devices (save-format prefix `Pouch.SpecialParts.*`). Every property
 //! is stored as a separate struct-of-arrays blob: `[u32 capacity][element_0][element_1]...`,
 //! resolved through the same pointer-hash mechanism as `SAVE_POS`/`SEQUENCE_CURRENT_BANC`
 //! (`totk::hashtable::scan_offsets`, unchanged). The hash itself is computed via
 //! `totk::murmur3::hash32` from the field's name string, since (unlike the core slice's
-//! hashes) these aren't literal constants in the source. See the design spec's Background and
-//! "Field tables" section for every hash constant used below and how each was cross-checked.
+//! hashes) these aren't literal constants in the source.
 
 use crate::binary::SaveBuffer;
 use crate::error::SaveError;
@@ -48,7 +47,7 @@ pub(crate) fn write_i32_elem(
     buf.write_i32(element_offset(array_addr, index, STRIDE_I32), value)
 }
 /// `Enum`-typed fields (modifier, dye color, ...) are raw u32 hashes: same stride as i32,
-/// unsigned read/write, no interpretation (see design spec non-goals).
+/// unsigned read/write, no interpretation.
 pub(crate) fn read_u32_elem(buf: &SaveBuffer, array_addr: usize, index: usize) -> Result<u32, SaveError> {
     buf.read_u32(element_offset(array_addr, index, STRIDE_I32))
 }
@@ -122,8 +121,8 @@ pub struct WeaponEntry {
 }
 
 /// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.WEAPONS`,
-/// hashed at call time via `murmur3::hash32` rather than stored as literal constants (see
-/// design spec Background: these are computed hashes in the source, unlike the core slice's).
+/// hashed at call time via `murmur3::hash32` rather than stored as literal constants, since
+/// these are computed hashes in the source, unlike the core slice's.
 fn weapon_field_names() -> [(&'static str, &'static str); 8] {
     [
         ("Pouch.Weapon.Content.Name", "NAME"),
@@ -658,7 +657,7 @@ pub struct DeviceEntry {
 /// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.SPECIALPARTS`.
 /// The UI category label "devices" (Zonai devices) maps to save-format prefix
 /// `Pouch.SpecialParts.*`, not `Pouch.Devices.*` (confirmed against the real fixture: decodes
-/// real device ids like `SpObj_WindGenerator_Capsule_A_01`, see design spec). No valid_num;
+/// real device ids like `SpObj_WindGenerator_Capsule_A_01`). No valid_num;
 /// scan until empty id.
 fn device_field_names() -> [(&'static str, &'static str); 3] {
     [
@@ -723,7 +722,7 @@ pub struct FoodEntry {
     pub id: String,
     pub quantity: i32,
     pub hearts_heal: i32,
-    /// `Enum`-typed field, raw u32 hash, no interpretation (see design spec non-goals).
+    /// `Enum`-typed field, raw u32 hash, no interpretation.
     pub effect: u32,
     pub effect_multiplier: i32,
     pub effect_time: i32,

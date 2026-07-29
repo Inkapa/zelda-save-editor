@@ -1,6 +1,6 @@
 //! Owned horses (save-format prefix `OwnedHorseList.*`, a separate top-level hash namespace,
-//! NOT `Pouch.*`, despite the conceptually similar struct-of-arrays shape; see design spec
-//! Background for how this was confirmed against the real fixture). Resolved through the same
+//! NOT `Pouch.*`, despite the conceptually similar struct-of-arrays shape, confirmed against
+//! the real fixture). Resolved through the same
 //! `totk::hashtable::scan_offsets` mechanism as everything else in this crate, with field hashes
 //! computed at call time via `totk::murmur3::hash32` (see `pouch.rs`'s module doc for why).
 //!
@@ -84,8 +84,8 @@ pub struct HorseEntry {
 }
 
 /// Field names exactly as they appear in the source's `OwnedHorseList.*` hash prefix, hashed at
-/// call time via `murmur3::hash32` (see design spec's Horses field table for every hash
-/// constant this was cross-checked against).
+/// call time via `murmur3::hash32` (every hash constant here was cross-checked against the
+/// real fixture).
 fn horse_field_names() -> [(&'static str, &'static str); 33] {
     [
         ("OwnedHorseList.ActorName", "ID"),

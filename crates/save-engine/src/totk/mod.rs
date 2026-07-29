@@ -13,9 +13,9 @@ use crate::binary::SaveBuffer;
 use crate::error::SaveError;
 
 /// Hash -> (field name, is_pointer) table, ported from `zelda-totk.js`'s `Hashes` array,
-/// restricted to the 11 hashes this crate exposes (see the design spec's non-goals for
-/// what's deferred: MapData icons, AutoBuilder, and everything else in the source's
-/// 18-entry table). Unlike BOTW's `HASHES`, this table has no ordering requirement, since
+/// restricted to the 11 hashes this crate exposes (MapData icons, AutoBuilder, and everything
+/// else in the source's 18-entry table are out of scope here). Unlike BOTW's `HASHES`, this
+/// table has no ordering requirement, since
 /// `hashtable::scan_offsets` looks each hash up in a map, not via a moving cursor.
 const HASHES: [(u32, &str, bool); 11] = [
     (0xfbe01da1, "MAX_LIFE", false),

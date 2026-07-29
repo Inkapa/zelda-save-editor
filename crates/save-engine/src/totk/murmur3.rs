@@ -4,9 +4,9 @@
 //! `u32` constants in `zelda-totk.js`), Pouch item and horse field hashes are computed at
 //! runtime from name strings in the source (`zelda-totk.variables.js`'s `Variable` constructor
 //! calls `murmurHash3.x86.hash32(hashText)`), so this crate needs the actual algorithm rather
-//! than a list of pre-computed constants. See the design spec's Background for why, and for
-//! the 3 independent cross-checks (already-shipped Rust constants, a community-published
-//! literal hash CSV, and live decoding of the real fixture) that verified this exact port.
+//! than a list of pre-computed constants, verified via 3 independent cross-checks
+//! (already-shipped Rust constants, a community-published literal hash CSV, and live decoding
+//! of the real fixture).
 
 const C1: u32 = 0xcc9e2d51;
 const C2: u32 = 0x1b873593;
@@ -79,7 +79,7 @@ mod tests {
 
     // Cross-check 3: this hash, decoded live against the real fixture, resolves to an
     // address whose first 4 bytes (every armor slot's dye color in progress.sav) equal
-    // this exact value, i.e. "no dye applied", the default. See design spec.
+    // this exact value, i.e. "no dye applied", the default.
     #[test]
     fn matches_live_fixture_decoded_dye_default() {
         assert_eq!(hash32("None"), 0xb6eede09);
