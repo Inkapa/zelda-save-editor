@@ -34,7 +34,6 @@ crates/save-engine/   headless Rust library: binary parsing, hash-table resoluti
 src-tauri/             Tauri v2 backend: converts save-engine's types to serializable DTOs and
                        exposes them as IPC commands, plus native file open/save dialogs.
 src/                    React + TypeScript frontend (Vite). Not yet built out beyond scaffolding.
-docs/                   Design specs and implementation plans for each shipped slice of work.
 ```
 
 Everything under `crates/save-engine` builds and tests independently of Tauri, so the parsing
