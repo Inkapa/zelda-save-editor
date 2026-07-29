@@ -1,4 +1,5 @@
 pub mod hashtable;
+pub mod murmur3;
 pub mod strings;
 pub mod versions;
 
