@@ -187,4 +187,39 @@ impl TotkSave {
     pub fn set_armor(&mut self, entries: &[pouch::ArmorEntry]) -> Result<(), SaveError> {
         pouch::write_armor(&mut self.buf, self.hash_table_end, entries)
     }
+
+    pub fn arrows(&self) -> Result<Vec<pouch::ArrowEntry>, SaveError> {
+        pouch::read_arrows(&self.buf, self.hash_table_end)
+    }
+    pub fn set_arrows(&mut self, entries: &[pouch::ArrowEntry]) -> Result<(), SaveError> {
+        pouch::write_arrows(&mut self.buf, self.hash_table_end, entries)
+    }
+
+    pub fn materials(&self) -> Result<Vec<pouch::MaterialEntry>, SaveError> {
+        pouch::read_materials(&self.buf, self.hash_table_end)
+    }
+    pub fn set_materials(&mut self, entries: &[pouch::MaterialEntry]) -> Result<(), SaveError> {
+        pouch::write_materials(&mut self.buf, self.hash_table_end, entries)
+    }
+
+    pub fn key_items(&self) -> Result<Vec<pouch::KeyItemEntry>, SaveError> {
+        pouch::read_key_items(&self.buf, self.hash_table_end)
+    }
+    pub fn set_key_items(&mut self, entries: &[pouch::KeyItemEntry]) -> Result<(), SaveError> {
+        pouch::write_key_items(&mut self.buf, self.hash_table_end, entries)
+    }
+
+    pub fn devices(&self) -> Result<Vec<pouch::DeviceEntry>, SaveError> {
+        pouch::read_devices(&self.buf, self.hash_table_end)
+    }
+    pub fn set_devices(&mut self, entries: &[pouch::DeviceEntry]) -> Result<(), SaveError> {
+        pouch::write_devices(&mut self.buf, self.hash_table_end, entries)
+    }
+
+    pub fn food(&self) -> Result<Vec<pouch::FoodEntry>, SaveError> {
+        pouch::read_food(&self.buf, self.hash_table_end)
+    }
+    pub fn set_food(&mut self, entries: &[pouch::FoodEntry]) -> Result<(), SaveError> {
+        pouch::write_food(&mut self.buf, self.hash_table_end, entries)
+    }
 }

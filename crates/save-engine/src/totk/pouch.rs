@@ -404,3 +404,383 @@ pub fn write_armor(
     }
     Ok(())
 }
+
+// ---------------------------------------------------------------------------------------------
+// Arrows
+// ---------------------------------------------------------------------------------------------
+
+pub struct ArrowEntry {
+    pub id: String,
+    pub quantity: i32,
+}
+
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.ARROW` —
+/// no valid_num entry in the core slice's HASHES table; scan until empty id (like Armor).
+fn arrow_field_names() -> [(&'static str, &'static str); 2] {
+    [
+        ("Pouch.Arrow.Content.Name", "NAME"),
+        ("Pouch.Arrow.Content.StockNum", "QUANTITY"),
+    ]
+}
+
+pub fn read_arrows(buf: &SaveBuffer, hash_table_end: usize) -> Result<Vec<ArrowEntry>, SaveError> {
+    let offsets = resolve_category(buf, hash_table_end, &arrow_field_names())?;
+    let name_addr = offsets["NAME"];
+    let quantity_addr = offsets["QUANTITY"];
+    let capacity = array_capacity(buf, name_addr)? as usize;
+
+    let mut entries = Vec::new();
+    for i in 0..capacity {
+        let id = read_string64_elem(buf, name_addr, i);
+        if id.is_empty() {
+            break;
+        }
+        entries.push(ArrowEntry {
+            id,
+            quantity: read_i32_elem(buf, quantity_addr, i)?,
+        });
+    }
+    Ok(entries)
+}
+
+pub fn write_arrows(
+    buf: &mut SaveBuffer,
+    hash_table_end: usize,
+    entries: &[ArrowEntry],
+) -> Result<(), SaveError> {
+    let offsets = resolve_category(buf, hash_table_end, &arrow_field_names())?;
+    let name_addr = offsets["NAME"];
+    let quantity_addr = offsets["QUANTITY"];
+    let capacity = array_capacity(buf, name_addr)? as usize;
+
+    for (i, entry) in entries.iter().enumerate() {
+        write_string64_elem(buf, name_addr, i, &entry.id)?;
+        write_i32_elem(buf, quantity_addr, i, entry.quantity)?;
+    }
+    for i in entries.len()..capacity {
+        clear_id_elem(buf, name_addr, i)?;
+    }
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------------------------
+// Materials
+// ---------------------------------------------------------------------------------------------
+
+pub struct MaterialEntry {
+    pub id: String,
+    pub quantity: i32,
+    pub get_order: i32,
+    pub use_order: i32,
+}
+
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.MATERIAL` —
+/// no valid_num entry; scan until empty id.
+fn material_field_names() -> [(&'static str, &'static str); 4] {
+    [
+        ("Pouch.Material.Content.Name", "NAME"),
+        ("Pouch.Material.Content.StockNum", "QUANTITY"),
+        ("Pouch.Material.Content.GetOrder", "GET_ORDER"),
+        ("Pouch.Material.Content.UseOrder", "USE_ORDER"),
+    ]
+}
+
+pub fn read_materials(
+    buf: &SaveBuffer,
+    hash_table_end: usize,
+) -> Result<Vec<MaterialEntry>, SaveError> {
+    let offsets = resolve_category(buf, hash_table_end, &material_field_names())?;
+    let name_addr = offsets["NAME"];
+    let quantity_addr = offsets["QUANTITY"];
+    let get_order_addr = offsets["GET_ORDER"];
+    let use_order_addr = offsets["USE_ORDER"];
+    let capacity = array_capacity(buf, name_addr)? as usize;
+
+    let mut entries = Vec::new();
+    for i in 0..capacity {
+        let id = read_string64_elem(buf, name_addr, i);
+        if id.is_empty() {
+            break;
+        }
+        entries.push(MaterialEntry {
+            id,
+            quantity: read_i32_elem(buf, quantity_addr, i)?,
+            get_order: read_i32_elem(buf, get_order_addr, i)?,
+            use_order: read_i32_elem(buf, use_order_addr, i)?,
+        });
+    }
+    Ok(entries)
+}
+
+pub fn write_materials(
+    buf: &mut SaveBuffer,
+    hash_table_end: usize,
+    entries: &[MaterialEntry],
+) -> Result<(), SaveError> {
+    let offsets = resolve_category(buf, hash_table_end, &material_field_names())?;
+    let name_addr = offsets["NAME"];
+    let quantity_addr = offsets["QUANTITY"];
+    let get_order_addr = offsets["GET_ORDER"];
+    let use_order_addr = offsets["USE_ORDER"];
+    let capacity = array_capacity(buf, name_addr)? as usize;
+
+    for (i, entry) in entries.iter().enumerate() {
+        write_string64_elem(buf, name_addr, i, &entry.id)?;
+        write_i32_elem(buf, quantity_addr, i, entry.quantity)?;
+        write_i32_elem(buf, get_order_addr, i, entry.get_order)?;
+        write_i32_elem(buf, use_order_addr, i, entry.use_order)?;
+    }
+    for i in entries.len()..capacity {
+        clear_id_elem(buf, name_addr, i)?;
+    }
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------------------------
+// Key items
+// ---------------------------------------------------------------------------------------------
+
+pub struct KeyItemEntry {
+    pub id: String,
+    /// Legitimately `-1` for most (non-stackable) key items — that's "not applicable", not
+    /// an error; don't clamp or reject it.
+    pub quantity: i32,
+}
+
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.KEYITEM` —
+/// no valid_num entry; scan until empty id.
+fn key_item_field_names() -> [(&'static str, &'static str); 2] {
+    [
+        ("Pouch.KeyItem.Content.Name", "NAME"),
+        ("Pouch.KeyItem.Content.StockNum", "QUANTITY"),
+    ]
+}
+
+pub fn read_key_items(
+    buf: &SaveBuffer,
+    hash_table_end: usize,
+) -> Result<Vec<KeyItemEntry>, SaveError> {
+    let offsets = resolve_category(buf, hash_table_end, &key_item_field_names())?;
+    let name_addr = offsets["NAME"];
+    let quantity_addr = offsets["QUANTITY"];
+    let capacity = array_capacity(buf, name_addr)? as usize;
+
+    let mut entries = Vec::new();
+    for i in 0..capacity {
+        let id = read_string64_elem(buf, name_addr, i);
+        if id.is_empty() {
+            break;
+        }
+        entries.push(KeyItemEntry {
+            id,
+            quantity: read_i32_elem(buf, quantity_addr, i)?,
+        });
+    }
+    Ok(entries)
+}
+
+pub fn write_key_items(
+    buf: &mut SaveBuffer,
+    hash_table_end: usize,
+    entries: &[KeyItemEntry],
+) -> Result<(), SaveError> {
+    let offsets = resolve_category(buf, hash_table_end, &key_item_field_names())?;
+    let name_addr = offsets["NAME"];
+    let quantity_addr = offsets["QUANTITY"];
+    let capacity = array_capacity(buf, name_addr)? as usize;
+
+    for (i, entry) in entries.iter().enumerate() {
+        write_string64_elem(buf, name_addr, i, &entry.id)?;
+        write_i32_elem(buf, quantity_addr, i, entry.quantity)?;
+    }
+    for i in entries.len()..capacity {
+        clear_id_elem(buf, name_addr, i)?;
+    }
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------------------------
+// Zonai devices
+// ---------------------------------------------------------------------------------------------
+
+pub struct DeviceEntry {
+    pub id: String,
+    pub quantity: i32,
+    pub use_order: i32,
+}
+
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.SPECIALPARTS`
+/// — the UI category label "devices" (Zonai devices) maps to save-format prefix
+/// `Pouch.SpecialParts.*`, not `Pouch.Devices.*` (confirmed against the real fixture: decodes
+/// real device ids like `SpObj_WindGenerator_Capsule_A_01`, see design spec). No valid_num;
+/// scan until empty id.
+fn device_field_names() -> [(&'static str, &'static str); 3] {
+    [
+        ("Pouch.SpecialParts.Content.Name", "NAME"),
+        ("Pouch.SpecialParts.Content.StockNum", "QUANTITY"),
+        ("Pouch.SpecialParts.Content.UseOrder", "USE_ORDER"),
+    ]
+}
+
+pub fn read_devices(buf: &SaveBuffer, hash_table_end: usize) -> Result<Vec<DeviceEntry>, SaveError> {
+    let offsets = resolve_category(buf, hash_table_end, &device_field_names())?;
+    let name_addr = offsets["NAME"];
+    let quantity_addr = offsets["QUANTITY"];
+    let use_order_addr = offsets["USE_ORDER"];
+    let capacity = array_capacity(buf, name_addr)? as usize;
+
+    let mut entries = Vec::new();
+    for i in 0..capacity {
+        let id = read_string64_elem(buf, name_addr, i);
+        if id.is_empty() {
+            break;
+        }
+        entries.push(DeviceEntry {
+            id,
+            quantity: read_i32_elem(buf, quantity_addr, i)?,
+            use_order: read_i32_elem(buf, use_order_addr, i)?,
+        });
+    }
+    Ok(entries)
+}
+
+pub fn write_devices(
+    buf: &mut SaveBuffer,
+    hash_table_end: usize,
+    entries: &[DeviceEntry],
+) -> Result<(), SaveError> {
+    let offsets = resolve_category(buf, hash_table_end, &device_field_names())?;
+    let name_addr = offsets["NAME"];
+    let quantity_addr = offsets["QUANTITY"];
+    let use_order_addr = offsets["USE_ORDER"];
+    let capacity = array_capacity(buf, name_addr)? as usize;
+
+    for (i, entry) in entries.iter().enumerate() {
+        write_string64_elem(buf, name_addr, i, &entry.id)?;
+        write_i32_elem(buf, quantity_addr, i, entry.quantity)?;
+        write_i32_elem(buf, use_order_addr, i, entry.use_order)?;
+    }
+    for i in entries.len()..capacity {
+        clear_id_elem(buf, name_addr, i)?;
+    }
+    Ok(())
+}
+
+// ---------------------------------------------------------------------------------------------
+// Food
+// ---------------------------------------------------------------------------------------------
+
+pub struct FoodEntry {
+    pub id: String,
+    pub quantity: i32,
+    pub hearts_heal: i32,
+    /// `Enum`-typed field, raw u32 hash, no interpretation (see design spec non-goals).
+    pub effect: u32,
+    pub effect_multiplier: i32,
+    pub effect_time: i32,
+    pub price: i32,
+    /// Up to 5 ingredient ids used to cook this item; unused slots are empty strings.
+    pub recipe: [String; 5],
+}
+
+/// Field names exactly as they appear in `zelda-totk.class.pouch.js`'s `Pouch.Structs.FOOD` —
+/// no valid_num entry; scan until empty id. `MaterialName` (recipe) resolves through the same
+/// table as everything else, but addresses into it flat (`item_index * 5 + slot`) since it's one
+/// `item_count * 5`-element `String64Array` rather than a per-item array — see `read_recipe`.
+fn food_field_names() -> [(&'static str, &'static str); 8] {
+    [
+        ("Pouch.Food.Content.Name", "NAME"),
+        ("Pouch.Food.Content.StockNum", "QUANTITY"),
+        ("Pouch.Food.Content.LifeRecover", "HEARTS_HEAL"),
+        ("Pouch.Food.Content.Effect.Type", "EFFECT"),
+        ("Pouch.Food.Content.Effect.Level", "EFFECT_MULTIPLIER"),
+        ("Pouch.Food.Content.Effect.Time", "EFFECT_TIME"),
+        ("Pouch.Food.Content.Price", "PRICE"),
+        ("Pouch.Food.Content.MaterialName", "RECIPE"),
+    ]
+}
+
+/// Reads item `item_index`'s 5 recipe slots out of the flat `item_count * 5`-element
+/// `MaterialName` array (slots `[item_index*5, item_index*5+4]`).
+fn read_recipe(buf: &SaveBuffer, recipe_array_addr: usize, item_index: usize) -> [String; 5] {
+    let mut recipe: [String; 5] = Default::default();
+    for slot in 0..5 {
+        recipe[slot] = read_string64_elem(buf, recipe_array_addr, item_index * 5 + slot);
+    }
+    recipe
+}
+fn write_recipe(
+    buf: &mut SaveBuffer,
+    recipe_array_addr: usize,
+    item_index: usize,
+    recipe: &[String; 5],
+) -> Result<(), SaveError> {
+    for (slot, value) in recipe.iter().enumerate() {
+        write_string64_elem(buf, recipe_array_addr, item_index * 5 + slot, value)?;
+    }
+    Ok(())
+}
+
+pub fn read_food(buf: &SaveBuffer, hash_table_end: usize) -> Result<Vec<FoodEntry>, SaveError> {
+    let offsets = resolve_category(buf, hash_table_end, &food_field_names())?;
+    let name_addr = offsets["NAME"];
+    let quantity_addr = offsets["QUANTITY"];
+    let hearts_heal_addr = offsets["HEARTS_HEAL"];
+    let effect_addr = offsets["EFFECT"];
+    let effect_multiplier_addr = offsets["EFFECT_MULTIPLIER"];
+    let effect_time_addr = offsets["EFFECT_TIME"];
+    let price_addr = offsets["PRICE"];
+    let recipe_addr = offsets["RECIPE"];
+    let capacity = array_capacity(buf, name_addr)? as usize;
+
+    let mut entries = Vec::new();
+    for i in 0..capacity {
+        let id = read_string64_elem(buf, name_addr, i);
+        if id.is_empty() {
+            break;
+        }
+        entries.push(FoodEntry {
+            id,
+            quantity: read_i32_elem(buf, quantity_addr, i)?,
+            hearts_heal: read_i32_elem(buf, hearts_heal_addr, i)?,
+            effect: read_u32_elem(buf, effect_addr, i)?,
+            effect_multiplier: read_i32_elem(buf, effect_multiplier_addr, i)?,
+            effect_time: read_i32_elem(buf, effect_time_addr, i)?,
+            price: read_i32_elem(buf, price_addr, i)?,
+            recipe: read_recipe(buf, recipe_addr, i),
+        });
+    }
+    Ok(entries)
+}
+
+pub fn write_food(
+    buf: &mut SaveBuffer,
+    hash_table_end: usize,
+    entries: &[FoodEntry],
+) -> Result<(), SaveError> {
+    let offsets = resolve_category(buf, hash_table_end, &food_field_names())?;
+    let name_addr = offsets["NAME"];
+    let quantity_addr = offsets["QUANTITY"];
+    let hearts_heal_addr = offsets["HEARTS_HEAL"];
+    let effect_addr = offsets["EFFECT"];
+    let effect_multiplier_addr = offsets["EFFECT_MULTIPLIER"];
+    let effect_time_addr = offsets["EFFECT_TIME"];
+    let price_addr = offsets["PRICE"];
+    let recipe_addr = offsets["RECIPE"];
+    let capacity = array_capacity(buf, name_addr)? as usize;
+
+    for (i, entry) in entries.iter().enumerate() {
+        write_string64_elem(buf, name_addr, i, &entry.id)?;
+        write_i32_elem(buf, quantity_addr, i, entry.quantity)?;
+        write_i32_elem(buf, hearts_heal_addr, i, entry.hearts_heal)?;
+        write_u32_elem(buf, effect_addr, i, entry.effect)?;
+        write_i32_elem(buf, effect_multiplier_addr, i, entry.effect_multiplier)?;
+        write_i32_elem(buf, effect_time_addr, i, entry.effect_time)?;
+        write_i32_elem(buf, price_addr, i, entry.price)?;
+        write_recipe(buf, recipe_addr, i, &entry.recipe)?;
+    }
+    for i in entries.len()..capacity {
+        clear_id_elem(buf, name_addr, i)?;
+    }
+    Ok(())
+}

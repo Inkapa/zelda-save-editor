@@ -189,6 +189,153 @@ fn pouch_armor_reads_real_fixture_contents() {
 }
 
 #[test]
+fn arrows_round_trip_scanning_until_empty_id() {
+    let mut save = load_totk();
+    let mut arrows = save.arrows().unwrap();
+    arrows.push(pouch::ArrowEntry {
+        id: "NormalArrow".into(),
+        quantity: 999,
+    });
+    save.set_arrows(&arrows).unwrap();
+    let reloaded = save.arrows().unwrap();
+    assert_eq!(reloaded.len(), arrows.len());
+    assert_eq!(reloaded.last().unwrap().id, "NormalArrow");
+    assert_eq!(reloaded.last().unwrap().quantity, 999);
+}
+
+#[test]
+fn materials_round_trip_scanning_until_empty_id() {
+    let mut save = load_totk();
+    let mut materials = save.materials().unwrap();
+    materials.push(pouch::MaterialEntry {
+        id: "Item_Fruit_A".into(),
+        quantity: 5,
+        get_order: 42,
+        use_order: 7,
+    });
+    save.set_materials(&materials).unwrap();
+    let reloaded = save.materials().unwrap();
+    assert_eq!(reloaded.len(), materials.len());
+    let last = reloaded.last().unwrap();
+    assert_eq!(last.id, "Item_Fruit_A");
+    assert_eq!(last.quantity, 5);
+    assert_eq!(last.get_order, 42);
+    assert_eq!(last.use_order, 7);
+}
+
+#[test]
+fn key_items_round_trip_and_allow_negative_one_quantity() {
+    let mut save = load_totk();
+    let mut key_items = save.key_items().unwrap();
+    key_items.push(pouch::KeyItemEntry {
+        id: "PouchExtension_01".into(),
+        quantity: -1,
+    });
+    save.set_key_items(&key_items).unwrap();
+    let reloaded = save.key_items().unwrap();
+    assert_eq!(reloaded.len(), key_items.len());
+    let last = reloaded.last().unwrap();
+    assert_eq!(last.id, "PouchExtension_01");
+    assert_eq!(last.quantity, -1);
+}
+
+#[test]
+fn devices_reads_real_fixture_zonai_inventory() {
+    let save = load_totk();
+    let devices = save.devices().unwrap();
+    assert_eq!(devices[0].id, "SpObj_WindGenerator_Capsule_A_01"); // Fan
+    assert_eq!(devices[0].quantity, 99);
+    assert_eq!(devices[4].id, "SpObj_Rocket_Capsule_A_01"); // Rocket
+    assert_eq!(devices[4].quantity, 72);
+}
+
+#[test]
+fn devices_round_trip_scanning_until_empty_id() {
+    let mut save = load_totk();
+    let mut devices = save.devices().unwrap();
+    devices.push(pouch::DeviceEntry {
+        id: "SpObj_Fan_Capsule_A_01".into(),
+        quantity: 3,
+        use_order: 1,
+    });
+    save.set_devices(&devices).unwrap();
+    let reloaded = save.devices().unwrap();
+    assert_eq!(reloaded.len(), devices.len());
+    let last = reloaded.last().unwrap();
+    assert_eq!(last.id, "SpObj_Fan_Capsule_A_01");
+    assert_eq!(last.quantity, 3);
+    assert_eq!(last.use_order, 1);
+}
+
+#[test]
+fn food_reads_real_fixture_recipe_partition() {
+    let save = load_totk();
+    let food = save.food().unwrap();
+    assert_eq!(food[0].id, "Item_Cook_C_17"); // Elixir
+    assert_eq!(food[0].quantity, 1);
+    assert_eq!(
+        food[0].recipe,
+        [
+            "Animal_Insect_M".to_string(),
+            "Item_Enemy_40".to_string(),
+            "Item_Mushroom_L".to_string(),
+            "".to_string(),
+            "".to_string(),
+        ]
+    );
+}
+
+#[test]
+fn food_round_trips_including_recipe_partition() {
+    let mut save = load_totk();
+    let mut food = save.food().unwrap();
+    food.push(pouch::FoodEntry {
+        id: "Item_Fruit_A".into(),
+        quantity: 2,
+        hearts_heal: 4,
+        effect: save_engine::totk::murmur3::hash32("None"),
+        effect_multiplier: 0,
+        effect_time: 0,
+        price: 10,
+        recipe: [
+            "Item_Fruit_A".to_string(),
+            "Item_Fruit_A".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+        ],
+    });
+    save.set_food(&food).unwrap();
+    let reloaded = save.food().unwrap();
+    assert_eq!(reloaded.len(), food.len());
+    let last = reloaded.last().unwrap();
+    assert_eq!(last.id, "Item_Fruit_A");
+    assert_eq!(last.hearts_heal, 4);
+    assert_eq!(last.price, 10);
+    assert_eq!(
+        last.recipe,
+        [
+            "Item_Fruit_A".to_string(),
+            "Item_Fruit_A".to_string(),
+            "".to_string(),
+            "".to_string(),
+            "".to_string(),
+        ]
+    );
+    // Untouched fixture entries' recipes must still read back correctly after the write pass.
+    assert_eq!(
+        reloaded[0].recipe,
+        [
+            "Animal_Insect_M".to_string(),
+            "Item_Enemy_40".to_string(),
+            "Item_Mushroom_L".to_string(),
+            "".to_string(),
+            "".to_string(),
+        ]
+    );
+}
+
+#[test]
 fn malformed_input_returns_err_instead_of_panicking() {
     // Right magic and in-range size, but all-zero content: no sentinel hash exists in
     // it, so the hash-table-end scan should fail gracefully rather than panic or scan
