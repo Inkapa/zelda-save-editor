@@ -1,8 +1,8 @@
 use tauri::State;
 
 use crate::dto::{
-    TotkArmorDto, TotkArrowDto, TotkBowDto, TotkDeviceDto, TotkFoodDto, TotkHorseDto,
-    TotkKeyItemDto, TotkMaterialDto, TotkShieldDto, TotkState, TotkWeaponDto,
+    TotkArmorDto, TotkArrowDto, TotkAutoBuildEntryDto, TotkBowDto, TotkDeviceDto, TotkFoodDto,
+    TotkHorseDto, TotkKeyItemDto, TotkMaterialDto, TotkShieldDto, TotkState, TotkWeaponDto,
 };
 use crate::error::ShellError;
 use crate::state::AppState;
@@ -32,6 +32,15 @@ pub fn read_state(save: &TotkSave) -> Result<TotkState, ShellError> {
         devices: save.devices()?.into_iter().map(TotkDeviceDto::from).collect(),
         food: save.food()?.into_iter().map(TotkFoodDto::from).collect(),
         horses: save.horses()?.into_iter().map(TotkHorseDto::from).collect(),
+        shrines_found: save.shrines_found()? as u32,
+        shrines_cleared: save.shrines_cleared()? as u32,
+        koroks_hidden: save.koroks_hidden()? as u32,
+        koroks_carried: save.koroks_carried()? as u32,
+        locations_visited: save.locations_visited()? as u32,
+        defeated_hinox: save.defeated_hinox()? as u32,
+        defeated_talus: save.defeated_talus()? as u32,
+        defeated_molduga: save.defeated_molduga()? as u32,
+        autobuilds: save.autobuilds()?.into_iter().map(TotkAutoBuildEntryDto::from).collect(),
     })
 }
 
@@ -181,6 +190,12 @@ pub fn set_horses(state: State<'_, AppState>, entries: Vec<TotkHorseDto>) -> Res
     with_totk(state.inner(), |save| save.set_horses(&entries))
 }
 
+#[tauri::command]
+pub fn set_autobuilds(state: State<'_, AppState>, entries: Vec<TotkAutoBuildEntryDto>) -> Result<(), ShellError> {
+    let entries: Vec<_> = entries.into_iter().map(Into::into).collect();
+    with_totk(state.inner(), |save| save.set_autobuilds(&entries))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -282,5 +297,39 @@ mod tests {
         .unwrap();
         let after = get_totk_state_impl(&app_state).unwrap().horses;
         assert_eq!(after[0].name, "Renamed");
+    }
+
+    #[test]
+    fn get_totk_state_impl_includes_completism_counts() {
+        let app_state = loaded_app_state();
+        let dto = get_totk_state_impl(&app_state).unwrap();
+        // Cross-check against the engine's own accessors directly, not just "didn't panic".
+        let expected_shrines_found = match Save::detect(totk_fixture_bytes()).unwrap() {
+            Save::Totk(save) => save.shrines_found().unwrap() as u32,
+            Save::Botw(_) => panic!("fixture should be TOTK"),
+        };
+        assert_eq!(dto.shrines_found, expected_shrines_found);
+    }
+
+    #[test]
+    fn get_totk_state_impl_includes_autobuilds() {
+        let app_state = loaded_app_state();
+        let dto = get_totk_state_impl(&app_state).unwrap();
+        assert!(!dto.autobuilds.is_empty());
+        assert!(dto.autobuilds.iter().all(|e| e.combined_actor_info.len() == 6688));
+    }
+
+    #[test]
+    fn set_autobuilds_round_trips_favorite_flag_through_with_totk() {
+        let app_state = loaded_app_state();
+        let mut autobuilds = get_totk_state_impl(&app_state).unwrap().autobuilds;
+        let flipped = !autobuilds[0].is_favorite;
+        autobuilds[0].is_favorite = flipped;
+        with_totk(&app_state, |save| {
+            save.set_autobuilds(&autobuilds.iter().cloned().map(Into::into).collect::<Vec<_>>())
+        })
+        .unwrap();
+        let after = get_totk_state_impl(&app_state).unwrap().autobuilds;
+        assert_eq!(after[0].is_favorite, flipped);
     }
 }

@@ -28,7 +28,7 @@ pub fn read_state(save: &BotwSave) -> Result<BotwState, ShellError> {
         horse_position: save.horse_position()?,
         map: save.map()?,
         map_type: save.map_type()?,
-        items: save.items()?.into_iter().map(crate::dto::BotwItemDto::from).collect(),
+        items: save.items_with_category()?.into_iter().map(crate::dto::BotwItemDto::from).collect(),
         weapon_modifiers: weapon_modifiers.into_iter().map(crate::dto::ItemModifierDto::from).collect(),
         bow_modifiers: bow_modifiers.into_iter().map(crate::dto::ItemModifierDto::from).collect(),
         shield_modifiers: shield_modifiers.into_iter().map(crate::dto::ItemModifierDto::from).collect(),
@@ -206,6 +206,31 @@ pub fn set_horse_type(state: State<'_, AppState>, index: usize, value: String) -
     with_botw(state.inner(), |save| save.set_horse_type(index, &value))
 }
 
+#[tauri::command]
+pub fn unlock_all_koroks(state: State<'_, AppState>) -> Result<usize, ShellError> {
+    with_botw(state.inner(), |save| save.unlock_all_koroks())
+}
+
+#[tauri::command]
+pub fn unlock_all_defeated_hinox(state: State<'_, AppState>) -> Result<usize, ShellError> {
+    with_botw(state.inner(), |save| save.unlock_all_defeated_hinox())
+}
+
+#[tauri::command]
+pub fn unlock_all_defeated_talus(state: State<'_, AppState>) -> Result<usize, ShellError> {
+    with_botw(state.inner(), |save| save.unlock_all_defeated_talus())
+}
+
+#[tauri::command]
+pub fn unlock_all_defeated_molduga(state: State<'_, AppState>) -> Result<usize, ShellError> {
+    with_botw(state.inner(), |save| save.unlock_all_defeated_molduga())
+}
+
+#[tauri::command]
+pub fn unlock_all_locations(state: State<'_, AppState>) -> Result<usize, ShellError> {
+    with_botw(state.inner(), |save| save.unlock_all_locations())
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -319,5 +344,39 @@ mod tests {
         with_botw(&app_state, |save| save.set_horse_name(0, "Epona")).unwrap();
         let horses = get_botw_state_impl(&app_state).unwrap().horses;
         assert_eq!(horses[0].name, Some("Epona".to_string()));
+    }
+
+    #[test]
+    fn get_botw_state_impl_includes_item_categories() {
+        let app_state = loaded_app_state();
+        let dto = get_botw_state_impl(&app_state).unwrap();
+        // The real fixture's item list mixes categories; this just confirms the DTO
+        // carries a real category rather than always defaulting to KeyItem.
+        assert!(dto
+            .items
+            .iter()
+            .any(|item| item.category != crate::dto::ItemCategoryDto::KeyItem));
+    }
+
+    #[test]
+    fn unlock_all_koroks_returns_newly_found_count_and_persists() {
+        let app_state = loaded_app_state();
+        let before = get_botw_state_impl(&app_state).unwrap().korok_seed_counter;
+        let unlocked = with_botw(&app_state, |save| save.unlock_all_koroks()).unwrap();
+        let after = get_botw_state_impl(&app_state).unwrap().korok_seed_counter;
+        assert_eq!(after, before + unlocked as u32);
+
+        // Idempotent: running it again finds nothing new.
+        let second = with_botw(&app_state, |save| save.unlock_all_koroks()).unwrap();
+        assert_eq!(second, 0);
+    }
+
+    #[test]
+    fn unlock_all_locations_returns_newly_visited_count() {
+        let app_state = loaded_app_state();
+        let unlocked = with_botw(&app_state, |save| save.unlock_all_locations()).unwrap();
+        let second = with_botw(&app_state, |save| save.unlock_all_locations()).unwrap();
+        assert_eq!(second, 0, "should be idempotent");
+        assert!(unlocked > 0, "fixture should have at least one unvisited location");
     }
 }

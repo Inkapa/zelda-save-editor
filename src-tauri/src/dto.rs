@@ -1,14 +1,42 @@
 use serde::{Deserialize, Serialize};
 
+#[derive(Debug, Clone, Copy, Serialize, Deserialize, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+pub enum ItemCategoryDto {
+    Weapon,
+    Bow,
+    Shield,
+    Armor,
+    Material,
+    Food,
+    KeyItem,
+}
+
+impl From<save_engine::botw::items::ItemCategory> for ItemCategoryDto {
+    fn from(c: save_engine::botw::items::ItemCategory) -> Self {
+        use save_engine::botw::items::ItemCategory;
+        match c {
+            ItemCategory::Weapon => ItemCategoryDto::Weapon,
+            ItemCategory::Bow => ItemCategoryDto::Bow,
+            ItemCategory::Shield => ItemCategoryDto::Shield,
+            ItemCategory::Armor => ItemCategoryDto::Armor,
+            ItemCategory::Material => ItemCategoryDto::Material,
+            ItemCategory::Food => ItemCategoryDto::Food,
+            ItemCategory::KeyItem => ItemCategoryDto::KeyItem,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BotwItemDto {
     pub name: String,
     pub quantity: u32,
+    pub category: ItemCategoryDto,
 }
 
-impl From<save_engine::botw::BotwItem> for BotwItemDto {
-    fn from(item: save_engine::botw::BotwItem) -> Self {
-        BotwItemDto { name: item.name, quantity: item.quantity }
+impl From<(save_engine::botw::BotwItem, save_engine::botw::items::ItemCategory)> for BotwItemDto {
+    fn from((item, category): (save_engine::botw::BotwItem, save_engine::botw::items::ItemCategory)) -> Self {
+        BotwItemDto { name: item.name, quantity: item.quantity, category: category.into() }
     }
 }
 
@@ -105,6 +133,48 @@ pub struct TotkState {
     pub devices: Vec<TotkDeviceDto>,
     pub food: Vec<TotkFoodDto>,
     pub horses: Vec<TotkHorseDto>,
+    pub shrines_found: u32,
+    pub shrines_cleared: u32,
+    pub koroks_hidden: u32,
+    pub koroks_carried: u32,
+    pub locations_visited: u32,
+    pub defeated_hinox: u32,
+    pub defeated_talus: u32,
+    pub defeated_molduga: u32,
+    pub autobuilds: Vec<TotkAutoBuildEntryDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkAutoBuildEntryDto {
+    pub index: i32,
+    pub combined_actor_info: Vec<u8>,
+    pub camera_pos: (f32, f32, f32),
+    pub camera_at: (f32, f32, f32),
+    pub is_favorite: bool,
+}
+
+impl From<save_engine::totk::autobuilder::AutoBuildEntry> for TotkAutoBuildEntryDto {
+    fn from(e: save_engine::totk::autobuilder::AutoBuildEntry) -> Self {
+        TotkAutoBuildEntryDto {
+            index: e.index,
+            combined_actor_info: e.combined_actor_info,
+            camera_pos: e.camera_pos,
+            camera_at: e.camera_at,
+            is_favorite: e.is_favorite,
+        }
+    }
+}
+
+impl From<TotkAutoBuildEntryDto> for save_engine::totk::autobuilder::AutoBuildEntry {
+    fn from(d: TotkAutoBuildEntryDto) -> Self {
+        save_engine::totk::autobuilder::AutoBuildEntry {
+            index: d.index,
+            combined_actor_info: d.combined_actor_info,
+            camera_pos: d.camera_pos,
+            camera_at: d.camera_at,
+            is_favorite: d.is_favorite,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
