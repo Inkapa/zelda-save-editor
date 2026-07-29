@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import SectionHeading from "../../theme/SectionHeading";
 import styles from "./EditableEntryTable.module.css";
 
@@ -77,12 +77,22 @@ interface Props<T> {
   columns: ColumnDef<T>[];
   setter: (entries: T[]) => Promise<void>;
   onError: (message: string) => void;
+  level?: "h3" | "h4";
+  motif?: ReactNode;
 }
 
-export default function EditableEntryTable<T>({ title, entries, columns, setter, onError }: Props<T>) {
+export default function EditableEntryTable<T>({
+  title,
+  entries,
+  columns,
+  setter,
+  onError,
+  level = "h4",
+  motif,
+}: Props<T>) {
   return (
     <div>
-      <SectionHeading level="h4" title={`${title} (${entries.length})`} />
+      <SectionHeading level={level} motif={motif} title={`${title} (${entries.length})`} />
       <table className={styles.table}>
         <thead>
           <tr>

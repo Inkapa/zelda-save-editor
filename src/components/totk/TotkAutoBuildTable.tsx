@@ -1,6 +1,7 @@
 import type { TotkAutoBuildEntry } from "../../api";
 import * as api from "../../api";
 import EditableEntryTable, { ColumnDef } from "./EditableEntryTable";
+import TotkMotif from "../../theme/motifs/TotkMotif";
 
 function vec3ToText(v: [number, number, number]): string {
   return v.join(",");
@@ -49,6 +50,8 @@ export default function TotkAutoBuildTable({ autobuilds, onError }: Props) {
       columns={columns}
       setter={api.setAutobuilds}
       onError={onError}
+      level="h3"
+      motif={<TotkMotif />}
     />
   );
 }

@@ -1,6 +1,7 @@
 import type { TotkHorse } from "../../api";
 import * as api from "../../api";
 import EditableEntryTable, { ColumnDef } from "./EditableEntryTable";
+import TotkMotif from "../../theme/motifs/TotkMotif";
 
 function text(key: keyof TotkHorse, label: string): ColumnDef<TotkHorse> {
   return { key, label, type: "text" };
@@ -39,6 +40,14 @@ interface Props {
 
 export default function TotkHorsesTable({ horses, onError }: Props) {
   return (
-    <EditableEntryTable title="Horses" entries={horses} columns={columns} setter={api.setHorses} onError={onError} />
+    <EditableEntryTable
+      title="Horses"
+      entries={horses}
+      columns={columns}
+      setter={api.setHorses}
+      onError={onError}
+      level="h3"
+      motif={<TotkMotif />}
+    />
   );
 }
