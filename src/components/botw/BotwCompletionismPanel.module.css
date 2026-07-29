@@ -1,6 +1,0 @@
-.row {
-  margin-bottom: 4px;
-}
-.button {
-  composes: button from "../../theme/controls.module.css";
-}
