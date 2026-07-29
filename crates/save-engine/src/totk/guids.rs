@@ -6,6 +6,10 @@
 //! `SavegameEditor._getOffsets`'s `this.guidsArrayOffset=tempFile.readU32(i+4)` at the sentinel
 //! row (the same row `totk::hashtable::find_hash_table_end` already scans for, just reading its
 //! value instead of stopping at its position).
+//!
+//! Unlike every other field in this crate, this array has no reserved slack after it: growing it
+//! means shifting every byte that follows and fixing up every pointer that shifted, which is
+//! what `append_guids` and `hashtable::insert_and_relocate` exist for.
 
 use std::collections::HashSet;
 
@@ -28,4 +32,29 @@ pub fn read_discovered_guids(buf: &SaveBuffer, hash_table_end: usize) -> Result<
         offset += 8;
     }
     Ok(guids)
+}
+
+/// Adds every GUID in `new_guids` that isn't already in the discovered set, in one batched
+/// insertion: computes the whole missing list first (no buffer mutation), then makes exactly
+/// one `hashtable::insert_and_relocate` call sized for the whole batch, then writes all new
+/// entries at once. Mirrors the source's own `_setGuids`, which pushes to an in-memory array
+/// per item but only calls the real file write once after the whole batch, critical for mass-
+/// unlocking dozens or hundreds of items without dozens or hundreds of separate buffer shifts.
+pub fn append_guids(buf: &mut SaveBuffer, hash_table_end: usize, new_guids: &[u64]) -> Result<(), SaveError> {
+    let discovered = read_discovered_guids(buf, hash_table_end)?;
+    let missing: Vec<u64> = new_guids.iter().copied().filter(|g| !discovered.contains(g)).collect();
+    if missing.is_empty() {
+        return Ok(());
+    }
+
+    let array_addr = buf.read_u32(hash_table_end)? as usize;
+    let terminator_offset = array_addr + discovered.len() * 8;
+    let additional_bytes = missing.len() * 8;
+
+    crate::totk::hashtable::insert_and_relocate(buf, hash_table_end, terminator_offset, additional_bytes)?;
+
+    for (i, guid) in missing.iter().enumerate() {
+        buf.write_u64(terminator_offset + i * 8, *guid)?;
+    }
+    Ok(())
 }
