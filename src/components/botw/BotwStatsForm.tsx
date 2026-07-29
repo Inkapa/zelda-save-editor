@@ -1,6 +1,9 @@
 import { useState } from "react";
 import type { BotwState } from "../../api";
 import * as api from "../../api";
+import SectionHeading from "../../theme/SectionHeading";
+import BotwMotif from "../../theme/motifs/BotwMotif";
+import styles from "./BotwStatsForm.module.css";
 
 interface Props {
   state: BotwState;
@@ -18,9 +21,10 @@ function NumberField({
 }) {
   const [text, setText] = useState(String(value));
   return (
-    <label style={{ display: "block", marginBottom: 4 }}>
+    <label className={styles.field}>
       {label}:{" "}
       <input
+        className={styles.input}
         type="number"
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -43,7 +47,7 @@ export default function BotwStatsForm({ state, onError }: Props) {
 
   return (
     <div>
-      <h3>Stats</h3>
+      <SectionHeading title="Stats" motif={<BotwMotif />} />
       <NumberField label="Rupees" value={state.rupees} onCommit={commit(api.setRupees)} />
       <NumberField label="Mons (Amiibo)" value={state.mons} onCommit={commit(api.setMons)} />
       <NumberField label="Max Hearts" value={state.max_hearts} onCommit={commit(api.setMaxHearts)} />
@@ -89,7 +93,7 @@ export default function BotwStatsForm({ state, onError }: Props) {
         onCommit={commit(api.setPlaytimeSeconds)}
       />
       {state.motorcycle !== null && (
-        <label style={{ display: "block", marginBottom: 4 }}>
+        <label className={styles.field}>
           Master Cycle Zero unlocked:{" "}
           <input
             type="checkbox"
@@ -100,24 +104,26 @@ export default function BotwStatsForm({ state, onError }: Props) {
           />
         </label>
       )}
-      <h3>Map</h3>
-      <label style={{ display: "block", marginBottom: 4 }}>
+      <SectionHeading level="h4" title="Map" />
+      <label className={styles.field}>
         Map:{" "}
         <input
+          className={styles.input}
           type="text"
           defaultValue={state.map}
           onBlur={(e) => api.setMap(e.target.value).catch((err) => onError(String(err)))}
         />
       </label>
-      <label style={{ display: "block", marginBottom: 4 }}>
+      <label className={styles.field}>
         Map Type:{" "}
         <input
+          className={styles.input}
           type="text"
           defaultValue={state.map_type}
           onBlur={(e) => api.setMapType(e.target.value).catch((err) => onError(String(err)))}
         />
       </label>
-      <h3>Positions</h3>
+      <SectionHeading level="h4" title="Positions" />
       <PositionField
         label="Player Position"
         value={state.player_position}
@@ -159,11 +165,11 @@ function PositionField({
   const [zs, setZs] = useState(String(value[2]));
   const commit = () => onCommit(Number(xs), Number(ys), Number(zs));
   return (
-    <div style={{ marginBottom: 4 }}>
+    <div className={styles.field}>
       {label}:{" "}
-      <input type="number" value={xs} onChange={(e) => setXs(e.target.value)} onBlur={commit} />{" "}
-      <input type="number" value={ys} onChange={(e) => setYs(e.target.value)} onBlur={commit} />{" "}
-      <input type="number" value={zs} onChange={(e) => setZs(e.target.value)} onBlur={commit} />
+      <input className={styles.input} type="number" value={xs} onChange={(e) => setXs(e.target.value)} onBlur={commit} />{" "}
+      <input className={styles.input} type="number" value={ys} onChange={(e) => setYs(e.target.value)} onBlur={commit} />{" "}
+      <input className={styles.input} type="number" value={zs} onChange={(e) => setZs(e.target.value)} onBlur={commit} />
     </div>
   );
 }

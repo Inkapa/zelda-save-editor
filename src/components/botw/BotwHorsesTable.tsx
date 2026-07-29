@@ -1,6 +1,9 @@
 import { useState } from "react";
 import type { BotwHorse } from "../../api";
 import * as api from "../../api";
+import SectionHeading from "../../theme/SectionHeading";
+import BotwMotif from "../../theme/motifs/BotwMotif";
+import styles from "./BotwHorsesTable.module.css";
 
 interface Props {
   horses: BotwHorse[];
@@ -27,6 +30,7 @@ function HorseRow({
       <td>{index}</td>
       <td>
         <input
+          className={styles.input}
           value={horseType}
           onChange={(e) => setHorseType(e.target.value)}
           onBlur={() => api.setHorseType(index, horseType).catch((err) => onError(String(err)))}
@@ -35,6 +39,7 @@ function HorseRow({
       <td>
         {hasNamedSlots && (
           <input
+            className={styles.input}
             value={name}
             onChange={(e) => setName(e.target.value)}
             onBlur={() => api.setHorseName(index, name).catch((err) => onError(String(err)))}
@@ -44,6 +49,7 @@ function HorseRow({
       <td>
         {hasNamedSlots && (
           <input
+            className={styles.input}
             value={saddle}
             onChange={(e) => setSaddle(e.target.value)}
             onBlur={() => api.setHorseSaddle(index, saddle).catch((err) => onError(String(err)))}
@@ -53,6 +59,7 @@ function HorseRow({
       <td>
         {hasNamedSlots && (
           <input
+            className={styles.input}
             value={reins}
             onChange={(e) => setReins(e.target.value)}
             onBlur={() => api.setHorseReins(index, reins).catch((err) => onError(String(err)))}
@@ -66,8 +73,8 @@ function HorseRow({
 export default function BotwHorsesTable({ horses, onError }: Props) {
   return (
     <div>
-      <h3>Horses</h3>
-      <table>
+      <SectionHeading title="Horses" motif={<BotwMotif />} />
+      <table className={styles.table}>
         <thead>
           <tr>
             <th>#</th>

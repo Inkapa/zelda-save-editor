@@ -1,6 +1,9 @@
 import { useState } from "react";
 import type { ItemModifier, ModifierCategory } from "../../api";
 import * as api from "../../api";
+import SectionHeading from "../../theme/SectionHeading";
+import BotwMotif from "../../theme/motifs/BotwMotif";
+import styles from "./BotwModifiersTable.module.css";
 
 interface Props {
   weaponModifiers: ItemModifier[];
@@ -30,10 +33,10 @@ function ModifierRow({
     <tr>
       <td>{index}</td>
       <td>
-        <input value={flag} onChange={(e) => setFlag(e.target.value)} onBlur={commit} />
+        <input className={styles.input} value={flag} onChange={(e) => setFlag(e.target.value)} onBlur={commit} />
       </td>
       <td>
-        <input value={value} onChange={(e) => setValue(e.target.value)} onBlur={commit} />
+        <input className={styles.input} value={value} onChange={(e) => setValue(e.target.value)} onBlur={commit} />
       </td>
     </tr>
   );
@@ -52,10 +55,8 @@ function ModifierTable({
 }) {
   return (
     <div>
-      <h4>
-        {title} ({modifiers.length})
-      </h4>
-      <table>
+      <SectionHeading level="h4" title={`${title} (${modifiers.length})`} />
+      <table className={styles.table}>
         <thead>
           <tr>
             <th>#</th>
@@ -81,7 +82,7 @@ export default function BotwModifiersTable({
 }: Props) {
   return (
     <div>
-      <h3>Item Modifiers</h3>
+      <SectionHeading title="Item Modifiers" motif={<BotwMotif />} />
       <ModifierTable title="Weapon" category="weapon" modifiers={weaponModifiers} onError={onError} />
       <ModifierTable title="Bow" category="bow" modifiers={bowModifiers} onError={onError} />
       <ModifierTable title="Shield" category="shield" modifiers={shieldModifiers} onError={onError} />
