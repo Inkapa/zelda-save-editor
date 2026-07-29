@@ -1,6 +1,13 @@
 import { useState } from "react";
 import type { TotkState } from "../../api";
 import * as api from "../../api";
+import TotkPouchTables from "./TotkPouchTables";
+import TotkHorsesTable from "./TotkHorsesTable";
+import TotkAutoBuildTable from "./TotkAutoBuildTable";
+import TotkCompletionismPanel from "./TotkCompletionismPanel";
+import SectionHeading from "../../theme/SectionHeading";
+import TotkMotif from "../../theme/motifs/TotkMotif";
+import styles from "./TotkView.module.css";
 
 interface Props {
   state: TotkState;
@@ -20,9 +27,10 @@ function NumberField({
 }) {
   const [text, setText] = useState(String(value));
   return (
-    <label style={{ display: "block", marginBottom: 4 }}>
+    <label className={styles.field}>
       {label}:{" "}
       <input
+        className={styles.input}
         type="number"
         value={text}
         onChange={(e) => setText(e.target.value)}
@@ -42,8 +50,8 @@ export default function TotkView({ state, onError }: Props) {
       .catch((err) => onError(String(err)));
 
   return (
-    <div>
-      <h3>Stats</h3>
+    <div className={styles.view}>
+      <SectionHeading title="Stats" motif={<TotkMotif />} />
       <NumberField label="Max Life" value={state.max_life} onCommit={api.setMaxLife} onError={onError} />
       <NumberField
         label="Current Rupees"
@@ -71,21 +79,22 @@ export default function TotkView({ state, onError }: Props) {
         onError={onError}
       />
 
-      <h3>Save Position</h3>
-      <div>
-        <input type="number" value={posX} onChange={(e) => setPosX(e.target.value)} onBlur={commitPos} />{" "}
-        <input type="number" value={posY} onChange={(e) => setPosY(e.target.value)} onBlur={commitPos} />{" "}
-        <input type="number" value={posZ} onChange={(e) => setPosZ(e.target.value)} onBlur={commitPos} />
+      <SectionHeading level="h4" title="Save Position" />
+      <div className={styles.row}>
+        <input className={styles.input} type="number" value={posX} onChange={(e) => setPosX(e.target.value)} onBlur={commitPos} />{" "}
+        <input className={styles.input} type="number" value={posY} onChange={(e) => setPosY(e.target.value)} onBlur={commitPos} />{" "}
+        <input className={styles.input} type="number" value={posZ} onChange={(e) => setPosZ(e.target.value)} onBlur={commitPos} />
       </div>
 
-      <h3>Current Checkpoint</h3>
+      <SectionHeading level="h4" title="Current Checkpoint" />
       <input
+        className={styles.input}
         type="text"
         defaultValue={state.sequence_current_banc}
         onBlur={(e) => api.setSequenceCurrentBanc(e.target.value).catch((err) => onError(String(err)))}
       />
 
-      <h3>Pouch Slot Counts</h3>
+      <SectionHeading level="h4" title="Pouch Slot Counts" />
       <NumberField
         label="Weapon"
         value={state.pouch_weapon_valid_num}
@@ -104,6 +113,25 @@ export default function TotkView({ state, onError }: Props) {
         onCommit={api.setPouchShieldValidNum}
         onError={onError}
       />
+
+      <TotkPouchTables
+        weapons={state.pouch_weapons}
+        bows={state.pouch_bows}
+        shields={state.pouch_shields}
+        armor={state.armor}
+        arrows={state.arrows}
+        materials={state.materials}
+        keyItems={state.key_items}
+        devices={state.devices}
+        food={state.food}
+        onError={onError}
+      />
+
+      <TotkHorsesTable horses={state.horses} onError={onError} />
+
+      <TotkAutoBuildTable autobuilds={state.autobuilds} onError={onError} />
+
+      <TotkCompletionismPanel state={state} />
     </div>
   );
 }
