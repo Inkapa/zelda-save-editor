@@ -1,7 +1,8 @@
-//! Completionism counts: shrines, koroks, defeated hinox/talus/molduga, and visited
-//! locations. Read-only: the source tool (`zelda-totk.completism.js`) only ever displays
-//! these counts (plus optional map pins, out of scope here); there's no mass-unlock/write
-//! feature to mirror, unlike BOTW's `unlock_all_*` functions.
+//! Completionism counts: shrines, koroks, defeated hinox/talus/molduga, visited locations, and
+//! the GUID-based categories (bubbuls, sage wills, Addison, old maps). The hash-based categories
+//! stay read-only (the source has no mass-unlock for them); the GUID-based categories now
+//! support mass-unlock, matching BOTW's `unlock_all_*` functions, built on
+//! `totk::guids::append_guids`'s safe buffer-growing insertion.
 //!
 //! Field hashes here are literal pre-computed constants (ported directly from
 //! `CompletismHashes`), not name-derived like pouch/horse fields, so no `murmur3::hash32` call
@@ -337,6 +338,29 @@ pub fn old_maps_found(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, 
 
 pub fn addison_completed(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
     count_guids(buf, hash_table_end, &ADDISON_GUIDS)
+}
+
+/// Diffs `guids` (the source's own literal list for a category) against what's already
+/// discovered and appends whatever's missing in one batch, mirroring `Completism._setGuids`.
+/// Returns the number of newly-unlocked items.
+fn unlock_all_guids(buf: &mut SaveBuffer, hash_table_end: usize, guids: &[u64]) -> Result<usize, SaveError> {
+    let discovered = read_discovered_guids(buf, hash_table_end)?;
+    let missing: Vec<u64> = guids.iter().copied().filter(|g| !discovered.contains(g)).collect();
+    let count = missing.len();
+    crate::totk::guids::append_guids(buf, hash_table_end, &missing)?;
+    Ok(count)
+}
+
+pub fn unlock_all_bubbuls(buf: &mut SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    unlock_all_guids(buf, hash_table_end, &BUBBUL_GUIDS)
+}
+
+pub fn unlock_all_sage_wills(buf: &mut SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    unlock_all_guids(buf, hash_table_end, &SAGE_WILL_GUIDS)
+}
+
+pub fn unlock_all_addison(buf: &mut SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    unlock_all_guids(buf, hash_table_end, &ADDISON_GUIDS)
 }
 
 #[cfg(test)]

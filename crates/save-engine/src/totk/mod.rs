@@ -274,6 +274,15 @@ impl TotkSave {
     pub fn addison_completed(&self) -> Result<usize, SaveError> {
         completism::addison_completed(&self.buf, self.hash_table_end)
     }
+    pub fn unlock_all_bubbuls(&mut self) -> Result<usize, SaveError> {
+        completism::unlock_all_bubbuls(&mut self.buf, self.hash_table_end)
+    }
+    pub fn unlock_all_sage_wills(&mut self) -> Result<usize, SaveError> {
+        completism::unlock_all_sage_wills(&mut self.buf, self.hash_table_end)
+    }
+    pub fn unlock_all_addison(&mut self) -> Result<usize, SaveError> {
+        completism::unlock_all_addison(&mut self.buf, self.hash_table_end)
+    }
 
     // --- AutoBuild ---
 

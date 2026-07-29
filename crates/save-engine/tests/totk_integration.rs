@@ -618,6 +618,78 @@ fn set_map_markers_round_trips_and_rejects_wrong_entry_count() {
 }
 
 #[test]
+fn unlock_all_bubbuls_adds_missing_guids_and_others_are_untouched() {
+    let mut save = load_totk();
+    let before_sage_wills = save.sage_wills_found().unwrap();
+    let before_pouch = save.pouch_weapons().unwrap();
+    let before_horses = save.horses().unwrap();
+    let before_map_pins = save.map_pins().unwrap();
+
+    let newly_unlocked = save.unlock_all_bubbuls().unwrap();
+
+    assert!(newly_unlocked > 0, "fixture should have at least one undiscovered bubbul to unlock");
+    assert_eq!(save.defeated_bubbuls().unwrap(), 147, "all 147 bubbuls should now read as defeated");
+    assert_eq!(save.sage_wills_found().unwrap(), before_sage_wills, "unrelated GUID category must be untouched");
+    assert_eq!(save.pouch_weapons().unwrap().len(), before_pouch.len(), "pouch weapons must survive the buffer growth unmoved");
+    for (before, after) in before_pouch.iter().zip(save.pouch_weapons().unwrap().iter()) {
+        assert_eq!(before.id, after.id);
+        assert_eq!(before.durability, after.durability);
+    }
+    assert_eq!(save.horses().unwrap().len(), before_horses.len());
+    assert_eq!(save.horses().unwrap()[0].name, before_horses[0].name);
+    assert_eq!(save.map_pins().unwrap().len(), before_map_pins.len());
+}
+
+#[test]
+fn unlock_all_bubbuls_is_idempotent() {
+    let mut save = load_totk();
+    save.unlock_all_bubbuls().unwrap();
+    let second_run = save.unlock_all_bubbuls().unwrap();
+    assert_eq!(second_run, 0, "nothing left to unlock on a second call");
+}
+
+#[test]
+fn unlock_all_sage_wills_and_addison_work_and_stay_isolated() {
+    let mut save = load_totk();
+    let before_bubbuls = save.defeated_bubbuls().unwrap();
+
+    let sage_wills_unlocked = save.unlock_all_sage_wills().unwrap();
+    assert_eq!(save.sage_wills_found().unwrap(), 20);
+    assert!(sage_wills_unlocked > 0);
+
+    let addison_unlocked = save.unlock_all_addison().unwrap();
+    assert_eq!(save.addison_completed().unwrap(), 81);
+    assert!(addison_unlocked > 0);
+
+    assert_eq!(save.defeated_bubbuls().unwrap(), before_bubbuls, "unrelated category untouched by the other two unlocks");
+}
+
+#[test]
+fn mass_unlock_survives_write_and_reload() {
+    let mut save = load_totk();
+    save.unlock_all_bubbuls().unwrap();
+    let bytes = save.to_bytes();
+
+    // A grown file must still pass the version/size range check and load cleanly.
+    let reloaded = save_engine::Save::detect(bytes).expect("grown save should still load");
+    let save_engine::Save::Totk(reloaded) = reloaded else { panic!("fixture should be TOTK") };
+    assert_eq!(reloaded.defeated_bubbuls().unwrap(), 147);
+    assert!(!reloaded.pouch_weapons().unwrap().is_empty(), "other fields still readable after reload");
+}
+
+#[test]
+fn mass_unlock_completes_within_a_generous_time_budget() {
+    let mut save = load_totk();
+    let start = std::time::Instant::now();
+    save.unlock_all_bubbuls().unwrap();
+    let elapsed = start.elapsed();
+    assert!(
+        elapsed.as_millis() < 200,
+        "mass-unlock took {elapsed:?}, expected well under 200ms for a single batched insertion"
+    );
+}
+
+#[test]
 fn teleporters_read_real_fixture_contents() {
     let save = load_totk();
     let teleporters = save.teleporters().unwrap();
