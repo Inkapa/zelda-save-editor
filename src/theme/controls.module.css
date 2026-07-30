@@ -1,7 +1,6 @@
 .field {
   display: block;
   margin-bottom: 4px;
-  font-family: var(--font-display);
 }
 
 .input {
@@ -12,6 +11,18 @@
   border: 1px solid var(--border);
   border-radius: 3px;
   padding: 2px 4px;
+}
+
+/* Plain <input> elements default to a fairly wide browser intrinsic size (~20 characters)
+   regardless of what's actually typed in them, which stretches table columns (an "Id" cell
+   showing a 12-character string still reserves 20 characters of width) and stat-form fields far
+   past what the content needs. <select> keeps its native content-based auto width (not covered
+   here, since these rules target the <input> tag specifically). */
+input.input {
+  width: 20ch;
+}
+input.input[type="number"] {
+  width: 7ch;
 }
 
 .button {
