@@ -14,6 +14,11 @@ import EditableEntryTable, { ColumnDef } from "./EditableEntryTable";
 import SectionHeading from "../../theme/SectionHeading";
 import TotkMotif from "../../theme/motifs/TotkMotif";
 import { totkArmorIconUrl, totkIconUrl } from "./totkIcons";
+import { TOTK_ITEM_NAMES } from "./totkItemNames.data";
+
+function nameFor(entry: { id: string }): string | undefined {
+  return TOTK_ITEM_NAMES[entry.id];
+}
 
 function text<T>(key: keyof T, label: string): ColumnDef<T> {
   return { key, label, type: "text" };
@@ -125,6 +130,7 @@ export default function TotkPouchTables({
         setter={api.setPouchWeapons}
         onError={onError}
         iconFor={(e) => totkIconUrl("weapon", e.id)}
+        nameFor={nameFor}
       />
       <EditableEntryTable
         title="Bows"
@@ -133,6 +139,7 @@ export default function TotkPouchTables({
         setter={api.setPouchBows}
         onError={onError}
         iconFor={(e) => totkIconUrl("bow", e.id)}
+        nameFor={nameFor}
       />
       <EditableEntryTable
         title="Shields"
@@ -141,6 +148,7 @@ export default function TotkPouchTables({
         setter={api.setPouchShields}
         onError={onError}
         iconFor={(e) => totkIconUrl("shield", e.id)}
+        nameFor={nameFor}
       />
       <EditableEntryTable
         title="Armor"
@@ -149,6 +157,7 @@ export default function TotkPouchTables({
         setter={api.setArmor}
         onError={onError}
         iconFor={(e) => totkArmorIconUrl(e.id, e.dye_color)}
+        nameFor={nameFor}
       />
       <EditableEntryTable
         title="Arrows"
@@ -157,6 +166,7 @@ export default function TotkPouchTables({
         setter={api.setArrows}
         onError={onError}
         iconFor={(e) => totkIconUrl("arrow", e.id)}
+        nameFor={nameFor}
       />
       <EditableEntryTable
         title="Materials"
@@ -165,6 +175,7 @@ export default function TotkPouchTables({
         setter={api.setMaterials}
         onError={onError}
         iconFor={(e) => totkIconUrl("material", e.id)}
+        nameFor={nameFor}
       />
       <EditableEntryTable
         title="Key Items"
@@ -173,6 +184,7 @@ export default function TotkPouchTables({
         setter={api.setKeyItems}
         onError={onError}
         iconFor={(e) => totkIconUrl("keyItem", e.id)}
+        nameFor={nameFor}
       />
       <EditableEntryTable
         title="Devices"
@@ -181,6 +193,7 @@ export default function TotkPouchTables({
         setter={api.setDevices}
         onError={onError}
         iconFor={(e) => totkIconUrl("device", e.id)}
+        nameFor={nameFor}
       />
       <EditableEntryTable
         title="Food"
@@ -189,6 +202,7 @@ export default function TotkPouchTables({
         setter={api.setFood}
         onError={onError}
         iconFor={(e) => totkIconUrl("food", e.id)}
+        nameFor={nameFor}
       />
     </div>
   );

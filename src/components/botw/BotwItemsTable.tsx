@@ -4,6 +4,7 @@ import * as api from "../../api";
 import SectionHeading from "../../theme/SectionHeading";
 import BotwMotif from "../../theme/motifs/BotwMotif";
 import { botwIconStyle, botwUnknownIconUrl } from "./botwIcons";
+import { BOTW_ITEM_NAMES } from "./botwItemNames.data";
 import styles from "./BotwItemsTable.module.css";
 
 const ICON_SIZE = 32;
@@ -44,6 +45,7 @@ function ItemRow({
         <ItemIcon item={item} />
       </td>
       <td>{index}</td>
+      <td>{BOTW_ITEM_NAMES[item.name] ?? ""}</td>
       <td>
         <input className={styles.input} value={name} onChange={(e) => setName(e.target.value)} onBlur={commit} />
       </td>
@@ -80,6 +82,7 @@ function CategoryTable({
             <th></th>
             <th>#</th>
             <th>Name</th>
+            <th>Id</th>
             <th>{quantityLabel}</th>
           </tr>
         </thead>

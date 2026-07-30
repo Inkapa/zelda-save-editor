@@ -81,6 +81,7 @@ interface Props<T> {
   level?: "h3" | "h4";
   motif?: ReactNode;
   iconFor?: (entry: T) => string;
+  nameFor?: (entry: T) => string | undefined;
 }
 
 export default function EditableEntryTable<T>({
@@ -92,6 +93,7 @@ export default function EditableEntryTable<T>({
   level = "h4",
   motif,
   iconFor,
+  nameFor,
 }: Props<T>) {
   return (
     <div>
@@ -101,6 +103,7 @@ export default function EditableEntryTable<T>({
           <tr>
             {iconFor && <th></th>}
             <th>#</th>
+            {nameFor && <th>Name</th>}
             {columns.map((c) => (
               <th key={String(c.key)}>{c.label}</th>
             ))}
@@ -123,6 +126,7 @@ export default function EditableEntryTable<T>({
                 </td>
               )}
               <td>{i}</td>
+              {nameFor && <td>{nameFor(entry) ?? ""}</td>}
               {columns.map((c) => (
                 <Cell key={String(c.key)} entries={entries} index={i} column={c} setter={setter} onError={onError} />
               ))}

@@ -14,7 +14,8 @@ built as a Rust save-parsing core with a Tauri desktop shell.
 ### Breath of the Wild
 - Player stats (hearts, stamina, rupees, mon, playtime), positions, and current map
 - Full inventory: weapons, bows, shields, armor, materials, food, and key items, with automatic
-  item categorization and item icons (including dye-colored armor)
+  item categorization, item icons (including dye-colored armor), and English display names
+  next to each raw item id
 - Weapon/bow/shield modifier slots
 - Horses (name, saddle, reins, type)
 - Completionism mass-unlock: koroks, defeated hinox/talus/molduga, visited locations
@@ -22,7 +23,7 @@ built as a Rust save-parsing core with a Tauri desktop shell.
 ### Tears of the Kingdom
 - Player stats, save position, and current checkpoint
 - Full pouch inventory: weapons, bows, shields, armor, arrows, materials, key items, Zonai
-  devices, and food (including fused-weapon and recipe data), with item icons
+  devices, and food (including fused-weapon and recipe data), with item icons and display names
 - Horses, including bond, stats, and coat/mane/eye coloring
 - Completionism counts: shrines, koroks, defeated bosses, visited locations (read-only, matching
   the absence of a mass-unlock feature for these categories in-game), plus mass-unlock for
