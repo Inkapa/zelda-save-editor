@@ -3,6 +3,8 @@ import type { BotwState } from "../../api";
 import * as api from "../../api";
 import SectionHeading from "../../theme/SectionHeading";
 import BotwMotif from "../../theme/motifs/BotwMotif";
+import Select from "../Select";
+import { HEARTS_OPTIONS, STAMINA_OPTIONS } from "./botwEnums.data";
 import styles from "./BotwStatsForm.module.css";
 
 interface Props {
@@ -50,11 +52,19 @@ export default function BotwStatsForm({ state, onError }: Props) {
       <SectionHeading title="Stats" motif={<BotwMotif />} />
       <NumberField label="Rupees" value={state.rupees} onCommit={commit(api.setRupees)} />
       <NumberField label="Mons (Amiibo)" value={state.mons} onCommit={commit(api.setMons)} />
-      <NumberField label="Max Hearts" value={state.max_hearts} onCommit={commit(api.setMaxHearts)} />
-      <NumberField
+      <Select
+        label="Max Hearts"
+        value={state.max_hearts}
+        options={HEARTS_OPTIONS}
+        onCommit={commit(api.setMaxHearts)}
+        onError={onError}
+      />
+      <Select
         label="Max Stamina"
         value={state.max_stamina}
+        options={STAMINA_OPTIONS}
         onCommit={commit(api.setMaxStaminaBotw)}
+        onError={onError}
       />
       <NumberField
         label="Relic - Gerudo"
