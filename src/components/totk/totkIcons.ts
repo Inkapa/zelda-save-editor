@@ -1,3 +1,5 @@
+import { armorBaseId } from "./totkArmorFamilies.data";
+
 const CATEGORY_DIRS = {
   weapon: "weapons",
   bow: "bows",
@@ -20,7 +22,7 @@ export function totkIconUrl(category: TotkIconCategory, id: string): string {
 
 // murmur3("<name>") of each dye color, computed with the engine's own hash function
 // (totk::murmur3::hash32) since armor's dye_color field stores a name hash, not an index.
-const DYE_COLOR_NAMES: Record<number, string> = {
+export const DYE_COLOR_NAMES: Record<number, string> = {
   0xb6eede09: "None",
   0x6cbc3cb4: "Black",
   0xe2911aba: "Blue",
@@ -40,7 +42,8 @@ const DYE_COLOR_NAMES: Record<number, string> = {
 };
 
 export function totkArmorIconUrl(id: string, dyeColor: number): string {
+  const baseId = armorBaseId(id);
   const colorName = DYE_COLOR_NAMES[dyeColor];
-  if (!colorName || colorName === "None") return totkIconUrl("armor", id);
-  return `/icons/totk/armors/dye/${id}_${colorName}.webp`;
+  if (!colorName || colorName === "None") return totkIconUrl("armor", baseId);
+  return `/icons/totk/armors/dye/${baseId}_${colorName}.webp`;
 }
