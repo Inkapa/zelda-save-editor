@@ -7,7 +7,7 @@ use save_engine::botw::BotwSave;
 use save_engine::{Save, SaveError};
 
 /// Builds the DTO from a loaded `BotwSave`. Pure and Tauri-free, directly unit-testable
-/// against a real fixture, and reused (extended) by Task 4 once the list-shaped fields exist.
+/// against a real fixture.
 pub fn read_state(save: &BotwSave) -> Result<BotwState, ShellError> {
     let (weapon_modifiers, bow_modifiers, shield_modifiers) = save.modifiers()?;
     Ok(BotwState {

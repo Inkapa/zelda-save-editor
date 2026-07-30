@@ -12,7 +12,7 @@ use crate::hashtable::scan_offsets;
 pub const MAX_ITEMS: usize = 420;
 
 /// Hash -> field name table, ported from `zelda-botw.js`'s `Hashes` array. MUST stay
-/// sorted in ascending hash order (see Global Constraints in the plan).
+/// sorted in ascending hash order, see `hashtable::scan_offsets`'s doc for why.
 const HASHES: [(u32, &str); 33] = [
     (0x0bee9e46, "MAP"),
     (0x0cbf052a, "FLAGS_BOW"),
@@ -424,6 +424,9 @@ impl BotwSave {
         let reins_offset = self.offset("HORSE_REINS")?;
         let types_offset = self.offset("HORSE_TYPES")?;
 
+        // Slots 0-4 are the five named, stabled horses. Slot 5 is the source's "Untamed
+        // horse" slot (the wild horse Link is currently riding but hasn't registered at a
+        // stable), which only ever has a type, never a name/saddle/reins.
         let mut out = Vec::with_capacity(NUM_HORSE_SLOTS);
         for i in 0..NUM_HORSE_SLOTS {
             let horse_type = strings::read_string64(&self.buf, types_offset, i)?;

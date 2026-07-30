@@ -3,7 +3,7 @@ use crate::error::SaveError;
 /// (version label, file size, header value at offset 4, metaDataStart value at offset 8).
 /// Used only to LABEL a detected save. An unrecognized combination is labeled "game mod"
 /// rather than rejected; the real validity gate is `check_magic_and_size` plus the
-/// hash-table scan in `totk::hashtable` (see Task 2).
+/// hash-table scan in `totk::hashtable`.
 pub const GAME_VERSIONS: [(&str, usize, u32, u32); 3] = [
     ("v1.0", 2307552, 0x0046c3c8, 0x0003c050),
     ("v1.1.x/v1.2.x", 2307656, 0x0047e0f4, 0x0003c088),

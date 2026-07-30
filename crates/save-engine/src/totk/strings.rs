@@ -102,9 +102,9 @@ mod wstring16_tests {
 
     #[test]
     fn round_trips_the_real_fixtures_longest_observed_horse_name() {
-        // "Brownie" is horse index 1's real name in progress.sav (OwnedHorseList.Name),
-        // decoded during design-spec research. Exercises the round-trip contract with a
-        // realistic name length independent of Task 7's offset resolution.
+        // "Brownie" is horse index 1's real name in progress.sav (OwnedHorseList.Name).
+        // Exercises the round-trip contract with a realistic name length rather than a
+        // short placeholder string.
         let mut buf = SaveBuffer::new(vec![0u8; WSTRING16_SIZE]);
         write_wstring16(&mut buf, 0, "Brownie").unwrap();
         assert_eq!(read_wstring16(&buf, 0).unwrap(), "Brownie");

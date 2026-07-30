@@ -88,7 +88,7 @@ pub fn save_as(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<(), 
 /// Serializes the currently-loaded save, writes it to `path`, then re-detects the freshly
 /// written bytes to put a newly-constructed `Save` back into `AppState`. `Save::to_bytes`
 /// consumes `self`, so this is how editing continues to work after a save without changing
-/// the engine's already-shipped signature (see Global Constraints).
+/// that signature.
 ///
 /// Before touching `path`, copies whatever's already there to a `.bak` sibling (overwriting
 /// any previous backup), so a bad edit is always one file away from recoverable. Done before
