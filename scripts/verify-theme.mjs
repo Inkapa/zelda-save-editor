@@ -1,8 +1,7 @@
 import { chromium } from "playwright";
 
 const game = process.argv[2] ?? "neutral"; // botw | totk | neutral
-const scheme = process.argv[3] ?? "light"; // light | dark
-const outPath = process.argv[4] ?? `scratch-${game}-${scheme}.png`;
+const outPath = process.argv[3] ?? `scratch-${game}.png`;
 
 const mocks = {
   botw: {
@@ -144,7 +143,6 @@ const mocks = {
 
 const browser = await chromium.launch();
 const page = await browser.newPage({ viewport: { width: 1280, height: 1600 } });
-await page.emulateMedia({ colorScheme: scheme });
 
 await page.addInitScript((mock) => {
   window.__TAURI_INTERNALS__ = {
@@ -153,7 +151,17 @@ await page.addInitScript((mock) => {
       if (cmd === "get_botw_state" || cmd === "get_totk_state") return mock?.state ?? null;
       return null;
     },
+    transformCallback: (callback) => {
+      const id = Math.floor(Math.random() * 1e9);
+      window[`_${id}`] = callback;
+      return id;
+    },
+    metadata: {
+      currentWindow: { label: "main" },
+      currentWebview: { windowLabel: "main", label: "main" },
+    },
   };
+  window.__TAURI_EVENT_PLUGIN_INTERNALS__ = { unregisterListener: () => {} };
 }, mocks[game] ?? null);
 
 await page.goto("http://localhost:1420");
