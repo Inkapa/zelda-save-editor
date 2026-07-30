@@ -5,8 +5,22 @@
   composes: input from "../../theme/controls.module.css";
 }
 .icon {
-  width: 32px;
-  height: 32px;
+  width: 48px;
+  height: 48px;
   object-fit: contain;
   display: block;
+}
+.select {
+  composes: input from "../../theme/controls.module.css";
+}
+.cellRow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.bonusIcon {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  flex-shrink: 0;
 }
