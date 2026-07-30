@@ -1,4 +1,5 @@
 pub mod autobuilder;
+pub mod caption;
 pub mod completism;
 pub mod guids;
 pub mod hashdict;

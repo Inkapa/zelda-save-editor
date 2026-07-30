@@ -203,9 +203,20 @@ export interface TotkState {
   teleporters: TotkTeleporter[];
 }
 
+export interface TotkCaption {
+  year: number;
+  month: number;
+  day: number;
+  hour: number;
+  minute: number;
+  is_autosave: boolean;
+  thumbnail_jpeg: number[];
+}
+
 export type OpenResult =
   | { kind: "botw"; state: BotwState }
-  | { kind: "totk"; state: TotkState };
+  | { kind: "totk"; state: TotkState }
+  | { kind: "caption"; info: TotkCaption };
 
 export interface ShellError {
   kind: string;

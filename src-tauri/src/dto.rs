@@ -567,8 +567,34 @@ impl From<TotkHorseDto> for save_engine::totk::horse::HorseEntry {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkCaptionDto {
+    pub year: u32,
+    pub month: u32,
+    pub day: u32,
+    pub hour: u32,
+    pub minute: u32,
+    pub is_autosave: bool,
+    pub thumbnail_jpeg: Vec<u8>,
+}
+
+impl From<save_engine::totk::caption::CaptionInfo> for TotkCaptionDto {
+    fn from(c: save_engine::totk::caption::CaptionInfo) -> Self {
+        TotkCaptionDto {
+            year: c.year,
+            month: c.month,
+            day: c.day,
+            hour: c.hour,
+            minute: c.minute,
+            is_autosave: c.is_autosave,
+            thumbnail_jpeg: c.thumbnail_jpeg,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum OpenResult {
     Botw { state: BotwState },
     Totk { state: TotkState },
+    Caption { info: TotkCaptionDto },
 }

@@ -3,7 +3,7 @@ use std::path::PathBuf;
 use tauri::State;
 use tauri_plugin_dialog::DialogExt;
 
-use crate::dto::OpenResult;
+use crate::dto::{OpenResult, TotkCaptionDto};
 use crate::error::ShellError;
 use crate::state::AppState;
 use save_engine::Save;
@@ -11,17 +11,30 @@ use save_engine::Save;
 /// Detects the save format from raw bytes and builds the DTO to return to the frontend,
 /// without touching `AppState`. The caller is responsible for storing the resulting
 /// `Save` and file path. Pure and Tauri-free: directly unit-testable against real fixtures.
-pub fn detect_and_build(bytes: Vec<u8>) -> Result<(Save, OpenResult), ShellError> {
-    let save = Save::detect(bytes)?;
-    let result = match &save {
-        Save::Botw(botw_save) => {
-            OpenResult::Botw { state: crate::commands::botw::read_state(botw_save)? }
+///
+/// `caption.sav` isn't a `Save`: it has no editable state and nothing to write back
+/// (the source only ever reads it, to show a thumbnail next to a save slot), so a
+/// successful caption parse returns `None` in place of a `Save` for the caller to store.
+pub fn detect_and_build(bytes: Vec<u8>) -> Result<(Option<Save>, OpenResult), ShellError> {
+    let detect_err = match Save::detect(bytes.clone()) {
+        Ok(save) => {
+            let result = match &save {
+                Save::Botw(botw_save) => {
+                    OpenResult::Botw { state: crate::commands::botw::read_state(botw_save)? }
+                }
+                Save::Totk(totk_save) => {
+                    OpenResult::Totk { state: crate::commands::totk::read_state(totk_save)? }
+                }
+            };
+            return Ok((Some(save), result));
         }
-        Save::Totk(totk_save) => {
-            OpenResult::Totk { state: crate::commands::totk::read_state(totk_save)? }
-        }
+        Err(err) => err,
     };
-    Ok((save, result))
+
+    match save_engine::totk::caption::parse(bytes) {
+        Ok(info) => Ok((None, OpenResult::Caption { info: TotkCaptionDto::from(info) })),
+        Err(_) => Err(detect_err.into()),
+    }
 }
 
 #[tauri::command]
@@ -37,8 +50,10 @@ pub fn open_save(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<Op
         .map_err(|e| ShellError::io(std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string())))?;
     let bytes = std::fs::read(&path).map_err(ShellError::io)?;
     let (save, result) = detect_and_build(bytes)?;
-    *state.save.lock().unwrap() = Some(save);
-    *state.path.lock().unwrap() = Some(path);
+    if let Some(save) = save {
+        *state.save.lock().unwrap() = Some(save);
+        *state.path.lock().unwrap() = Some(path);
+    }
     Ok(result)
 }
 
@@ -76,7 +91,7 @@ fn write_current_save(app_state: &AppState, path: &PathBuf) -> Result<(), ShellE
     // failure would permanently empty AppState.save, discarding in-memory edits until the user
     // manually reopens the file.
     let (reloaded, _) = detect_and_build(bytes)?;
-    *app_state.save.lock().unwrap() = Some(reloaded);
+    *app_state.save.lock().unwrap() = reloaded;
     write_result.map_err(ShellError::io)?;
     Ok(())
 }
@@ -108,11 +123,45 @@ mod tests {
     }
 
     #[test]
+    fn detect_and_build_falls_back_to_caption_when_not_a_botw_or_totk_save() {
+        const HASH_TABLE_END: usize = 0x1c0;
+        let mut bytes = vec![0u8; 0x28];
+        let rows: [(u32, u32); 7] = [
+            (0x9811a3f7, 2026),
+            (0xdfd840d3, 7),
+            (0xbd46f485, 30),
+            (0x23f3d75e, 14),
+            (0x27853bf7, 45),
+            (0x25f03caa, 0),
+            (0x63696a32, HASH_TABLE_END as u32),
+        ];
+        for (hash, value) in rows {
+            bytes.extend_from_slice(&hash.to_le_bytes());
+            bytes.extend_from_slice(&value.to_le_bytes());
+        }
+        bytes.resize(HASH_TABLE_END, 0);
+        let jpeg_bytes = [0xffu8, 0xd8, 0xff, 0xd9];
+        bytes.extend_from_slice(&(jpeg_bytes.len() as u32).to_le_bytes());
+        bytes.extend_from_slice(&jpeg_bytes);
+
+        let (save, result) = detect_and_build(bytes).unwrap();
+        assert!(save.is_none(), "caption.sav has no editable Save to store");
+        match result {
+            OpenResult::Caption { info } => {
+                assert_eq!(info.year, 2026);
+                assert_eq!(info.thumbnail_jpeg, vec![0xff, 0xd8, 0xff, 0xd9]);
+            }
+            _ => panic!("expected OpenResult::Caption"),
+        }
+    }
+
+    #[test]
     fn write_current_save_round_trips_and_leaves_state_reloaded() {
         let bytes = std::fs::read("../crates/save-engine/tests/fixtures/botw/game_data.sav")
             .expect("fixture present");
         let original_len = bytes.len();
         let (save, _) = detect_and_build(bytes).unwrap();
+        let save = save.expect("botw fixture should produce a Save");
         let app_state = AppState {
             save: std::sync::Mutex::new(Some(save)),
             path: std::sync::Mutex::new(None),
@@ -132,6 +181,7 @@ mod tests {
         let bytes = std::fs::read("../crates/save-engine/tests/fixtures/botw/game_data.sav")
             .expect("fixture present");
         let (save, _) = detect_and_build(bytes).unwrap();
+        let save = save.expect("botw fixture should produce a Save");
         let app_state = AppState {
             save: std::sync::Mutex::new(Some(save)),
             path: std::sync::Mutex::new(None),

@@ -3,6 +3,7 @@ import type { OpenResult } from "./api";
 import * as api from "./api";
 import BotwView from "./components/botw/BotwView";
 import TotkView from "./components/totk/TotkView";
+import CaptionView from "./components/totk/CaptionView";
 import ErrorBanner from "./components/ErrorBanner";
 import { useThemeAttributes } from "./theme/useThemeAttributes";
 import styles from "./App.module.css";
@@ -10,7 +11,8 @@ import styles from "./App.module.css";
 function App() {
   const [loaded, setLoaded] = useState<OpenResult | null>(null);
   const [error, setError] = useState<string | null>(null);
-  useThemeAttributes(loaded?.kind ?? "neutral");
+  const editable = loaded?.kind === "botw" || loaded?.kind === "totk";
+  useThemeAttributes(loaded?.kind === "caption" ? "totk" : loaded?.kind ?? "neutral");
 
   const handleOpen = async () => {
     try {
@@ -39,7 +41,7 @@ function App() {
   };
 
   const refreshCurrent = async () => {
-    if (!loaded) return;
+    if (!loaded || loaded.kind === "caption") return;
     try {
       if (loaded.kind === "botw") {
         setLoaded({ kind: "botw", state: await api.getBotwState() });
@@ -59,13 +61,13 @@ function App() {
         <button className={styles.button} onClick={handleOpen}>
           Open...
         </button>
-        <button className={styles.button} onClick={handleSave} disabled={!loaded}>
+        <button className={styles.button} onClick={handleSave} disabled={!editable}>
           Save
         </button>
-        <button className={styles.button} onClick={handleSaveAs} disabled={!loaded}>
+        <button className={styles.button} onClick={handleSaveAs} disabled={!editable}>
           Save As...
         </button>
-        <button className={styles.button} onClick={refreshCurrent} disabled={!loaded}>
+        <button className={styles.button} onClick={refreshCurrent} disabled={!editable}>
           Refresh
         </button>
       </div>
@@ -75,6 +77,7 @@ function App() {
       {loaded?.kind === "totk" && (
         <TotkView state={loaded.state} onError={setError} onRefresh={refreshCurrent} />
       )}
+      {loaded?.kind === "caption" && <CaptionView info={loaded.info} />}
       {!loaded && <p className={styles.empty}>Open a save file to begin.</p>}
     </div>
   );
