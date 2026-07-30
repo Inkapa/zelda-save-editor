@@ -12,7 +12,7 @@ built as a Rust save-parsing core with a Tauri desktop shell.
 ### Breath of the Wild
 - Player stats (hearts, stamina, rupees, mon, playtime), positions, and current map
 - Full inventory: weapons, bows, shields, armor, materials, food, and key items, with automatic
-  item categorization
+  item categorization and item icons (including dye-colored armor)
 - Weapon/bow/shield modifier slots
 - Horses (name, saddle, reins, type)
 - Completionism mass-unlock: koroks, defeated hinox/talus/molduga, visited locations
@@ -75,8 +75,6 @@ The save-format core is complete for both games' most commonly edited data (see 
 and every shipped engine capability is wired through to the Tauri IPC layer with a typed
 command per read/write operation, backed by a themed UI. What's still ahead:
 
-- Item icons for BOTW (TOTK's are done); BOTW's icon set is a different mechanism, sprite sheets
-  with per-item lookup tables, rather than TOTK's one-file-per-item layout
 - A BOTW equivalent of the advanced hash browser (BOTW's hash dictionary isn't vendored yet)
 - An interactive in-game map, on hold pending a licensing check on the map imagery
 - Responsive layout across desktop and mobile form factors
@@ -87,8 +85,10 @@ command per read/write operation, backed by a themed UI. What's still ahead:
 The BOTW and TOTK save formats implemented here (hash tables, field offsets, and encoding
 details) were taken from
 [marcrobledo/savegame-editors](https://github.com/marcrobledo/savegame-editors) (MIT licensed). This project is an independent Rust reimplementation built on top of that
-research, not a fork of its code. The TOTK item icons under `public/icons/totk/` are also
-vendored from that repository.
+research, not a fork of its code. The item icons under `public/icons/` are also vendored from
+that repository, which in turn credits
+[spriters-resource.com](https://www.spriters-resource.com/wii_u/thelegendofzeldabreathofthewild/)
+for the BOTW sprite sheets.
 
 ## Disclaimer
 
