@@ -1,7 +1,7 @@
 //! Typed lookup over TOTK's full hash dictionary (`zelda-totk.hashes.csv`, vendored from the
 //! same MIT-licensed source repo as everything else in this crate). The only thing this module
 //! answers is "is this hash's stored value in the hash table a pointer (an address into the blob
-//! heap) or a direct scalar value" — needed to safely relocate pointers when
+//! heap) or a direct scalar value", needed to safely relocate pointers when
 //! `totk::hashtable::insert_and_relocate` grows the file. Field names and the full type
 //! vocabulary are parsed but not exposed; nothing else needs them yet.
 
@@ -14,7 +14,7 @@ const RAW_CSV: &str = include_str!("../../data/totk-hashes.csv");
 /// therefore pointer-indirected rather than stored directly in the hash table. Matches the
 /// source's own `Variable.getVariableSize`, which throws for any type outside this same set
 /// (plus the 4-byte direct types `Bool`/`Int`/`UInt`/`Enum`/`Float`, which are deliberately
-/// *not* listed here — see `is_pointer`'s doc comment for why unrecognized types must default
+/// *not* listed here, see `is_pointer`'s doc comment for why unrecognized types must default
 /// to "not a pointer", not the reverse).
 const POINTER_TYPES: &[&str] = &[
     "IntArray",
@@ -68,7 +68,7 @@ fn dictionary() -> &'static HashMap<u32, bool> {
 
 /// Whether `hash`'s stored value in the TOTK hash table is a pointer into the blob heap.
 /// Unrecognized hashes (not present in the dictionary, or present with an unrecognized type
-/// string) default to `false` — deliberately: a scalar `Enum` field's value is itself a full
+/// string) default to `false` deliberately: a scalar `Enum` field's value is itself a full
 /// 32-bit hash, so a "default to pointer" policy would risk incrementing real enum state data
 /// any time that hash numerically exceeded an insertion point, a much wider blast radius than
 /// the narrower failure of a rare unknown field's own pointer going stale.
@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn dictionary_parses_a_realistic_row_count() {
         // Sanity bound, not an exact count (the vendored file may gain/lose a handful of rows
-        // upstream) — catches a totally broken parse (e.g. wrong delimiter) immediately.
+        // upstream), catches a totally broken parse (e.g. wrong delimiter) immediately.
         assert!(dictionary().len() > 20_000, "expected tens of thousands of parsed hashes, got {}", dictionary().len());
     }
 }
