@@ -1,0 +1,34 @@
+.tabBar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 8px;
+}
+.tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  color: var(--text);
+  opacity: 0.65;
+  font-family: system-ui, sans-serif;
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+.tab:hover {
+  opacity: 0.9;
+}
+.active {
+  opacity: 1;
+  border-bottom-color: var(--accent);
+}
+.wave {
+  opacity: 0.5;
+  margin-bottom: 8px;
+}
+.content {
+  min-height: 200px;
+}
