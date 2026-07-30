@@ -1,4 +1,5 @@
-import { invoke } from "@tauri-apps/api/core";
+import { invoke as tauriInvoke } from "@tauri-apps/api/core";
+import { clearDirty, markDirty, notifyStateChanged } from "./dirty";
 import type {
   BotwState,
   ModifierCategory,
@@ -20,6 +21,20 @@ import type {
   TotkTeleporter,
   TotkWeapon,
 } from "./types";
+
+const READONLY_COMMANDS = new Set(["get_botw_state", "get_totk_state", "get_totk_hash_rows"]);
+const CLEARS_DIRTY_COMMANDS = new Set(["open_save", "save", "save_as"]);
+
+function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
+  return tauriInvoke<T>(cmd, args).then((result) => {
+    if (CLEARS_DIRTY_COMMANDS.has(cmd)) clearDirty();
+    else if (!READONLY_COMMANDS.has(cmd)) {
+      markDirty();
+      notifyStateChanged();
+    }
+    return result;
+  });
+}
 
 export function openSave(): Promise<OpenResult> {
   return invoke("open_save");
