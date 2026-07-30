@@ -713,3 +713,20 @@ fn set_teleporters_round_trips_and_rejects_wrong_entry_count() {
     let result = save.set_teleporters(&teleporters);
     assert!(matches!(result, Err(save_engine::SaveError::SizeMismatch { .. })));
 }
+
+#[test]
+fn browse_hashes_covers_the_real_fixtures_full_table() {
+    let save = load_totk();
+    let rows = save.browse_hashes().unwrap();
+    assert_eq!(rows.len(), 30731);
+    assert_eq!(rows.iter().filter(|r| r.editable).count(), 28920);
+    assert_eq!(rows.iter().filter(|r| r.name.is_none()).count(), 32);
+}
+
+#[test]
+fn set_hash_field_edits_a_scalar_field_found_by_hash() {
+    let mut save = load_totk();
+    let hash = save_engine::totk::murmur3::hash32("PlayerStatus.MaxLife");
+    save.set_hash_field(hash, 777.0).unwrap();
+    assert_eq!(save.max_life().unwrap(), 777);
+}

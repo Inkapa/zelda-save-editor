@@ -76,6 +76,45 @@ pub fn is_pointer(hash: u32) -> bool {
     dictionary().get(&hash).copied().unwrap_or(false)
 }
 
+/// A dictionary row's name and type, for the generic hash browser (`totk::hashbrowser`). Kept
+/// separate from `dictionary()`'s hash -> is_pointer map, which stays on its own hot lookup path
+/// used by every buffer-growing edit.
+pub struct DictEntry {
+    pub name: &'static str,
+    pub type_name: &'static str,
+    pub is_pointer: bool,
+}
+
+fn parse_full_dictionary() -> HashMap<u32, DictEntry> {
+    let mut map = HashMap::new();
+    for line in RAW_CSV.lines() {
+        if line.starts_with('#') || line.starts_with("EnumValues;") || line.trim().is_empty() {
+            continue;
+        }
+        let mut fields = line.splitn(3, ';');
+        let (Some(hash_str), Some(type_str), Some(name)) = (fields.next(), fields.next(), fields.next()) else {
+            continue;
+        };
+        let Ok(hash) = u32::from_str_radix(hash_str, 16) else {
+            continue;
+        };
+        map.insert(hash, DictEntry { name, type_name: type_str, is_pointer: POINTER_TYPES.contains(&type_str) });
+    }
+    map
+}
+
+fn full_dictionary() -> &'static HashMap<u32, DictEntry> {
+    static DICT: OnceLock<HashMap<u32, DictEntry>> = OnceLock::new();
+    DICT.get_or_init(parse_full_dictionary)
+}
+
+/// Looks up `hash`'s name and type in the vendored dictionary, for display in the generic hash
+/// browser. Returns `None` for hashes the dictionary doesn't recognize (a real possibility: the
+/// dictionary was reverse-engineered by the community, not exhaustive).
+pub fn lookup(hash: u32) -> Option<&'static DictEntry> {
+    full_dictionary().get(&hash)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

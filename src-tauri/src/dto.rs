@@ -592,6 +592,27 @@ impl From<save_engine::totk::caption::CaptionInfo> for TotkCaptionDto {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkHashRowDto {
+    pub hash: u32,
+    pub name: Option<String>,
+    pub type_name: String,
+    pub editable: bool,
+    pub value: f64,
+}
+
+impl From<save_engine::totk::hashbrowser::HashRow> for TotkHashRowDto {
+    fn from(r: save_engine::totk::hashbrowser::HashRow) -> Self {
+        TotkHashRowDto {
+            hash: r.hash,
+            name: r.name.map(str::to_string),
+            type_name: r.type_name.to_string(),
+            editable: r.editable,
+            value: r.value,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum OpenResult {
     Botw { state: BotwState },

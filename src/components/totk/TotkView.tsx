@@ -8,6 +8,7 @@ import TotkMapPinsTable from "./TotkMapPinsTable";
 import TotkMapMarkersTable from "./TotkMapMarkersTable";
 import TotkTeleportersTable from "./TotkTeleportersTable";
 import TotkCompletionismPanel from "./TotkCompletionismPanel";
+import TotkHashBrowser from "./TotkHashBrowser";
 import SectionHeading from "../../theme/SectionHeading";
 import TotkMotif from "../../theme/motifs/TotkMotif";
 import styles from "./TotkView.module.css";
@@ -142,6 +143,8 @@ export default function TotkView({ state, onError, onRefresh }: Props) {
       <TotkTeleportersTable teleporters={state.teleporters} onError={onError} />
 
       <TotkCompletionismPanel state={state} onError={onError} onUnlocked={onRefresh} />
+
+      <TotkHashBrowser onError={onError} />
     </div>
   );
 }

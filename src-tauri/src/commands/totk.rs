@@ -2,8 +2,8 @@ use tauri::State;
 
 use crate::dto::{
     TotkArmorDto, TotkArrowDto, TotkAutoBuildEntryDto, TotkBowDto, TotkDeviceDto, TotkFoodDto,
-    TotkHorseDto, TotkKeyItemDto, TotkMapMarkerDto, TotkMapPinDto, TotkMaterialDto, TotkShieldDto,
-    TotkState, TotkTeleporterDto, TotkWeaponDto,
+    TotkHashRowDto, TotkHorseDto, TotkKeyItemDto, TotkMapMarkerDto, TotkMapPinDto, TotkMaterialDto,
+    TotkShieldDto, TotkState, TotkTeleporterDto, TotkWeaponDto,
 };
 use crate::error::ShellError;
 use crate::state::AppState;
@@ -237,6 +237,29 @@ pub fn unlock_all_addison(state: State<'_, AppState>) -> Result<usize, ShellErro
     with_totk(state.inner(), |save| save.unlock_all_addison())
 }
 
+// --- Advanced: generic hash browser. Kept out of `TotkState`/`read_state`: the full table is
+// ~30k rows, and every edit already triggers a `get_totk_state` refresh, so folding this in
+// would send that whole payload on every single unrelated edit. Fetched on demand instead. ---
+
+pub fn get_totk_hash_rows_impl(app_state: &AppState) -> Result<Vec<TotkHashRowDto>, ShellError> {
+    let guard = app_state.save.lock().unwrap();
+    match guard.as_ref() {
+        Some(Save::Totk(save)) => Ok(save.browse_hashes()?.into_iter().map(TotkHashRowDto::from).collect()),
+        Some(Save::Botw(_)) => Err(ShellError::wrong_game("TOTK")),
+        None => Err(ShellError::no_save_loaded()),
+    }
+}
+
+#[tauri::command]
+pub fn get_totk_hash_rows(state: State<'_, AppState>) -> Result<Vec<TotkHashRowDto>, ShellError> {
+    get_totk_hash_rows_impl(state.inner())
+}
+
+#[tauri::command]
+pub fn set_totk_hash_field(state: State<'_, AppState>, hash: u32, value: f64) -> Result<(), ShellError> {
+    with_totk(state.inner(), |save| save.set_hash_field(hash, value))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -438,5 +461,21 @@ mod tests {
         let after = get_totk_state_impl(&app_state).unwrap().defeated_bubbuls;
         assert_eq!(after, 147);
         assert!(after > before);
+    }
+
+    #[test]
+    fn get_totk_hash_rows_returns_the_full_table_with_editable_and_unknown_rows() {
+        let app_state = loaded_app_state();
+        let rows = get_totk_hash_rows_impl(&app_state).unwrap();
+        assert_eq!(rows.len(), 30731);
+    }
+
+    #[test]
+    fn set_totk_hash_field_edits_a_known_scalar_field() {
+        let app_state = loaded_app_state();
+        let hash = save_engine::totk::murmur3::hash32("PlayerStatus.MaxLife");
+        with_totk(&app_state, |save| save.set_hash_field(hash, 555.0)).unwrap();
+        let after = get_totk_state_impl(&app_state).unwrap().max_life;
+        assert_eq!(after, 555);
     }
 }

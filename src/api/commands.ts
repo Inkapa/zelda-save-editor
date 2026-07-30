@@ -14,6 +14,7 @@ import type {
   TotkMapMarker,
   TotkMapPin,
   TotkMaterial,
+  TotkHashRow,
   TotkShield,
   TotkState,
   TotkTeleporter,
@@ -271,4 +272,12 @@ export function unlockAllSageWills(): Promise<number> {
 
 export function unlockAllAddison(): Promise<number> {
   return invoke("unlock_all_addison");
+}
+
+export function getTotkHashRows(): Promise<TotkHashRow[]> {
+  return invoke("get_totk_hash_rows");
+}
+
+export function setTotkHashField(hash: number, value: number): Promise<void> {
+  return invoke("set_totk_hash_field", { hash, value });
 }

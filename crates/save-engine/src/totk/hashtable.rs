@@ -4,7 +4,7 @@ use crate::binary::SaveBuffer;
 use crate::error::SaveError;
 
 const SENTINEL_HASH: u32 = 0xa3db7114; // "MetaData.SaveTypeHash" in the source
-const HASH_TABLE_START: usize = 0x28;
+pub(crate) const HASH_TABLE_START: usize = 0x28;
 
 /// Finds the end of the simple hash-value region by scanning for the sentinel hash,
 /// which marks where the "guids array" (discovered-locations tracking, out of scope for

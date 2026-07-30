@@ -1,0 +1,27 @@
+.view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.warning {
+  background: var(--danger-bg);
+  border: 1px solid var(--danger);
+  color: var(--text);
+  padding: 8px;
+  border-radius: 4px;
+  margin: 0;
+}
+.input {
+  composes: input from "../../theme/controls.module.css";
+}
+.table {
+  composes: table from "../../theme/controls.module.css";
+}
+.readonly {
+  opacity: 0.7;
+}
+.truncated {
+  opacity: 0.7;
+  font-size: 0.85rem;
+  margin: 0;
+}

@@ -203,6 +203,14 @@ export interface TotkState {
   teleporters: TotkTeleporter[];
 }
 
+export interface TotkHashRow {
+  hash: number;
+  name: string | null;
+  type_name: string;
+  editable: boolean;
+  value: number;
+}
+
 export interface TotkCaption {
   year: number;
   month: number;

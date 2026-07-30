@@ -69,6 +69,8 @@ pub fn run() {
             commands::totk::unlock_all_bubbuls,
             commands::totk::unlock_all_sage_wills,
             commands::totk::unlock_all_addison,
+            commands::totk::get_totk_hash_rows,
+            commands::totk::set_totk_hash_field,
             commands::file::open_save,
             commands::file::save,
             commands::file::save_as,

@@ -2,6 +2,7 @@ pub mod autobuilder;
 pub mod caption;
 pub mod completism;
 pub mod guids;
+pub mod hashbrowser;
 pub mod hashdict;
 pub mod hashtable;
 pub mod horse;
@@ -315,5 +316,14 @@ impl TotkSave {
     }
     pub fn set_teleporters(&mut self, entries: &[mapdata::TeleporterEntry]) -> Result<(), SaveError> {
         mapdata::write_teleporters(&mut self.buf, self.hash_table_end, entries)
+    }
+
+    // --- Advanced: generic hash browser ---
+
+    pub fn browse_hashes(&self) -> Result<Vec<hashbrowser::HashRow>, SaveError> {
+        hashbrowser::browse(&self.buf, self.hash_table_end)
+    }
+    pub fn set_hash_field(&mut self, hash: u32, value: f64) -> Result<(), SaveError> {
+        hashbrowser::write_scalar(&mut self.buf, self.hash_table_end, hash, value)
     }
 }
