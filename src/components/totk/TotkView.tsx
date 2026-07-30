@@ -1,7 +1,17 @@
 import { useState } from "react";
 import type { TotkState } from "../../api";
 import * as api from "../../api";
-import TotkPouchTables from "./TotkPouchTables";
+import {
+  TotkWeaponsTable,
+  TotkBowsTable,
+  TotkShieldsTable,
+  TotkArmorTable,
+  TotkArrowsTable,
+  TotkMaterialsTable,
+  TotkKeyItemsTable,
+  TotkDevicesTable,
+  TotkFoodTable,
+} from "./TotkPouchTables";
 import TotkHorsesTable from "./TotkHorsesTable";
 import TotkAutoBuildTable from "./TotkAutoBuildTable";
 import TotkMapPinsTable from "./TotkMapPinsTable";
@@ -10,7 +20,26 @@ import TotkTeleportersTable from "./TotkTeleportersTable";
 import TotkCompletionismPanel from "./TotkCompletionismPanel";
 import TotkHashBrowser from "./TotkHashBrowser";
 import SectionHeading from "../../theme/SectionHeading";
-import TotkMotif from "../../theme/motifs/TotkMotif";
+import TabShell from "../../theme/TabShell";
+import Select from "../Select";
+import { HEARTS_OPTIONS, STAMINA_OPTIONS, BATTERY_OPTIONS } from "./totkEnums.data";
+import {
+  HeartIcon,
+  SwordIcon,
+  BowIcon,
+  ShieldIcon,
+  ShirtIcon,
+  ArrowIcon,
+  LeafIcon,
+  ChestIcon,
+  GearIcon,
+  AppleIcon,
+  BlueprintIcon,
+  HorseshoeIcon,
+  PinIcon,
+  StarIcon,
+  SearchIcon,
+} from "../../theme/icons";
 import styles from "./TotkView.module.css";
 
 interface Props {
@@ -54,25 +83,26 @@ export default function TotkView({ state, onError, onRefresh }: Props) {
       .setSavePos(Number(posX), Number(posY), Number(posZ))
       .catch((err) => onError(String(err)));
 
-  return (
-    <div className={styles.view}>
-      <SectionHeading title="Stats" motif={<TotkMotif />} />
-      <NumberField label="Max Life" value={state.max_life} onCommit={api.setMaxLife} onError={onError} />
+  const statsTab = (
+    <div>
+      <Select label="Max Hearts" value={state.max_life} options={HEARTS_OPTIONS} onCommit={api.setMaxLife} onError={onError} />
       <NumberField
         label="Current Rupees"
         value={state.current_rupees}
         onCommit={api.setCurrentRupees}
         onError={onError}
       />
-      <NumberField
+      <Select
         label="Max Stamina"
         value={state.max_stamina}
+        options={STAMINA_OPTIONS}
         onCommit={api.setMaxStaminaTotk}
         onError={onError}
       />
-      <NumberField
-        label="Max Energy"
+      <Select
+        label="Battery Size"
         value={state.max_energy}
+        options={BATTERY_OPTIONS}
         onCommit={api.setMaxEnergy}
         onError={onError}
       />
@@ -118,33 +148,120 @@ export default function TotkView({ state, onError, onRefresh }: Props) {
         onCommit={api.setPouchShieldValidNum}
         onError={onError}
       />
+    </div>
+  );
 
-      <TotkPouchTables
-        weapons={state.pouch_weapons}
-        bows={state.pouch_bows}
-        shields={state.pouch_shields}
-        armor={state.armor}
-        arrows={state.arrows}
-        materials={state.materials}
-        keyItems={state.key_items}
-        devices={state.devices}
-        food={state.food}
-        onError={onError}
-      />
-
-      <TotkHorsesTable horses={state.horses} onError={onError} />
-
-      <TotkAutoBuildTable autobuilds={state.autobuilds} onError={onError} />
-
+  const mapTab = (
+    <div>
       <TotkMapPinsTable mapPins={state.map_pins} onError={onError} />
-
       <TotkMapMarkersTable mapMarkers={state.map_markers} onError={onError} />
-
       <TotkTeleportersTable teleporters={state.teleporters} onError={onError} />
+    </div>
+  );
 
-      <TotkCompletionismPanel state={state} onError={onError} onUnlocked={onRefresh} />
-
-      <TotkHashBrowser onError={onError} />
+  return (
+    <div className={styles.view}>
+      <TabShell
+        tabs={[
+          { id: "stats", label: "Stats", icon: <HeartIcon />, content: statsTab },
+          {
+            id: "weapons",
+            label: "Weapons",
+            icon: <SwordIcon />,
+            content: <TotkWeaponsTable weapons={state.pouch_weapons} onError={onError} />,
+          },
+          {
+            id: "bows",
+            label: "Bows",
+            icon: <BowIcon />,
+            content: <TotkBowsTable bows={state.pouch_bows} onError={onError} />,
+          },
+          {
+            id: "shields",
+            label: "Shields",
+            icon: <ShieldIcon />,
+            content: <TotkShieldsTable shields={state.pouch_shields} onError={onError} />,
+          },
+          {
+            id: "armor",
+            label: "Armor",
+            icon: <ShirtIcon />,
+            content: <TotkArmorTable armor={state.armor} onError={onError} />,
+          },
+          {
+            id: "arrows",
+            label: "Arrows",
+            icon: <ArrowIcon />,
+            content: <TotkArrowsTable arrows={state.arrows} onError={onError} />,
+          },
+          {
+            id: "materials",
+            label: "Materials",
+            icon: <LeafIcon />,
+            content: <TotkMaterialsTable materials={state.materials} onError={onError} />,
+          },
+          {
+            id: "key_items",
+            label: "Key Items",
+            icon: <ChestIcon />,
+            content: <TotkKeyItemsTable keyItems={state.key_items} onError={onError} />,
+          },
+          {
+            id: "devices",
+            label: "Devices",
+            icon: <GearIcon />,
+            content: <TotkDevicesTable devices={state.devices} onError={onError} />,
+          },
+          {
+            id: "food",
+            label: "Food",
+            icon: <AppleIcon />,
+            content: <TotkFoodTable food={state.food} onError={onError} />,
+          },
+          {
+            id: "horses",
+            label: "Horses",
+            icon: <HorseshoeIcon />,
+            content: <TotkHorsesTable horses={state.horses} onError={onError} />,
+          },
+          {
+            id: "autobuild",
+            label: "AutoBuild",
+            icon: <BlueprintIcon />,
+            content: <TotkAutoBuildTable autobuilds={state.autobuilds} onError={onError} />,
+          },
+          {
+            id: "map_pins",
+            label: "Map Pins",
+            icon: <PinIcon />,
+            content: <TotkMapPinsTable mapPins={state.map_pins} onError={onError} />,
+          },
+          {
+            id: "map_markers",
+            label: "Map Markers",
+            icon: <PinIcon />,
+            content: <TotkMapMarkersTable mapMarkers={state.map_markers} onError={onError} />,
+          },
+          {
+            id: "teleporters",
+            label: "Teleporters",
+            icon: <PinIcon />,
+            content: <TotkTeleportersTable teleporters={state.teleporters} onError={onError} />,
+          },
+          {
+            id: "completionism",
+            label: "Completionism",
+            icon: <StarIcon />,
+            content: <TotkCompletionismPanel state={state} onError={onError} onUnlocked={onRefresh} />,
+          },
+          {
+            id: "hashes",
+            label: "Hash Browser",
+            icon: <SearchIcon />,
+            content: <TotkHashBrowser onError={onError} />,
+          },
+        ]}
+      />
     </div>
   );
 }
