@@ -1,9 +1,42 @@
 // Sprite-sheet slot tables, transcribed from the source project's `zelda-botw.icons.js`
 // `ICONS` object and `REPEAT_ARMOR_ICONS_1`/`REPEAT_ARMOR_ICONS_2` arrays. Each sheet is a
-// 16-column grid of 64x64 cells; a slot's index in its array is its position in the grid
-// (row = floor(index / 16), col = index % 16).
+// 16-column grid; a slot's index in its array is its position in the grid (row = floor(index /
+// 16), col = index % 16). Cells are square (64x64) on multi-row sheets, but single-row sheets
+// (fruits, mushrooms, ore, meat, fish, ...) are only as tall as one 64px row while their width
+// is however many columns that sheet actually uses, so their cells are narrower than they are
+// tall, not 64x64. See `sheetDimensions` in `botwIcons.ts`, derived from each sheet's real pixel
+// size, not assumed square.
 
 export const ICON_COLS = 16;
+
+// Real pixel dimensions of each vendored sheet (measured from the actual webp files), used to
+// derive each sheet's true (possibly non-square) cell size instead of assuming 64x64 for all of
+// them.
+export const SHEET_DIMENSIONS: Record<string, [number, number]> = {
+  Armor_Head: [1024, 1280],
+  Armor_Lower: [1024, 1152],
+  Armor_Upper: [1024, 1088],
+  Item_Chilled: [384, 64],
+  Item_ChilledFish: [576, 64],
+  Item_Cook: [1024, 512],
+  Item_Enemy: [1024, 256],
+  Item_FishGet: [960, 64],
+  Item_Fruit: [768, 64],
+  Item_InsectGet: [1024, 128],
+  Item_Material: [512, 64],
+  Item_Meat: [384, 64],
+  Item_MushroomGet: [768, 64],
+  Item_Ore: [640, 64],
+  Item_PlantGet: [832, 64],
+  Item_Roast: [1024, 192],
+  Item_RoastFish: [576, 64],
+  Other: [1024, 384],
+  Weapon_Bow: [1024, 128],
+  Weapon_Lsword: [1024, 192],
+  Weapon_Shield: [1024, 192],
+  Weapon_Spear: [1024, 192],
+  Weapon_Sword: [1024, 256],
+};
 
 export const ICONS: Record<string, string[]> = {
   Armor_Head: [
