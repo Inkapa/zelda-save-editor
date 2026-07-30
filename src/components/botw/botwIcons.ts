@@ -1,6 +1,6 @@
 import { ICON_COLS, ICONS, REPEAT_ARMOR_ICONS_1, REPEAT_ARMOR_ICONS_2 } from "./botwIcons.data";
 
-export const botwUnknownIconUrl = "/icons/botw/_blank.png";
+export const botwUnknownIconUrl = "/icons/botw/_blank.webp";
 
 interface Resolved {
   sheet: string;
@@ -76,7 +76,7 @@ export function botwIconStyle(itemNameId: string, dyeColor: number | undefined, 
   const col = index % ICON_COLS;
   const row = Math.floor(index / ICON_COLS);
   return {
-    backgroundImage: `url(/icons/botw/${resolved.sheet}.png)`,
+    backgroundImage: `url(/icons/botw/${resolved.sheet}.webp)`,
     backgroundSize: `${ICON_COLS * displaySize}px auto`,
     backgroundPosition: `${-(col * displaySize)}px ${-(row * displaySize)}px`,
     width: displaySize,

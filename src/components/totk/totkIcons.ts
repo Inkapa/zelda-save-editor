@@ -12,10 +12,10 @@ const CATEGORY_DIRS = {
 
 export type TotkIconCategory = keyof typeof CATEGORY_DIRS;
 
-export const totkUnknownIconUrl = "/icons/totk/unknown.png";
+export const totkUnknownIconUrl = "/icons/totk/unknown.webp";
 
 export function totkIconUrl(category: TotkIconCategory, id: string): string {
-  return `/icons/totk/${CATEGORY_DIRS[category]}/${id}.png`;
+  return `/icons/totk/${CATEGORY_DIRS[category]}/${id}.webp`;
 }
 
 // murmur3("<name>") of each dye color, computed with the engine's own hash function
@@ -42,5 +42,5 @@ const DYE_COLOR_NAMES: Record<number, string> = {
 export function totkArmorIconUrl(id: string, dyeColor: number): string {
   const colorName = DYE_COLOR_NAMES[dyeColor];
   if (!colorName || colorName === "None") return totkIconUrl("armor", id);
-  return `/icons/totk/armors/dye/${id}_${colorName}.png`;
+  return `/icons/totk/armors/dye/${id}_${colorName}.webp`;
 }
