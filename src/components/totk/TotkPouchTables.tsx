@@ -13,7 +13,7 @@ import * as api from "../../api";
 import EditableEntryTable, { ColumnDef } from "./EditableEntryTable";
 import SectionHeading from "../../theme/SectionHeading";
 import TotkMotif from "../../theme/motifs/TotkMotif";
-import { totkIconUrl } from "./totkIcons";
+import { totkArmorIconUrl, totkIconUrl } from "./totkIcons";
 
 function text<T>(key: keyof T, label: string): ColumnDef<T> {
   return { key, label, type: "text" };
@@ -148,7 +148,7 @@ export default function TotkPouchTables({
         columns={armorColumns}
         setter={api.setArmor}
         onError={onError}
-        iconFor={(e) => totkIconUrl("armor", e.id)}
+        iconFor={(e) => totkArmorIconUrl(e.id, e.dye_color)}
       />
       <EditableEntryTable
         title="Arrows"
