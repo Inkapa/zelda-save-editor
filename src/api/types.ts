@@ -1,6 +1,9 @@
+export type BotwItemCategory = "weapon" | "bow" | "shield" | "armor" | "material" | "food" | "key_item";
+
 export interface BotwItem {
   name: string;
   quantity: number;
+  category: BotwItemCategory;
 }
 
 export interface ItemModifier {
