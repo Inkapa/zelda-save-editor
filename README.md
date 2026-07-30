@@ -7,6 +7,8 @@ built as a Rust save-parsing core with a Tauri desktop shell.
 > against real save files, and a themed editor UI covers most of what the backend exposes for
 > both games. See [Status & roadmap](#status--roadmap) below for what's still missing.
 
+![TOTK pouch editor screenshot, showing weapon, bow, shield, and armor tables with item icons](.github/screenshot.png)
+
 ## Features
 
 ### Breath of the Wild
@@ -37,12 +39,12 @@ built as a Rust save-parsing core with a Tauri desktop shell.
 ## Project layout
 
 ```
-crates/save-engine/   headless Rust library: binary parsing, hash-table resolution, and typed
-                       read/write accessors for both games' save formats. No UI dependencies.
-src-tauri/             Tauri v2 backend: converts save-engine's types to serializable DTOs and
-                       exposes them as IPC commands, plus native file open/save dialogs.
-src/                    React + TypeScript frontend (Vite), with a byronic-inspired visual
-                       design system.
+crates/save-engine/  headless Rust library: binary parsing, hash-table resolution, and typed
+                      read/write accessors for both games' save formats. No UI dependencies.
+src-tauri/            Tauri v2 backend: converts save-engine's types to serializable DTOs and
+                      exposes them as IPC commands, plus native file open/save dialogs.
+src/                  React + TypeScript frontend (Vite), with a byronic-inspired visual
+                      design system.
 ```
 
 Everything under `crates/save-engine` builds and tests independently of Tauri, so the parsing
@@ -69,6 +71,11 @@ npm run tauri dev
 
 Target platforms are Windows, Linux, and Android.
 
+Once the app is running, click **Open...** and pick a save file: `game_data.sav` for BOTW,
+`progress.sav` for TOTK, or `caption.sav` for a save-slot thumbnail preview. **Save** writes back
+to the same file (after backing up the previous contents to a `.bak` file alongside it);
+**Save As...** picks a new location.
+
 ## Status & roadmap
 
 The save-format core is complete for both games' most commonly edited data (see Features above),
@@ -83,12 +90,13 @@ command per read/write operation, backed by a themed UI. What's still ahead:
 ## Credits
 
 The BOTW and TOTK save formats implemented here (hash tables, field offsets, and encoding
-details) were taken from
-[marcrobledo/savegame-editors](https://github.com/marcrobledo/savegame-editors) (MIT licensed). This project is an independent Rust reimplementation built on top of that
-research, not a fork of its code. The item icons under `public/icons/` are also vendored from
-that repository, which in turn credits
-[spriters-resource.com](https://www.spriters-resource.com/wii_u/thelegendofzeldabreathofthewild/)
-for the BOTW sprite sheets.
+details) were taken from [marcrobledo/savegame-editors][source-repo] (MIT licensed). This
+project is an independent Rust reimplementation built on top of that research, not a fork of
+its code. The item icons under `public/icons/` are also vendored from that repository, which in
+turn credits [spriters-resource.com][spriters-resource] for the BOTW sprite sheets.
+
+[source-repo]: https://github.com/marcrobledo/savegame-editors
+[spriters-resource]: https://www.spriters-resource.com/wii_u/thelegendofzeldabreathofthewild/
 
 ## Disclaimer
 
