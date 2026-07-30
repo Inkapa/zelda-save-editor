@@ -13,6 +13,7 @@ import * as api from "../../api";
 import EditableEntryTable, { ColumnDef } from "./EditableEntryTable";
 import SectionHeading from "../../theme/SectionHeading";
 import TotkMotif from "../../theme/motifs/TotkMotif";
+import { totkIconUrl } from "./totkIcons";
 
 function text<T>(key: keyof T, label: string): ColumnDef<T> {
   return { key, label, type: "text" };
@@ -117,15 +118,78 @@ export default function TotkPouchTables({
   return (
     <div>
       <SectionHeading title="Pouch" motif={<TotkMotif />} />
-      <EditableEntryTable title="Weapons" entries={weapons} columns={weaponColumns} setter={api.setPouchWeapons} onError={onError} />
-      <EditableEntryTable title="Bows" entries={bows} columns={bowColumns} setter={api.setPouchBows} onError={onError} />
-      <EditableEntryTable title="Shields" entries={shields} columns={shieldColumns} setter={api.setPouchShields} onError={onError} />
-      <EditableEntryTable title="Armor" entries={armor} columns={armorColumns} setter={api.setArmor} onError={onError} />
-      <EditableEntryTable title="Arrows" entries={arrows} columns={arrowColumns} setter={api.setArrows} onError={onError} />
-      <EditableEntryTable title="Materials" entries={materials} columns={materialColumns} setter={api.setMaterials} onError={onError} />
-      <EditableEntryTable title="Key Items" entries={keyItems} columns={keyItemColumns} setter={api.setKeyItems} onError={onError} />
-      <EditableEntryTable title="Devices" entries={devices} columns={deviceColumns} setter={api.setDevices} onError={onError} />
-      <EditableEntryTable title="Food" entries={food} columns={foodColumns} setter={api.setFood} onError={onError} />
+      <EditableEntryTable
+        title="Weapons"
+        entries={weapons}
+        columns={weaponColumns}
+        setter={api.setPouchWeapons}
+        onError={onError}
+        iconFor={(e) => totkIconUrl("weapon", e.id)}
+      />
+      <EditableEntryTable
+        title="Bows"
+        entries={bows}
+        columns={bowColumns}
+        setter={api.setPouchBows}
+        onError={onError}
+        iconFor={(e) => totkIconUrl("bow", e.id)}
+      />
+      <EditableEntryTable
+        title="Shields"
+        entries={shields}
+        columns={shieldColumns}
+        setter={api.setPouchShields}
+        onError={onError}
+        iconFor={(e) => totkIconUrl("shield", e.id)}
+      />
+      <EditableEntryTable
+        title="Armor"
+        entries={armor}
+        columns={armorColumns}
+        setter={api.setArmor}
+        onError={onError}
+        iconFor={(e) => totkIconUrl("armor", e.id)}
+      />
+      <EditableEntryTable
+        title="Arrows"
+        entries={arrows}
+        columns={arrowColumns}
+        setter={api.setArrows}
+        onError={onError}
+        iconFor={(e) => totkIconUrl("arrow", e.id)}
+      />
+      <EditableEntryTable
+        title="Materials"
+        entries={materials}
+        columns={materialColumns}
+        setter={api.setMaterials}
+        onError={onError}
+        iconFor={(e) => totkIconUrl("material", e.id)}
+      />
+      <EditableEntryTable
+        title="Key Items"
+        entries={keyItems}
+        columns={keyItemColumns}
+        setter={api.setKeyItems}
+        onError={onError}
+        iconFor={(e) => totkIconUrl("keyItem", e.id)}
+      />
+      <EditableEntryTable
+        title="Devices"
+        entries={devices}
+        columns={deviceColumns}
+        setter={api.setDevices}
+        onError={onError}
+        iconFor={(e) => totkIconUrl("device", e.id)}
+      />
+      <EditableEntryTable
+        title="Food"
+        entries={food}
+        columns={foodColumns}
+        setter={api.setFood}
+        onError={onError}
+        iconFor={(e) => totkIconUrl("food", e.id)}
+      />
     </div>
   );
 }

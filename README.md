@@ -4,9 +4,8 @@ A unified save editor for *The Legend of Zelda: Breath of the Wild* and *Tears o
 built as a Rust save-parsing core with a Tauri desktop shell.
 
 > **Status: early development.** The save-format engine and IPC wiring are functional and tested
-> against real save files, and a plain, unstyled editor UI can open, edit, and save both games,
-> but it doesn't yet cover every field the backend exposes. See
-> [Status & roadmap](#status--roadmap) below.
+> against real save files, and a themed editor UI covers most of what the backend exposes for
+> both games. See [Status & roadmap](#status--roadmap) below for what's still missing.
 
 ## Features
 
@@ -21,11 +20,19 @@ built as a Rust save-parsing core with a Tauri desktop shell.
 ### Tears of the Kingdom
 - Player stats, save position, and current checkpoint
 - Full pouch inventory: weapons, bows, shields, armor, arrows, materials, key items, Zonai
-  devices, and food (including fused-weapon and recipe data)
+  devices, and food (including fused-weapon and recipe data), with item icons
 - Horses, including bond, stats, and coat/mane/eye coloring
 - Completionism counts: shrines, koroks, defeated bosses, visited locations (read-only, matching
-  the absence of a mass-unlock feature for these categories in-game)
+  the absence of a mass-unlock feature for these categories in-game), plus mass-unlock for
+  bubbuls, sage wills, and Addison sidequest markers
 - AutoBuild: all 30 saved Ultrahand schematics, including camera framing and favorite status
+- Map pins, markers, and teleporters
+- `caption.sav` preview: the save-slot thumbnail and date/autosave metadata
+- Advanced hash browser: every field in a save's hash table, searchable by name or hash, with
+  direct editing for the fields it's safe to edit generically
+
+### Both games
+- Every save is backed up to a `.bak` file before it's overwritten
 
 ## Project layout
 
@@ -34,8 +41,8 @@ crates/save-engine/   headless Rust library: binary parsing, hash-table resoluti
                        read/write accessors for both games' save formats. No UI dependencies.
 src-tauri/             Tauri v2 backend: converts save-engine's types to serializable DTOs and
                        exposes them as IPC commands, plus native file open/save dialogs.
-src/                    React + TypeScript frontend (Vite). Plain, unstyled forms and tables,
-                       no design pass yet.
+src/                    React + TypeScript frontend (Vite), with a byronic-inspired visual
+                       design system.
 ```
 
 Everything under `crates/save-engine` builds and tests independently of Tauri, so the parsing
@@ -66,21 +73,22 @@ Target platforms are Windows, Linux, and Android.
 
 The save-format core is complete for both games' most commonly edited data (see Features above),
 and every shipped engine capability is wired through to the Tauri IPC layer with a typed
-command per read/write operation. What's still ahead:
+command per read/write operation, backed by a themed UI. What's still ahead:
 
-- A visual design pass; the current UI is plain unstyled HTML forms and tables
-- UI coverage for TOTK's pouch/horse/AutoBuild data and both games' completionism actions, which
-  are wired end to end in the backend but not yet exposed in the frontend
+- Item icons for BOTW (TOTK's are done); BOTW's icon set is a different mechanism, sprite sheets
+  with per-item lookup tables, rather than TOTK's one-file-per-item layout
+- A BOTW equivalent of the advanced hash browser (BOTW's hash dictionary isn't vendored yet)
+- An interactive in-game map, on hold pending a licensing check on the map imagery
 - Responsive layout across desktop and mobile form factors
 - Packaging and release automation (installers, Android APK/AAB, CI)
-- BOTW Master Mode, TOTK map icons/pins, and a handful of other lower-priority save fields
 
 ## Credits
 
 The BOTW and TOTK save formats implemented here (hash tables, field offsets, and encoding
 details) were taken from
 [marcrobledo/savegame-editors](https://github.com/marcrobledo/savegame-editors) (MIT licensed). This project is an independent Rust reimplementation built on top of that
-research, not a fork of its code.
+research, not a fork of its code. The TOTK item icons under `public/icons/totk/` are also
+vendored from that repository.
 
 ## Disclaimer
 

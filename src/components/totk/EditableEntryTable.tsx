@@ -1,5 +1,6 @@
 import { useState, type ReactNode } from "react";
 import SectionHeading from "../../theme/SectionHeading";
+import { totkUnknownIconUrl } from "./totkIcons";
 import styles from "./EditableEntryTable.module.css";
 
 export interface ColumnDef<T> {
@@ -79,6 +80,7 @@ interface Props<T> {
   onError: (message: string) => void;
   level?: "h3" | "h4";
   motif?: ReactNode;
+  iconFor?: (entry: T) => string;
 }
 
 export default function EditableEntryTable<T>({
@@ -89,6 +91,7 @@ export default function EditableEntryTable<T>({
   onError,
   level = "h4",
   motif,
+  iconFor,
 }: Props<T>) {
   return (
     <div>
@@ -96,6 +99,7 @@ export default function EditableEntryTable<T>({
       <table className={styles.table}>
         <thead>
           <tr>
+            {iconFor && <th></th>}
             <th>#</th>
             {columns.map((c) => (
               <th key={String(c.key)}>{c.label}</th>
@@ -103,8 +107,21 @@ export default function EditableEntryTable<T>({
           </tr>
         </thead>
         <tbody>
-          {entries.map((_, i) => (
+          {entries.map((entry, i) => (
             <tr key={i}>
+              {iconFor && (
+                <td>
+                  <img
+                    className={styles.icon}
+                    src={iconFor(entry)}
+                    alt=""
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = totkUnknownIconUrl;
+                    }}
+                  />
+                </td>
+              )}
               <td>{i}</td>
               {columns.map((c) => (
                 <Cell key={String(c.key)} entries={entries} index={i} column={c} setter={setter} onError={onError} />
