@@ -1,4 +1,4 @@
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 use tauri::State;
 use tauri_plugin_dialog::DialogExt;
@@ -7,6 +7,12 @@ use crate::dto::{OpenResult, TotkCaptionDto};
 use crate::error::ShellError;
 use crate::state::AppState;
 use save_engine::Save;
+
+fn backup_path(path: &Path) -> PathBuf {
+    let mut name = path.as_os_str().to_os_string();
+    name.push(".bak");
+    PathBuf::from(name)
+}
 
 /// Detects the save format from raw bytes and builds the DTO to return to the frontend,
 /// without touching `AppState`. The caller is responsible for storing the resulting
@@ -83,7 +89,15 @@ pub fn save_as(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<(), 
 /// written bytes to put a newly-constructed `Save` back into `AppState`. `Save::to_bytes`
 /// consumes `self`, so this is how editing continues to work after a save without changing
 /// the engine's already-shipped signature (see Global Constraints).
+///
+/// Before touching `path`, copies whatever's already there to a `.bak` sibling (overwriting
+/// any previous backup), so a bad edit is always one file away from recoverable. Done before
+/// `AppState.save` is taken, so a failed backup leaves the in-memory edits untouched instead
+/// of silently discarding them.
 fn write_current_save(app_state: &AppState, path: &PathBuf) -> Result<(), ShellError> {
+    if path.exists() {
+        std::fs::copy(path, backup_path(path)).map_err(ShellError::io)?;
+    }
     let save = app_state.save.lock().unwrap().take().ok_or_else(ShellError::no_save_loaded)?;
     let bytes = save.to_bytes();
     let write_result = std::fs::write(path, &bytes);
@@ -174,6 +188,31 @@ mod tests {
         assert!(app_state.save.lock().unwrap().is_some(), "state should be reloaded, not left empty");
 
         std::fs::remove_file(&tmp_path).ok();
+    }
+
+    #[test]
+    fn write_current_save_backs_up_existing_file_before_overwriting() {
+        let bytes = std::fs::read("../crates/save-engine/tests/fixtures/botw/game_data.sav")
+            .expect("fixture present");
+        let tmp_path = std::env::temp_dir().join("zelda_shell_backup_test.sav");
+        let original_bytes = b"stand-in for a previous save on disk".to_vec();
+        std::fs::write(&tmp_path, &original_bytes).unwrap();
+
+        let (save, _) = detect_and_build(bytes).unwrap();
+        let save = save.expect("botw fixture should produce a Save");
+        let app_state = AppState {
+            save: std::sync::Mutex::new(Some(save)),
+            path: std::sync::Mutex::new(None),
+        };
+        write_current_save(&app_state, &tmp_path).unwrap();
+
+        let backup = std::fs::read(backup_path(&tmp_path)).expect("backup file should exist");
+        assert_eq!(backup, original_bytes, "backup should hold the pre-overwrite content");
+        let overwritten = std::fs::read(&tmp_path).unwrap();
+        assert_ne!(overwritten, original_bytes, "the actual file should now hold the new save");
+
+        std::fs::remove_file(&tmp_path).ok();
+        std::fs::remove_file(backup_path(&tmp_path)).ok();
     }
 
     #[test]
