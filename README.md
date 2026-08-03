@@ -68,10 +68,6 @@ backed up before it's overwritten.
 <table>
 <tr>
 <td width="50%">
-<img src=".github/screenshots/botw-completionism.png" alt="Breath of the Wild completionism panel with koroks, locations, and boss cards" />
-<p align="center"><em>BOTW completionism, same layout in the game's blue theme</em></p>
-</td>
-<td width="50%">
 <img src=".github/screenshots/totk-pouch.png" alt="TOTK weapons table showing item icons, id pickers, durability, and fuse fields" />
 <p align="center"><em>Pouch tables with icons, name pickers, and fuse data</em></p>
 </td>
@@ -80,10 +76,6 @@ backed up before it's overwritten.
 <td width="50%">
 <img src=".github/screenshots/totk-materials.png" alt="TOTK materials table with per-row max-quantity, duplicate, and delete buttons" />
 <p align="center"><em>Per-item actions and quick-fills on every row</em></p>
-</td>
-<td width="50%">
-<img src=".github/screenshots/hero.png" alt="Landing screen with an Open a save file button" />
-<p align="center"><em>Open a <code>game_data.sav</code>, <code>progress.sav</code>, or <code>caption.sav</code></em></p>
 </td>
 </tr>
 </table>
