@@ -10,8 +10,9 @@ import type {
   TotkWeapon,
 } from "../../api";
 import * as api from "../../api";
+import type { SyntheticEvent } from "react";
 import EditableEntryTable, { ColumnDef } from "./EditableEntryTable";
-import { totkArmorIconUrl, totkIconUrl, type TotkIconCategory } from "./totkIcons";
+import { totkArmorIconUrl, totkIconUrl, totkUnknownIconUrl, type TotkIconCategory } from "./totkIcons";
 import { TOTK_ITEM_NAMES } from "./totkItemNames.data";
 import { TOTK_CATEGORY_ITEMS } from "./totkCategoryItems.data";
 import {
@@ -42,10 +43,18 @@ function text<T>(key: keyof T, label: string): ColumnDef<T> {
   return { key, label, type: "text" };
 }
 
+function totkIconImg(url: string, size: number) {
+  const onError = (e: SyntheticEvent<HTMLImageElement>) => {
+    e.currentTarget.onerror = null;
+    e.currentTarget.src = totkUnknownIconUrl;
+  };
+  return <img src={url} width={size} height={size} style={{ objectFit: "contain" }} alt="" onError={onError} />;
+}
+
 // A category-restricted item picker for the "Id" column: shows an icon + name dropdown listing
 // only that category's items, in place of a blind free-text field.
 function idPicker<T extends { id: string }>(category: TotkIconCategory): ColumnDef<T> {
-  const iconFor =
+  const urlFor =
     category === "armor"
       ? (id: string) => totkArmorIconUrl(id, 0)
       : (id: string) => totkIconUrl(category, id);
@@ -53,7 +62,11 @@ function idPicker<T extends { id: string }>(category: TotkIconCategory): ColumnD
     key: "id" as keyof T,
     label: "Id",
     type: "itempicker",
-    picker: { items: TOTK_CATEGORY_ITEMS[category], iconFor, nameFor: (id) => TOTK_ITEM_NAMES[id] },
+    picker: {
+      items: TOTK_CATEGORY_ITEMS[category],
+      renderIcon: (id, size) => totkIconImg(urlFor(id), size),
+      nameFor: (id) => TOTK_ITEM_NAMES[id],
+    },
   };
 }
 

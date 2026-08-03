@@ -2,7 +2,7 @@ import { useState, type ReactNode } from "react";
 import SectionHeading from "../../theme/SectionHeading";
 import { withCurrentValue, type SelectOption } from "../Select";
 import ItemIcon from "./ItemIcon";
-import ItemPicker from "./ItemPicker";
+import ItemPicker from "../ItemPicker";
 import styles from "./EditableEntryTable.module.css";
 
 export type { SelectOption };
@@ -18,7 +18,7 @@ export interface DatalistDef {
 export interface PickerDef {
   /** Ids selectable in this column, restricted to the table's category. */
   items: string[];
-  iconFor: (id: string) => string;
+  renderIcon: (id: string, size: number) => ReactNode;
   nameFor: (id: string) => string | undefined;
 }
 
@@ -122,7 +122,7 @@ function PickerCell<T>({ entries, index, column, setter, onError }: CellProps<T>
       <ItemPicker
         value={value}
         items={picker.items}
-        iconFor={picker.iconFor}
+        renderIcon={picker.renderIcon}
         nameFor={picker.nameFor}
         onCommit={commit}
       />

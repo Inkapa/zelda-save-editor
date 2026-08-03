@@ -1,25 +1,21 @@
-import { useEffect, useMemo, useState, type SyntheticEvent } from "react";
-import { totkUnknownIconUrl } from "./totkIcons";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import styles from "./ItemPicker.module.css";
 
 interface Props {
   value: string;
   items: string[];
-  iconFor: (id: string) => string;
+  /** Renders an item's icon at the given pixel size. Games differ (TOTK <img>, BOTW sprite sheet),
+   * so the caller supplies the rendering. */
+  renderIcon: (id: string, size: number) => ReactNode;
   nameFor: (id: string) => string | undefined;
   onCommit: (id: string) => void;
-}
-
-function fallback(e: SyntheticEvent<HTMLImageElement>) {
-  e.currentTarget.onerror = null;
-  e.currentTarget.src = totkUnknownIconUrl;
 }
 
 /** Category-restricted item chooser: a trigger showing the current item's icon + name, and a
  * searchable dropdown of the same category's items (icon + name), matching marcrobledo's own
  * filterable item picker. A native <select> can't render per-option images, hence the custom
  * combobox. */
-export default function ItemPicker({ value, items, iconFor, nameFor, onCommit }: Props) {
+export default function ItemPicker({ value, items, renderIcon, nameFor, onCommit }: Props) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -79,7 +75,7 @@ export default function ItemPicker({ value, items, iconFor, nameFor, onCommit }:
         className={styles.trigger}
         onClick={() => (open ? setOpen(false) : openDropdown())}
       >
-        <img className={styles.triggerIcon} src={iconFor(value)} alt="" onError={fallback} />
+        <span className={styles.triggerIcon}>{renderIcon(value, 20)}</span>
         <span className={styles.triggerLabel}>{label(value)}</span>
         <span className={styles.caret}>▾</span>
       </button>
@@ -107,13 +103,7 @@ export default function ItemPicker({ value, items, iconFor, nameFor, onCommit }:
                   i === active ? (el) => el?.scrollIntoView({ block: "nearest" }) : undefined
                 }
               >
-                <img
-                  className={styles.optionIcon}
-                  src={iconFor(id)}
-                  loading="lazy"
-                  alt=""
-                  onError={fallback}
-                />
+                <span className={styles.optionIcon}>{renderIcon(id, 28)}</span>
                 <span className={styles.optionLabel}>{label(id)}</span>
               </div>
             ))}

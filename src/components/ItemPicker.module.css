@@ -15,9 +15,11 @@
   font-size: 0.85rem;
 }
 .triggerIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 20px;
   height: 20px;
-  object-fit: contain;
   flex-shrink: 0;
 }
 .triggerLabel {
@@ -68,9 +70,11 @@
   background: color-mix(in srgb, var(--accent) 30%, var(--bg-panel));
 }
 .optionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   width: 28px;
   height: 28px;
-  object-fit: contain;
   flex-shrink: 0;
 }
 .optionLabel {

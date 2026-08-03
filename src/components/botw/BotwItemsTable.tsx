@@ -1,30 +1,37 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import type { BotwItem, BotwItemCategory, ItemModifier, ModifierCategory } from "../../api";
 import * as api from "../../api";
 import SectionHeading from "../../theme/SectionHeading";
 import BotwMotif from "../../theme/motifs/BotwMotif";
 import { botwIconStyle, botwUnknownIconUrl } from "./botwIcons";
 import { BOTW_ITEM_NAMES } from "./botwItemNames.data";
+import { BOTW_CATEGORY_ITEMS } from "./botwCategoryItems.data";
 import { MODIFIER_OPTIONS, DYE_COLOR_OPTIONS } from "./botwEnums.data";
 import { withCurrentValue } from "../Select";
+import ItemPicker from "../ItemPicker";
+import HoverPreview from "../HoverPreview";
 import styles from "./BotwItemsTable.module.css";
 
 const ICON_SIZE = 48;
 
-const ITEM_DATALIST_ID = "botw-item-ids";
-const ITEM_DATALIST_OPTIONS = Object.entries(BOTW_ITEM_NAMES).map(([value, label]) => ({
-  value,
-  label: `${label} (${value})`,
-}));
+// BOTW icons are sliced from shared sprite sheets (CSS background-position), not one file per item.
+function botwSpriteIcon(id: string, size: number, dyeColor?: number): ReactNode {
+  const style = botwIconStyle(id, dyeColor, size);
+  if (!style)
+    return <img src={botwUnknownIconUrl} width={size} height={size} style={{ objectFit: "contain" }} alt="" />;
+  return (
+    <div style={style.wrapper}>
+      <div style={style.cell} />
+    </div>
+  );
+}
 
 function ItemIcon({ item }: { item: BotwItem }) {
   const dyeColor = item.category === "armor" ? item.quantity : undefined;
-  const style = botwIconStyle(item.name, dyeColor, ICON_SIZE);
-  if (!style) return <img className={styles.icon} src={botwUnknownIconUrl} alt="" style={{ width: ICON_SIZE, height: ICON_SIZE }} />;
   return (
-    <div className={styles.icon} style={style.wrapper}>
-      <div style={style.cell} />
-    </div>
+    <HoverPreview preview={botwSpriteIcon(item.name, 144, dyeColor)}>
+      {botwSpriteIcon(item.name, ICON_SIZE, dyeColor)}
+    </HoverPreview>
   );
 }
 
@@ -103,12 +110,15 @@ function ItemRow({
       <td>{index}</td>
       <td>{BOTW_ITEM_NAMES[item.name] ?? ""}</td>
       <td>
-        <input
-          className={styles.input}
+        <ItemPicker
           value={name}
-          onChange={(e) => setName(e.target.value)}
-          onBlur={commit}
-          list={ITEM_DATALIST_ID}
+          items={BOTW_CATEGORY_ITEMS[item.category]}
+          renderIcon={(id, size) => botwSpriteIcon(id, size)}
+          nameFor={(id) => BOTW_ITEM_NAMES[id]}
+          onCommit={(id) => {
+            setName(id);
+            api.setItem(index, id, Number(quantity)).catch((err) => onError(String(err)));
+          }}
         />
       </td>
       <td>
@@ -167,13 +177,6 @@ export function BotwCategoryTable({ title, valueLabel, items, category, modifier
   return (
     <div>
       <SectionHeading title={`${title} (${entries.length})`} motif={<BotwMotif />} />
-      <datalist id={ITEM_DATALIST_ID}>
-        {ITEM_DATALIST_OPTIONS.map((o) => (
-          <option key={o.value} value={o.value}>
-            {o.label}
-          </option>
-        ))}
-      </datalist>
       <table className={styles.table}>
         <thead>
           <tr>
