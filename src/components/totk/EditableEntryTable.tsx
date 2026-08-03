@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, type MouseEvent as ReactMouseEvent, type ReactNode } from "react";
 import SectionHeading from "../../theme/SectionHeading";
 import { withCurrentValue, type SelectOption } from "../Select";
 import ItemIcon from "./ItemIcon";
@@ -47,6 +47,15 @@ interface CellProps<T> {
   column: ColumnDef<T>;
   setter: (entries: T[]) => Promise<void>;
   onError: (message: string) => void;
+}
+
+/** Toggles a card's expanded state from a click anywhere on its header. Clicks that land on an
+ * editable control (or inside an expanded detail cell) are ignored so editing still works; the
+ * chevron button handles its own toggle and stops propagation, so it isn't double-counted. Shared
+ * with the BOTW item rows, which have the same card behavior. */
+export function rowHeaderToggle(e: ReactMouseEvent, toggle: () => void) {
+  if ((e.target as HTMLElement).closest("input, select, textarea, [data-label]")) return;
+  toggle();
 }
 
 function defaultFormat(value: unknown): string {
@@ -174,8 +183,8 @@ function EntryRow<T>({ entries, index, columns, setter, onError, iconFor, nameFo
   const toggle = () => setExpanded((v) => !v);
   const entry = entries[index];
   return (
-    <tr data-collapsed={expanded ? undefined : "true"}>
-      <td data-summary onClick={toggle}>
+    <tr data-collapsed={expanded ? "false" : "true"} onClick={(e) => rowHeaderToggle(e, toggle)}>
+      <td data-summary>
         <button
           type="button"
           className={styles.rowToggle}
@@ -191,12 +200,12 @@ function EntryRow<T>({ entries, index, columns, setter, onError, iconFor, nameFo
         <span>{index}</span>
       </td>
       {iconFor && (
-        <td data-summary onClick={toggle}>
+        <td data-summary>
           <ItemIcon url={iconFor(entry)} />
         </td>
       )}
       {nameFor && (
-        <td data-summary data-grow onClick={toggle}>
+        <td data-summary data-grow>
           {nameFor(entry) ?? ""}
         </td>
       )}

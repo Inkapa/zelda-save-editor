@@ -44,6 +44,7 @@ export default function TotkMapPinsTable({ mapPins, onError }: Props) {
       onError={onError}
       level="h3"
       motif={<TotkMotif />}
+      nameFor={(e) => `(${Math.round(e.x)}, ${Math.round(e.y)})`}
     />
   );
 }

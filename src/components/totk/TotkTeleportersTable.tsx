@@ -42,6 +42,7 @@ export default function TotkTeleportersTable({ teleporters, onError }: Props) {
       onError={onError}
       level="h3"
       motif={<TotkMotif />}
+      nameFor={(e) => `(${e.pos.map(Math.round).join(", ")})`}
     />
   );
 }

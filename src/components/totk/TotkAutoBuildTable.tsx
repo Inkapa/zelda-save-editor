@@ -52,6 +52,8 @@ export default function TotkAutoBuildTable({ autobuilds, onError }: Props) {
       onError={onError}
       level="h3"
       motif={<TotkMotif />}
+      // No natural name for a draft; surface its favourite state so a collapsed card isn't just "#".
+      nameFor={(e) => (e.is_favorite ? "★ Favourite draft" : "Draft")}
     />
   );
 }

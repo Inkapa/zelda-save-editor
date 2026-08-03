@@ -38,6 +38,7 @@ export default function TotkMapMarkersTable({ mapMarkers, onError }: Props) {
       onError={onError}
       level="h3"
       motif={<TotkMotif />}
+      nameFor={(e) => `(${Math.round(e.x)}, ${Math.round(e.y)}, ${Math.round(e.z)})`}
     />
   );
 }

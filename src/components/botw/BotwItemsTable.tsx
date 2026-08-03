@@ -10,6 +10,7 @@ import { MODIFIER_OPTIONS, DYE_COLOR_OPTIONS } from "./botwEnums.data";
 import { withCurrentValue } from "../Select";
 import ItemPicker from "../ItemPicker";
 import HoverPreview from "../HoverPreview";
+import { rowHeaderToggle } from "../totk/EditableEntryTable";
 import styles from "./BotwItemsTable.module.css";
 
 const ICON_SIZE = 48;
@@ -110,8 +111,8 @@ function ItemRow({
   const isDye = valueLabel === "Dye Color";
 
   return (
-    <tr data-collapsed={expanded ? undefined : "true"}>
-      <td data-summary onClick={toggle}>
+    <tr data-collapsed={expanded ? "false" : "true"} onClick={(e) => rowHeaderToggle(e, toggle)}>
+      <td data-summary>
         <button
           type="button"
           className={styles.rowToggle}
@@ -126,10 +127,10 @@ function ItemRow({
         </button>
         <span>{index}</span>
       </td>
-      <td data-summary onClick={toggle}>
+      <td data-summary>
         <ItemIcon item={item} />
       </td>
-      <td data-summary data-grow onClick={toggle}>
+      <td data-summary data-grow>
         {BOTW_ITEM_NAMES[item.name] ?? ""}
       </td>
       <td data-label="Id">

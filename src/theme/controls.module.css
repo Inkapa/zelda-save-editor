@@ -102,6 +102,10 @@ input.input[type="number"] {
     border-radius: 6px;
     background: var(--bg-panel);
   }
+  /* The whole card header toggles the row (see rowHeaderToggle), so the entire row reads clickable. */
+  .table tr[data-collapsed] {
+    cursor: pointer;
+  }
   .table td {
     border: none;
     padding: 2px 0;
@@ -109,8 +113,11 @@ input.input[type="number"] {
   }
   .table td[data-summary] {
     flex: 0 0 auto;
-    /* The whole collapsed header toggles the row, so the summary cells read as clickable. */
-    cursor: pointer;
+  }
+  /* Expanded detail cells hold the editable fields, so they use the normal cursor, not the header's
+     pointer. */
+  .table td[data-label] {
+    cursor: auto;
   }
   /* The name cell grows to fill the rest of the header, so the whole bar (not just the icon/number)
      is clickable and the identifying text has room. */
