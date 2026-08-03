@@ -71,6 +71,8 @@ pub fn run() {
             commands::totk::unlock_all_addison,
             commands::totk::get_totk_hash_rows,
             commands::totk::set_totk_hash_field,
+            commands::totk::get_totk_abilities,
+            commands::totk::set_totk_ability,
             commands::file::open_save,
             commands::file::open_save_at,
             commands::file::current_path,

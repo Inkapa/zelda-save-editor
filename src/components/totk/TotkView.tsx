@@ -12,6 +12,7 @@ import {
   TotkDevicesTable,
   TotkFoodTable,
 } from "./TotkPouchTables";
+import TotkKeyAbilities from "./TotkKeyAbilities";
 import TotkHorsesTable from "./TotkHorsesTable";
 import TotkAutoBuildTable from "./TotkAutoBuildTable";
 import TotkMapPinsTable from "./TotkMapPinsTable";
@@ -199,7 +200,12 @@ export default function TotkView({ state, onError, onRefresh }: Props) {
             id: "key_items",
             label: "Key Items",
             icon: <ChestIcon />,
-            content: <TotkKeyItemsTable keyItems={state.key_items} onError={onError} />,
+            content: (
+              <>
+                <TotkKeyAbilities onError={onError} />
+                <TotkKeyItemsTable keyItems={state.key_items} onError={onError} />
+              </>
+            ),
           },
           {
             id: "devices",

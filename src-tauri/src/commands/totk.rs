@@ -1,9 +1,9 @@
 use tauri::State;
 
 use crate::dto::{
-    TotkArmorDto, TotkArrowDto, TotkAutoBuildEntryDto, TotkBowDto, TotkDeviceDto, TotkFoodDto,
-    TotkHashRowDto, TotkHorseDto, TotkKeyItemDto, TotkMapMarkerDto, TotkMapPinDto, TotkMaterialDto,
-    TotkShieldDto, TotkState, TotkTeleporterDto, TotkWeaponDto,
+    TotkAbilityDto, TotkArmorDto, TotkArrowDto, TotkAutoBuildEntryDto, TotkBowDto, TotkDeviceDto,
+    TotkFoodDto, TotkHashRowDto, TotkHorseDto, TotkKeyItemDto, TotkMapMarkerDto, TotkMapPinDto,
+    TotkMaterialDto, TotkShieldDto, TotkState, TotkTeleporterDto, TotkWeaponDto,
 };
 use crate::error::ShellError;
 use crate::state::AppState;
@@ -258,6 +258,27 @@ pub fn get_totk_hash_rows(state: State<'_, AppState>) -> Result<Vec<TotkHashRowD
 #[tauri::command]
 pub fn set_totk_hash_field(state: State<'_, AppState>, hash: u32, value: f64) -> Result<(), ShellError> {
     with_totk(state.inner(), |save| save.set_hash_field(hash, value))
+}
+
+// --- Key-item ability toggles ---
+
+pub fn get_totk_abilities_impl(app_state: &AppState) -> Result<Vec<TotkAbilityDto>, ShellError> {
+    let guard = app_state.save.lock().unwrap();
+    match guard.as_ref() {
+        Some(Save::Totk(save)) => Ok(save.abilities()?.into_iter().map(TotkAbilityDto::from).collect()),
+        Some(Save::Botw(_)) => Err(ShellError::wrong_game("TOTK")),
+        None => Err(ShellError::no_save_loaded()),
+    }
+}
+
+#[tauri::command]
+pub fn get_totk_abilities(state: State<'_, AppState>) -> Result<Vec<TotkAbilityDto>, ShellError> {
+    get_totk_abilities_impl(state.inner())
+}
+
+#[tauri::command]
+pub fn set_totk_ability(state: State<'_, AppState>, id: String, on: bool) -> Result<(), ShellError> {
+    with_totk(state.inner(), |save| save.set_ability(&id, on))
 }
 
 #[cfg(test)]

@@ -16,13 +16,20 @@ import type {
   TotkMapPin,
   TotkMaterial,
   TotkHashRow,
+  TotkAbility,
   TotkShield,
   TotkState,
   TotkTeleporter,
   TotkWeapon,
 } from "./types";
 
-const READONLY_COMMANDS = new Set(["get_botw_state", "get_totk_state", "get_totk_hash_rows", "current_path"]);
+const READONLY_COMMANDS = new Set([
+  "get_botw_state",
+  "get_totk_state",
+  "get_totk_hash_rows",
+  "get_totk_abilities",
+  "current_path",
+]);
 const CLEARS_DIRTY_COMMANDS = new Set(["open_save", "open_save_at", "save", "save_as"]);
 
 function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
@@ -303,4 +310,12 @@ export function getTotkHashRows(): Promise<TotkHashRow[]> {
 
 export function setTotkHashField(hash: number, value: number): Promise<void> {
   return invoke("set_totk_hash_field", { hash, value });
+}
+
+export function getTotkAbilities(): Promise<TotkAbility[]> {
+  return invoke("get_totk_abilities");
+}
+
+export function setTotkAbility(id: string, on: boolean): Promise<void> {
+  return invoke("set_totk_ability", { id, on });
 }

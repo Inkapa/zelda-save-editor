@@ -592,6 +592,19 @@ impl From<save_engine::totk::caption::CaptionInfo> for TotkCaptionDto {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TotkAbilityDto {
+    pub id: String,
+    pub label: String,
+    pub unlocked: bool,
+}
+
+impl From<save_engine::totk::abilities::AbilityState> for TotkAbilityDto {
+    fn from(a: save_engine::totk::abilities::AbilityState) -> Self {
+        TotkAbilityDto { id: a.id, label: a.label, unlocked: a.unlocked }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TotkHashRowDto {
     pub hash: u32,
     pub name: Option<String>,

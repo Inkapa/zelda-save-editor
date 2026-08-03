@@ -214,6 +214,12 @@ export interface TotkHashRow {
   value: number;
 }
 
+export interface TotkAbility {
+  id: string;
+  label: string;
+  unlocked: boolean;
+}
+
 export interface TotkCaption {
   year: number;
   month: number;

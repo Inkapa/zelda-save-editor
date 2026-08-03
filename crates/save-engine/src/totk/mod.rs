@@ -1,3 +1,4 @@
+pub mod abilities;
 pub mod autobuilder;
 pub mod caption;
 pub mod completism;
@@ -325,5 +326,14 @@ impl TotkSave {
     }
     pub fn set_hash_field(&mut self, hash: u32, value: f64) -> Result<(), SaveError> {
         hashbrowser::write_scalar(&mut self.buf, self.hash_table_end, hash, value)
+    }
+
+    // --- Key-item ability toggles ---
+
+    pub fn abilities(&self) -> Result<Vec<abilities::AbilityState>, SaveError> {
+        abilities::read_abilities(&self.buf, self.hash_table_end)
+    }
+    pub fn set_ability(&mut self, id: &str, on: bool) -> Result<(), SaveError> {
+        abilities::set_ability(&mut self.buf, self.hash_table_end, id, on)
     }
 }
