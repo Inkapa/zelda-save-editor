@@ -2,7 +2,7 @@
 // flat dark silhouette, so it's used as a CSS mask and filled with the current theme accent, which
 // recolors it per game (BOTW blue, TOTK gold) instead of a fixed color.
 const CELLS = 12;
-const SHEET = "/icons/tabs.png";
+const SHEET = "/icons/tabs.webp";
 
 export function TabSprite({ index, size = 20 }: { index: number; size?: number }) {
   const mask = {

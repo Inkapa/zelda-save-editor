@@ -1,6 +1,6 @@
 const COMMON = { fill: "none", stroke: "var(--accent)", strokeWidth: 1.4, strokeLinecap: "round" as const, strokeLinejoin: "round" as const };
 
-// Hand-drawn line icons for the tabs that have no matching cell in the tabs.png spritesheet.
+// Hand-drawn line icons for the tabs that have no matching cell in the tabs.webp spritesheet.
 // Tabs that do have a sheet cell use the tinted sprites from ./TabSprite instead.
 
 export function PinIcon() {
