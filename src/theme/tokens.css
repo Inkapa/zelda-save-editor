@@ -41,3 +41,11 @@ html {
 body {
   margin: 0;
 }
+
+button,
+select {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: default;
+}

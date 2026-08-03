@@ -114,7 +114,7 @@ export default function TotkView({ state, onError, onRefresh }: Props) {
         onError={onError}
       />
 
-      <SectionHeading level="h4" title="Save Position" />
+      <SectionHeading level="h4" title="Link's Position" />
       <div className={styles.row}>
         <input className={styles.input} type="number" value={posX} onChange={(e) => setPosX(e.target.value)} onBlur={commitPos} />{" "}
         <input className={styles.input} type="number" value={posY} onChange={(e) => setPosY(e.target.value)} onBlur={commitPos} />{" "}

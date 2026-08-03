@@ -42,7 +42,7 @@ export default function TotkHashBrowser({ onError }: Props) {
         skip the app's normal validation and can corrupt your save if the value is wrong.
       </p>
       <input
-        className={styles.input}
+        className={styles.search}
         type="text"
         placeholder="Search by field name or hex hash..."
         value={query}

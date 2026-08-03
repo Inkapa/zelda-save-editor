@@ -14,6 +14,13 @@
 .input {
   composes: input from "../../theme/controls.module.css";
 }
+.search {
+  composes: input from "../../theme/controls.module.css";
+}
+.view input.search {
+  width: 100%;
+  max-width: 32rem;
+}
 .table {
   composes: table from "../../theme/controls.module.css";
 }

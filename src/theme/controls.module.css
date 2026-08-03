@@ -1,6 +1,14 @@
 .field {
-  display: block;
+  display: flex;
+  align-items: center;
   margin-bottom: 4px;
+}
+/* Push the control(s) to the right edge with the label text on the left, matching marcrobledo's
+   two-column stat layout. Only the first control gets the auto margin so multi-input rows (the
+   x/y/z position fields) stay grouped together on the right instead of spreading apart. */
+.field > input:first-of-type,
+.field > select {
+  margin-left: auto;
 }
 
 .input {
@@ -21,8 +29,11 @@
 input.input {
   width: 20ch;
 }
+/* Wider than a plain 7ch and with room on the right so the native spinner arrows don't sit on
+   top of the last digit (a 6-digit playtime was getting its final digit hidden under them). */
 input.input[type="number"] {
-  width: 7ch;
+  width: 9ch;
+  padding-right: 16px;
 }
 
 .button {
