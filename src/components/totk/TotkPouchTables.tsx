@@ -11,8 +11,9 @@ import type {
 } from "../../api";
 import * as api from "../../api";
 import EditableEntryTable, { ColumnDef } from "./EditableEntryTable";
-import { totkArmorIconUrl, totkIconUrl } from "./totkIcons";
+import { totkArmorIconUrl, totkIconUrl, type TotkIconCategory } from "./totkIcons";
 import { TOTK_ITEM_NAMES } from "./totkItemNames.data";
+import { TOTK_CATEGORY_ITEMS } from "./totkCategoryItems.data";
 import {
   WEAPON_MODIFIER_OPTIONS,
   BOW_MODIFIER_OPTIONS,
@@ -41,16 +42,56 @@ function text<T>(key: keyof T, label: string): ColumnDef<T> {
   return { key, label, type: "text" };
 }
 
-function idColumn<T extends { id: string }>(): ColumnDef<T> {
-  return { key: "id" as keyof T, label: "Id", type: "text", datalist: ITEM_DATALIST };
+// A category-restricted item picker for the "Id" column: shows an icon + name dropdown listing
+// only that category's items, in place of a blind free-text field.
+function idPicker<T extends { id: string }>(category: TotkIconCategory): ColumnDef<T> {
+  const iconFor =
+    category === "armor"
+      ? (id: string) => totkArmorIconUrl(id, 0)
+      : (id: string) => totkIconUrl(category, id);
+  return {
+    key: "id" as keyof T,
+    label: "Id",
+    type: "itempicker",
+    picker: { items: TOTK_CATEGORY_ITEMS[category], iconFor, nameFor: (id) => TOTK_ITEM_NAMES[id] },
+  };
 }
 
 function num<T>(key: keyof T, label: string): ColumnDef<T> {
   return { key, label, type: "number", parse: (raw) => Number(raw) as T[keyof T] };
 }
 
+// Append a new entry to a category, defaulting to the next id after the last row (wrapping),
+// copying the last row's other fields so the new item is otherwise valid. Mirrors marcrobledo's
+// addItem next-id cycling. `blank` is only used when the category is currently empty.
+function addEntry<T extends { id: string }>(
+  entries: T[],
+  category: TotkIconCategory,
+  blank: Omit<T, "id">,
+  setter: (entries: T[]) => Promise<void>,
+  onError: (message: string) => void,
+) {
+  const items = TOTK_CATEGORY_ITEMS[category];
+  const last = entries[entries.length - 1];
+  const nextId = last ? items[(items.indexOf(last.id) + 1) % items.length] : items[0];
+  const next = { ...(last ?? (blank as T)), id: nextId } as T;
+  setter([...entries, next]).catch((err) => onError(String(err)));
+}
+
+// Field defaults used only when adding to a currently-empty category (otherwise the last row's
+// fields are copied).
+const BLANK_WEAPON: Omit<TotkWeapon, "id"> = { durability: 0, modifier: 0, modifier_value: 0, fuse_id: "", fuse_durability: 0, extra_durability: 0, record_extra_durability: 0 };
+const BLANK_BOW: Omit<TotkBow, "id"> = { durability: 0, modifier: 0, modifier_value: 0 };
+const BLANK_SHIELD: Omit<TotkShield, "id"> = { durability: 0, modifier: 0, modifier_value: 0, fuse_id: "", fuse_durability: 0, extra_durability: 0 };
+const BLANK_ARMOR: Omit<TotkArmor, "id"> = { dye_color: 0 };
+const BLANK_ARROW: Omit<TotkArrow, "id"> = { quantity: 1 };
+const BLANK_MATERIAL: Omit<TotkMaterial, "id"> = { quantity: 1, get_order: 0, use_order: 0 };
+const BLANK_KEYITEM: Omit<TotkKeyItem, "id"> = { quantity: 1 };
+const BLANK_DEVICE: Omit<TotkDevice, "id"> = { quantity: 1, use_order: 0 };
+const BLANK_FOOD: Omit<TotkFood, "id"> = { quantity: 1, hearts_heal: 0, effect: 0, effect_multiplier: 0, effect_time: 0, price: 0, recipe: ["", "", "", "", ""] };
+
 const weaponColumns: ColumnDef<TotkWeapon>[] = [
-  idColumn<TotkWeapon>(),
+  idPicker<TotkWeapon>("weapon"),
   num("durability", "Durability"),
   { key: "modifier", label: "Modifier", type: "select", options: WEAPON_MODIFIER_OPTIONS },
   { ...num("modifier_value", "Modifier Value"), iconFor: (e) => weaponModifierIconUrl(e.modifier) },
@@ -61,14 +102,14 @@ const weaponColumns: ColumnDef<TotkWeapon>[] = [
 ];
 
 const bowColumns: ColumnDef<TotkBow>[] = [
-  idColumn<TotkBow>(),
+  idPicker<TotkBow>("bow"),
   num("durability", "Durability"),
   { key: "modifier", label: "Modifier", type: "select", options: BOW_MODIFIER_OPTIONS },
   { ...num("modifier_value", "Modifier Value"), iconFor: (e) => bowModifierIconUrl(e.modifier) },
 ];
 
 const shieldColumns: ColumnDef<TotkShield>[] = [
-  idColumn<TotkShield>(),
+  idPicker<TotkShield>("shield"),
   num("durability", "Durability"),
   { key: "modifier", label: "Modifier", type: "select", options: SHIELD_MODIFIER_OPTIONS },
   { ...num("modifier_value", "Modifier Value"), iconFor: (e) => shieldModifierIconUrl(e.modifier) },
@@ -78,29 +119,29 @@ const shieldColumns: ColumnDef<TotkShield>[] = [
 ];
 
 const armorColumns: ColumnDef<TotkArmor>[] = [
-  idColumn<TotkArmor>(),
+  idPicker<TotkArmor>("armor"),
   { key: "dye_color", label: "Dye Color", type: "select", options: DYE_COLOR_OPTIONS },
 ];
 
-const arrowColumns: ColumnDef<TotkArrow>[] = [idColumn<TotkArrow>(), num("quantity", "Quantity")];
+const arrowColumns: ColumnDef<TotkArrow>[] = [idPicker<TotkArrow>("arrow"), num("quantity", "Quantity")];
 
 const materialColumns: ColumnDef<TotkMaterial>[] = [
-  idColumn<TotkMaterial>(),
+  idPicker<TotkMaterial>("material"),
   num("quantity", "Quantity"),
   num("get_order", "Get Order"),
   num("use_order", "Use Order"),
 ];
 
-const keyItemColumns: ColumnDef<TotkKeyItem>[] = [idColumn<TotkKeyItem>(), num("quantity", "Quantity")];
+const keyItemColumns: ColumnDef<TotkKeyItem>[] = [idPicker<TotkKeyItem>("keyItem"), num("quantity", "Quantity")];
 
 const deviceColumns: ColumnDef<TotkDevice>[] = [
-  idColumn<TotkDevice>(),
+  idPicker<TotkDevice>("device"),
   num("quantity", "Quantity"),
   num("use_order", "Use Order"),
 ];
 
 const foodColumns: ColumnDef<TotkFood>[] = [
-  idColumn<TotkFood>(),
+  idPicker<TotkFood>("food"),
   num("quantity", "Quantity"),
   num("hearts_heal", "Hearts Heal"),
   { key: "effect", label: "Food Effect", type: "select", options: FOOD_EFFECT_OPTIONS },
@@ -131,6 +172,7 @@ export function TotkWeaponsTable({ weapons, onError }: { weapons: TotkWeapon[] }
       columns={weaponColumns}
       setter={api.setPouchWeapons}
       onError={onError}
+      onAdd={() => addEntry(weapons, "weapon", BLANK_WEAPON, api.setPouchWeapons, onError)}
       iconFor={(e) => totkIconUrl("weapon", e.id)}
       nameFor={nameFor}
     />
@@ -145,6 +187,7 @@ export function TotkBowsTable({ bows, onError }: { bows: TotkBow[] } & ErrorProp
       columns={bowColumns}
       setter={api.setPouchBows}
       onError={onError}
+      onAdd={() => addEntry(bows, "bow", BLANK_BOW, api.setPouchBows, onError)}
       iconFor={(e) => totkIconUrl("bow", e.id)}
       nameFor={nameFor}
     />
@@ -159,6 +202,7 @@ export function TotkShieldsTable({ shields, onError }: { shields: TotkShield[] }
       columns={shieldColumns}
       setter={api.setPouchShields}
       onError={onError}
+      onAdd={() => addEntry(shields, "shield", BLANK_SHIELD, api.setPouchShields, onError)}
       iconFor={(e) => totkIconUrl("shield", e.id)}
       nameFor={nameFor}
     />
@@ -173,6 +217,7 @@ export function TotkArmorTable({ armor, onError }: { armor: TotkArmor[] } & Erro
       columns={armorColumns}
       setter={api.setArmor}
       onError={onError}
+      onAdd={() => addEntry(armor, "armor", BLANK_ARMOR, api.setArmor, onError)}
       iconFor={(e) => totkArmorIconUrl(e.id, e.dye_color)}
       nameFor={nameFor}
     />
@@ -187,6 +232,7 @@ export function TotkArrowsTable({ arrows, onError }: { arrows: TotkArrow[] } & E
       columns={arrowColumns}
       setter={api.setArrows}
       onError={onError}
+      onAdd={() => addEntry(arrows, "arrow", BLANK_ARROW, api.setArrows, onError)}
       iconFor={(e) => totkIconUrl("arrow", e.id)}
       nameFor={nameFor}
     />
@@ -201,6 +247,7 @@ export function TotkMaterialsTable({ materials, onError }: { materials: TotkMate
       columns={materialColumns}
       setter={api.setMaterials}
       onError={onError}
+      onAdd={() => addEntry(materials, "material", BLANK_MATERIAL, api.setMaterials, onError)}
       iconFor={(e) => totkIconUrl("material", e.id)}
       nameFor={nameFor}
     />
@@ -215,6 +262,7 @@ export function TotkKeyItemsTable({ keyItems, onError }: { keyItems: TotkKeyItem
       columns={keyItemColumns}
       setter={api.setKeyItems}
       onError={onError}
+      onAdd={() => addEntry(keyItems, "keyItem", BLANK_KEYITEM, api.setKeyItems, onError)}
       iconFor={(e) => totkIconUrl("keyItem", e.id)}
       nameFor={nameFor}
     />
@@ -229,6 +277,7 @@ export function TotkDevicesTable({ devices, onError }: { devices: TotkDevice[] }
       columns={deviceColumns}
       setter={api.setDevices}
       onError={onError}
+      onAdd={() => addEntry(devices, "device", BLANK_DEVICE, api.setDevices, onError)}
       iconFor={(e) => totkIconUrl("device", e.id)}
       nameFor={nameFor}
     />
@@ -243,6 +292,7 @@ export function TotkFoodTable({ food, onError }: { food: TotkFood[] } & ErrorPro
       columns={foodColumns}
       setter={api.setFood}
       onError={onError}
+      onAdd={() => addEntry(food, "food", BLANK_FOOD, api.setFood, onError)}
       iconFor={(e) => totkIconUrl("food", e.id)}
       nameFor={nameFor}
     />

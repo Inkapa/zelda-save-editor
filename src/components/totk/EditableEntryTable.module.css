@@ -24,3 +24,8 @@
   object-fit: contain;
   flex-shrink: 0;
 }
+.addButton {
+  composes: button from "../../theme/controls.module.css";
+  margin-top: 8px;
+  font-size: 0.85rem;
+}

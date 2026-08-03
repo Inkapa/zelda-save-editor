@@ -1,7 +1,8 @@
 import { useState, type ReactNode } from "react";
 import SectionHeading from "../../theme/SectionHeading";
-import { totkUnknownIconUrl } from "./totkIcons";
 import { withCurrentValue, type SelectOption } from "../Select";
+import ItemIcon from "./ItemIcon";
+import ItemPicker from "./ItemPicker";
 import styles from "./EditableEntryTable.module.css";
 
 export type { SelectOption };
@@ -14,13 +15,22 @@ export interface DatalistDef {
   options: { value: string; label: string }[];
 }
 
+export interface PickerDef {
+  /** Ids selectable in this column, restricted to the table's category. */
+  items: string[];
+  iconFor: (id: string) => string;
+  nameFor: (id: string) => string | undefined;
+}
+
 export interface ColumnDef<T> {
   key: keyof T;
   label: string;
-  type?: "text" | "number" | "checkbox" | "readonly" | "select";
+  type?: "text" | "number" | "checkbox" | "readonly" | "select" | "itempicker";
   format?: (value: T[keyof T]) => string;
   parse?: (raw: string) => T[keyof T];
   options?: SelectOption[];
+  /** Turns the column into a category-restricted item picker (icon + name dropdown). */
+  picker?: PickerDef;
   /** Turns a text column into a searchable autocomplete (native <datalist>) instead of a blind
    * free-text field, for id-shaped values a human can't reasonably type from memory (fuse
    * targets, etc). Still a plain text input underneath, so an unrecognized/custom id can still
@@ -100,6 +110,26 @@ function SelectCell<T>({ entries, index, column, setter, onError }: CellProps<T>
   );
 }
 
+function PickerCell<T>({ entries, index, column, setter, onError }: CellProps<T>) {
+  const picker = column.picker!;
+  const value = String(entries[index][column.key] ?? "");
+  const commit = (id: string) =>
+    setter(replaceAt(entries, index, column.key, id as unknown as T[keyof T])).catch((err) =>
+      onError(String(err)),
+    );
+  return (
+    <td>
+      <ItemPicker
+        value={value}
+        items={picker.items}
+        iconFor={picker.iconFor}
+        nameFor={picker.nameFor}
+        onCommit={commit}
+      />
+    </td>
+  );
+}
+
 function CheckboxCell<T>({ entries, index, column, setter, onError }: CellProps<T>) {
   const checked = Boolean(entries[index][column.key]);
   const commit = (next: boolean) => {
@@ -123,6 +153,7 @@ function Cell<T>(props: CellProps<T>) {
   if (props.column.type === "checkbox") return <CheckboxCell {...props} />;
   if (props.column.type === "readonly") return <ReadOnlyCell {...props} />;
   if (props.column.type === "select") return <SelectCell {...props} />;
+  if (props.column.type === "itempicker") return <PickerCell {...props} />;
   return <TextCell {...props} />;
 }
 
@@ -136,6 +167,8 @@ interface Props<T> {
   motif?: ReactNode;
   iconFor?: (entry: T) => string;
   nameFor?: (entry: T) => string | undefined;
+  /** Renders an "Add" button below the table when provided. */
+  onAdd?: () => void;
 }
 
 export default function EditableEntryTable<T>({
@@ -148,6 +181,7 @@ export default function EditableEntryTable<T>({
   motif,
   iconFor,
   nameFor,
+  onAdd,
 }: Props<T>) {
   return (
     <div>
@@ -179,15 +213,7 @@ export default function EditableEntryTable<T>({
             <tr key={i}>
               {iconFor && (
                 <td>
-                  <img
-                    className={styles.icon}
-                    src={iconFor(entry)}
-                    alt=""
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = totkUnknownIconUrl;
-                    }}
-                  />
+                  <ItemIcon url={iconFor(entry)} />
                 </td>
               )}
               <td>{i}</td>
@@ -199,6 +225,11 @@ export default function EditableEntryTable<T>({
           ))}
         </tbody>
       </table>
+      {onAdd && (
+        <button type="button" className={styles.addButton} onClick={onAdd}>
+          + Add {title}
+        </button>
+      )}
     </div>
   );
 }
