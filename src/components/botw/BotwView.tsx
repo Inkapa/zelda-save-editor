@@ -4,7 +4,17 @@ import { BotwCategoryTable } from "./BotwItemsTable";
 import BotwHorsesTable from "./BotwHorsesTable";
 import BotwCompletionismPanel from "./BotwCompletionismPanel";
 import TabShell from "../../theme/TabShell";
-import { HeartIcon, SwordIcon, BowIcon, ShieldIcon, ShirtIcon, LeafIcon, AppleIcon, ChestIcon, HorseshoeIcon, StarIcon } from "../../theme/icons";
+import { LeafIcon, ChestIcon } from "../../theme/icons";
+import {
+  HomeSprite,
+  SwordSprite,
+  BowSprite,
+  ShieldSprite,
+  ShirtSprite,
+  AppleSprite,
+  StarSprite,
+  HorseSprite,
+} from "../../theme/TabSprite";
 import styles from "./BotwView.module.css";
 
 interface Props {
@@ -21,13 +31,13 @@ export default function BotwView({ state, onError, onRefresh }: Props) {
           {
             id: "stats",
             label: "Stats",
-            icon: <HeartIcon />,
+            icon: <HomeSprite />,
             content: <BotwStatsForm state={state} onError={onError} />,
           },
           {
             id: "weapons",
             label: "Weapons",
-            icon: <SwordIcon />,
+            icon: <SwordSprite />,
             content: (
               <BotwCategoryTable
                 title="Weapons"
@@ -42,7 +52,7 @@ export default function BotwView({ state, onError, onRefresh }: Props) {
           {
             id: "bows",
             label: "Bows",
-            icon: <BowIcon />,
+            icon: <BowSprite />,
             content: (
               <BotwCategoryTable
                 title="Bows"
@@ -57,7 +67,7 @@ export default function BotwView({ state, onError, onRefresh }: Props) {
           {
             id: "shields",
             label: "Shields",
-            icon: <ShieldIcon />,
+            icon: <ShieldSprite />,
             content: (
               <BotwCategoryTable
                 title="Shields"
@@ -72,7 +82,7 @@ export default function BotwView({ state, onError, onRefresh }: Props) {
           {
             id: "armor",
             label: "Armor",
-            icon: <ShirtIcon />,
+            icon: <ShirtSprite />,
             content: (
               <BotwCategoryTable
                 title="Armor"
@@ -100,7 +110,7 @@ export default function BotwView({ state, onError, onRefresh }: Props) {
           {
             id: "food",
             label: "Food",
-            icon: <AppleIcon />,
+            icon: <AppleSprite />,
             content: (
               <BotwCategoryTable title="Food" valueLabel="Quantity" items={state.items} category="food" onError={onError} />
             ),
@@ -122,13 +132,13 @@ export default function BotwView({ state, onError, onRefresh }: Props) {
           {
             id: "horses",
             label: "Horses",
-            icon: <HorseshoeIcon />,
+            icon: <HorseSprite />,
             content: <BotwHorsesTable horses={state.horses} onError={onError} />,
           },
           {
             id: "completionism",
             label: "Completionism",
-            icon: <StarIcon />,
+            icon: <StarSprite />,
             content: <BotwCompletionismPanel onError={onError} onUnlocked={onRefresh} />,
           },
         ]}

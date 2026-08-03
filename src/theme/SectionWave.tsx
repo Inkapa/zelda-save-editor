@@ -4,13 +4,14 @@ import { subscribe } from "./waveClock";
 const WIDTH = 400;
 const HEIGHT = 24;
 const AMPLITUDE = 7;
-const FREQUENCY = 10;
-const SPEED = 0.012;
-const STEPS = 80;
+const FREQUENCY = 6;
+const SPEED = 0.03;
+const STEPS = 120;
 
-function triangleWave(x: number): number {
-  const raw = (2 / Math.PI) * Math.asin(Math.sin(x));
-  return Math.round(raw * 7) / 7;
+// Layered sines of different frequency/phase give a looser, hand-drawn ripple instead of a rigid
+// triangle wave. Normalized so the combined amplitude stays within AMPLITUDE.
+function organicWave(x: number): number {
+  return 0.6 * Math.sin(x) + 0.28 * Math.sin(2.3 * x + 1) + 0.12 * Math.sin(4.1 * x + 2);
 }
 
 function buildPoints(t: number): string {
@@ -19,7 +20,7 @@ function buildPoints(t: number): string {
   for (let i = 0; i <= STEPS; i++) {
     const progress = i / STEPS;
     const angle = progress * FREQUENCY * 2 * Math.PI + dtAngle;
-    const y = (HEIGHT / 2 + AMPLITUDE * triangleWave(angle)).toFixed(2);
+    const y = (HEIGHT / 2 + AMPLITUDE * organicWave(angle)).toFixed(2);
     parts.push(`${(progress * WIDTH).toFixed(1)},${y}`);
   }
   return parts.join(" ");
@@ -43,7 +44,7 @@ export default function SectionWave() {
       preserveAspectRatio="none"
       style={{ display: "block" }}
     >
-      <polyline ref={lineRef} fill="none" stroke="var(--accent)" strokeWidth={1.5} strokeLinejoin="miter" />
+      <polyline ref={lineRef} fill="none" stroke="var(--accent)" strokeWidth={1.5} strokeLinejoin="round" strokeLinecap="round" />
     </svg>
   );
 }

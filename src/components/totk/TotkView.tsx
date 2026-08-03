@@ -23,23 +23,18 @@ import SectionHeading from "../../theme/SectionHeading";
 import TabShell from "../../theme/TabShell";
 import Select from "../Select";
 import { HEARTS_OPTIONS, STAMINA_OPTIONS, BATTERY_OPTIONS } from "./totkEnums.data";
+import { ArrowIcon, LeafIcon, ChestIcon, BlueprintIcon, PinIcon, SearchIcon } from "../../theme/icons";
 import {
-  HeartIcon,
-  SwordIcon,
-  BowIcon,
-  ShieldIcon,
-  ShirtIcon,
-  ArrowIcon,
-  LeafIcon,
-  ChestIcon,
-  GearIcon,
-  AppleIcon,
-  BlueprintIcon,
-  HorseshoeIcon,
-  PinIcon,
-  StarIcon,
-  SearchIcon,
-} from "../../theme/icons";
+  HomeSprite,
+  SwordSprite,
+  BowSprite,
+  ShieldSprite,
+  ShirtSprite,
+  GearSprite,
+  AppleSprite,
+  HorseSprite,
+  StarSprite,
+} from "../../theme/TabSprite";
 import styles from "./TotkView.module.css";
 
 interface Props {
@@ -163,29 +158,29 @@ export default function TotkView({ state, onError, onRefresh }: Props) {
     <div className={styles.view}>
       <TabShell
         tabs={[
-          { id: "stats", label: "Stats", icon: <HeartIcon />, content: statsTab },
+          { id: "stats", label: "Stats", icon: <HomeSprite />, content: statsTab },
           {
             id: "weapons",
             label: "Weapons",
-            icon: <SwordIcon />,
+            icon: <SwordSprite />,
             content: <TotkWeaponsTable weapons={state.pouch_weapons} onError={onError} />,
           },
           {
             id: "bows",
             label: "Bows",
-            icon: <BowIcon />,
+            icon: <BowSprite />,
             content: <TotkBowsTable bows={state.pouch_bows} onError={onError} />,
           },
           {
             id: "shields",
             label: "Shields",
-            icon: <ShieldIcon />,
+            icon: <ShieldSprite />,
             content: <TotkShieldsTable shields={state.pouch_shields} onError={onError} />,
           },
           {
             id: "armor",
             label: "Armor",
-            icon: <ShirtIcon />,
+            icon: <ShirtSprite />,
             content: <TotkArmorTable armor={state.armor} onError={onError} />,
           },
           {
@@ -209,19 +204,19 @@ export default function TotkView({ state, onError, onRefresh }: Props) {
           {
             id: "devices",
             label: "Devices",
-            icon: <GearIcon />,
+            icon: <GearSprite />,
             content: <TotkDevicesTable devices={state.devices} onError={onError} />,
           },
           {
             id: "food",
             label: "Food",
-            icon: <AppleIcon />,
+            icon: <AppleSprite />,
             content: <TotkFoodTable food={state.food} onError={onError} />,
           },
           {
             id: "horses",
             label: "Horses",
-            icon: <HorseshoeIcon />,
+            icon: <HorseSprite />,
             content: <TotkHorsesTable horses={state.horses} onError={onError} />,
           },
           {
@@ -251,7 +246,7 @@ export default function TotkView({ state, onError, onRefresh }: Props) {
           {
             id: "completionism",
             label: "Completionism",
-            icon: <StarIcon />,
+            icon: <StarSprite />,
             content: <TotkCompletionismPanel state={state} onError={onError} onUnlocked={onRefresh} />,
           },
           {

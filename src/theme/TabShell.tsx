@@ -1,5 +1,5 @@
 import { useState, type ReactNode } from "react";
-import SectionWave from "./SectionWave";
+import WavyFrame from "./WavyFrame";
 import styles from "./TabShell.module.css";
 
 export interface TabDef {
@@ -28,13 +28,13 @@ export default function TabShell({ tabs }: Props) {
             className={`${styles.tab} ${tab.id === activeTab?.id ? styles.active : ""}`}
             onClick={() => setActiveId(tab.id)}
           >
-            {tab.icon}
-            {tab.label}
+            <WavyFrame />
+            <span className={styles.label}>
+              {tab.icon}
+              {tab.label}
+            </span>
           </button>
         ))}
-      </div>
-      <div className={styles.wave}>
-        <SectionWave />
       </div>
       <div className={styles.content}>{activeTab?.content}</div>
     </div>
