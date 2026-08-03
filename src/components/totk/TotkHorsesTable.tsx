@@ -61,6 +61,13 @@ export default function TotkHorsesTable({ horses, onError }: Props) {
       onError={onError}
       level="h3"
       motif={<TotkMotif />}
+      // Collapsed cards would otherwise show only the row number; surface the horse's given name
+      // (falling back to its breed) so a collapsed horse is identifiable at a glance.
+      nameFor={(h) => {
+        const breed = TOTK_ITEM_NAMES[h.id];
+        if (h.name && breed) return `${h.name} (${breed})`;
+        return h.name || breed || h.id;
+      }}
     />
   );
 }

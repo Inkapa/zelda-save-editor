@@ -89,6 +89,7 @@ function ItemRow({
   modifierCategory,
   modifier,
   categoryIndex,
+  pickerItems,
   onError,
 }: {
   index: number;
@@ -97,37 +98,44 @@ function ItemRow({
   modifierCategory: ModifierCategory | null;
   modifier: ItemModifier | undefined;
   categoryIndex: number;
+  pickerItems: string[];
   onError: (message: string) => void;
 }) {
   const [name, setName] = useState(item.name);
   const [quantity, setQuantity] = useState(String(item.quantity));
   const [expanded, setExpanded] = useState(false);
+  const toggle = () => setExpanded((v) => !v);
   const commit = () =>
     api.setItem(index, name, Number(quantity)).catch((err) => onError(String(err)));
   const isDye = valueLabel === "Dye Color";
 
   return (
     <tr data-collapsed={expanded ? undefined : "true"}>
-      <td data-summary>
+      <td data-summary onClick={toggle}>
         <button
           type="button"
           className={styles.rowToggle}
           aria-expanded={expanded}
           aria-label={expanded ? "Collapse" : "Expand"}
-          onClick={() => setExpanded((v) => !v)}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggle();
+          }}
         >
           {expanded ? "▾" : "▸"}
         </button>
         <span>{index}</span>
       </td>
-      <td data-summary>
+      <td data-summary onClick={toggle}>
         <ItemIcon item={item} />
       </td>
-      <td data-summary>{BOTW_ITEM_NAMES[item.name] ?? ""}</td>
+      <td data-summary data-grow onClick={toggle}>
+        {BOTW_ITEM_NAMES[item.name] ?? ""}
+      </td>
       <td data-label="Id">
         <ItemPicker
           value={name}
-          items={BOTW_CATEGORY_ITEMS[item.category]}
+          items={pickerItems}
           renderIcon={(id, size) => botwSpriteIcon(id, size)}
           nameFor={(id) => BOTW_ITEM_NAMES[id]}
           onCommit={(id) => {
@@ -181,19 +189,38 @@ interface CategoryTableProps {
   items: BotwItem[];
   category: BotwItemCategory;
   modifiers?: ItemModifier[];
+  /** Narrows a category to a sub-set (e.g. bows vs. arrows, which share the "bow" category). */
+  subFilter?: (item: BotwItem) => boolean;
+  /** Overrides the id picker's option list, so a split section only offers its own sub-set. */
+  pickerItems?: string[];
   onError: (message: string) => void;
 }
 
-export function BotwCategoryTable({ title, valueLabel, items, category, modifiers, onError }: CategoryTableProps) {
-  const entries = items.map((item, index) => ({ item, index })).filter(({ item }) => item.category === category);
+export function BotwCategoryTable({
+  title,
+  valueLabel,
+  items,
+  category,
+  modifiers,
+  subFilter,
+  pickerItems,
+  onError,
+}: CategoryTableProps) {
+  const entries = items
+    .map((item, index) => ({ item, index }))
+    .filter(({ item }) => item.category === category && (!subFilter || subFilter(item)));
+  // Modifier columns only apply where modifiers are actually supplied. Bows/weapons/shields pass a
+  // modifier list; the arrows section shares the "bow" category but has no modifiers, so it must not
+  // render those columns.
   const modifierCategory: ModifierCategory | null =
-    category === "weapon" || category === "bow" || category === "shield" ? category : null;
+    modifiers && (category === "weapon" || category === "bow" || category === "shield") ? category : null;
+  const pickerOptions = pickerItems ?? BOTW_CATEGORY_ITEMS[category];
 
   // A new item is appended into the first empty slot at the end of the flat array (index equal to
   // the current item count), mirroring marcrobledo's addItem. The default id is the first entry of
-  // this tab's category so the row lands under the table the button belongs to.
+  // this section's own id list so the row lands under the table the button belongs to.
   const addItem = () => {
-    const id = BOTW_CATEGORY_ITEMS[category][0];
+    const id = pickerOptions[0];
     if (!id) return;
     api.setItem(items.length, id, 1).catch((err) => onError(String(err)));
   };
@@ -228,6 +255,7 @@ export function BotwCategoryTable({ title, valueLabel, items, category, modifier
                 modifierCategory={modifierCategory}
                 modifier={modifiers?.[categoryIndex]}
                 categoryIndex={categoryIndex}
+                pickerItems={pickerOptions}
                 onError={onError}
               />
             ))}

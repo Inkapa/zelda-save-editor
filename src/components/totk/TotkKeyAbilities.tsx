@@ -2,7 +2,6 @@ import { useEffect, useState } from "react";
 import * as api from "../../api";
 import type { TotkAbility } from "../../api";
 import { totkIconUrl } from "./totkIcons";
-import ItemIcon from "./ItemIcon";
 import styles from "./TotkKeyAbilities.module.css";
 
 /**
@@ -42,7 +41,7 @@ export default function TotkKeyAbilities({ onError }: { onError: (msg: string) =
           aria-pressed={ability.unlocked}
           title={ability.unlocked ? `${ability.label} (unlocked)` : `${ability.label} (locked)`}
         >
-          <ItemIcon url={totkIconUrl("keyItem", `Obj_${ability.id}`)} size={40} />
+          <img className={styles.icon} src={totkIconUrl("keyItem", `Obj_${ability.id}`)} alt="" />
           <span className={styles.label}>{ability.label}</span>
         </button>
       ))}

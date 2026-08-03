@@ -43,7 +43,8 @@ body {
 }
 
 button,
-select {
+select,
+input[type="checkbox"] {
   cursor: pointer;
 }
 button:disabled {

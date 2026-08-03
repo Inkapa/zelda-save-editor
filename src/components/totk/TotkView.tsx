@@ -24,7 +24,7 @@ import SectionHeading from "../../theme/SectionHeading";
 import TabShell from "../../theme/TabShell";
 import Select from "../Select";
 import { HEARTS_OPTIONS, STAMINA_OPTIONS, BATTERY_OPTIONS } from "./totkEnums.data";
-import { ArrowIcon, LeafIcon, ChestIcon, BlueprintIcon, PinIcon, SearchIcon } from "../../theme/icons";
+import { LeafIcon, ChestIcon, BlueprintIcon, PinIcon, SearchIcon } from "../../theme/icons";
 import {
   HomeSprite,
   SwordSprite,
@@ -170,7 +170,12 @@ export default function TotkView({ state, onError, onRefresh }: Props) {
             id: "bows",
             label: "Bows",
             icon: <BowSprite />,
-            content: <TotkBowsTable bows={state.pouch_bows} onError={onError} />,
+            content: (
+              <>
+                <TotkBowsTable bows={state.pouch_bows} onError={onError} />
+                <TotkArrowsTable arrows={state.arrows} onError={onError} />
+              </>
+            ),
           },
           {
             id: "shields",
@@ -183,12 +188,6 @@ export default function TotkView({ state, onError, onRefresh }: Props) {
             label: "Armor",
             icon: <ShirtSprite />,
             content: <TotkArmorTable armor={state.armor} onError={onError} />,
-          },
-          {
-            id: "arrows",
-            label: "Arrows",
-            icon: <ArrowIcon />,
-            content: <TotkArrowsTable arrows={state.arrows} onError={onError} />,
           },
           {
             id: "materials",

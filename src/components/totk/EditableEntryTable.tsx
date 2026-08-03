@@ -171,27 +171,35 @@ function EntryRow<T>({ entries, index, columns, setter, onError, iconFor, nameFo
   // Rows start collapsed; the flag only takes effect at narrow widths (see `.table` media query),
   // where a chevron in the header expands the detail fields. At wide widths it's ignored.
   const [expanded, setExpanded] = useState(false);
+  const toggle = () => setExpanded((v) => !v);
   const entry = entries[index];
   return (
     <tr data-collapsed={expanded ? undefined : "true"}>
-      <td data-summary>
+      <td data-summary onClick={toggle}>
         <button
           type="button"
           className={styles.rowToggle}
           aria-expanded={expanded}
           aria-label={expanded ? "Collapse" : "Expand"}
-          onClick={() => setExpanded((v) => !v)}
+          onClick={(e) => {
+            e.stopPropagation();
+            toggle();
+          }}
         >
           {expanded ? "▾" : "▸"}
         </button>
         <span>{index}</span>
       </td>
       {iconFor && (
-        <td data-summary>
+        <td data-summary onClick={toggle}>
           <ItemIcon url={iconFor(entry)} />
         </td>
       )}
-      {nameFor && <td data-summary>{nameFor(entry) ?? ""}</td>}
+      {nameFor && (
+        <td data-summary data-grow onClick={toggle}>
+          {nameFor(entry) ?? ""}
+        </td>
+      )}
       {columns.map((c) => (
         <Cell key={String(c.key)} entries={entries} index={index} column={c} setter={setter} onError={onError} />
       ))}

@@ -4,39 +4,50 @@ import styles from "./WavyFrame.module.css";
 // straight box. Drawn in a normalized viewBox and stretched to the button with
 // preserveAspectRatio="none"; the stroke stays crisp via vector-effect non-scaling-stroke, and the
 // waves stretch a little per button width, which reads as organic rather than rigid.
+//
+// The same wave is animated by morphing the path through a full phase cycle, which makes the ripple
+// travel slowly around the border. The shape and amplitude are unchanged from the static version;
+// only the phase advances, so it reads as the existing outline gently flowing.
 const W = 100;
 const H = 40;
 const PAD = 4;
 const AMP = 1.6;
+const FRAMES = 12;
+const DURATION = "9s";
 
 function edge(
   n: number,
   waves: number,
   point: (p: number, offset: number) => [number, number],
   startAt: number,
+  phase: number,
 ): [number, number][] {
   const pts: [number, number][] = [];
   for (let i = startAt; i <= n; i++) {
     const p = i / n;
-    const offset = AMP * Math.sin(p * waves * 2 * Math.PI);
+    const offset = AMP * Math.sin(p * waves * 2 * Math.PI + phase);
     pts.push(point(p, offset));
   }
   return pts;
 }
 
-function wavyRectPath(): string {
+function wavyRectPath(phase: number): string {
   const iw = W - 2 * PAD;
   const ih = H - 2 * PAD;
   const pts: [number, number][] = [
-    ...edge(28, 7, (p, o) => [PAD + p * iw, PAD + o], 0), // top
-    ...edge(8, 2, (p, o) => [W - PAD + o, PAD + p * ih], 1), // right
-    ...edge(28, 7, (p, o) => [W - PAD - p * iw, H - PAD + o], 1), // bottom
-    ...edge(8, 2, (p, o) => [PAD + o, H - PAD - p * ih], 1), // left
+    ...edge(28, 7, (p, o) => [PAD + p * iw, PAD + o], 0, phase), // top
+    ...edge(8, 2, (p, o) => [W - PAD + o, PAD + p * ih], 1, phase), // right
+    ...edge(28, 7, (p, o) => [W - PAD - p * iw, H - PAD + o], 1, phase), // bottom
+    ...edge(8, 2, (p, o) => [PAD + o, H - PAD - p * ih], 1, phase), // left
   ];
   return "M" + pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" L") + " Z";
 }
 
-const PATH = wavyRectPath();
+// One path per phase step across a full 2*PI cycle; the last frame equals the first (phase 2*PI is
+// the same wave as phase 0), so the loop is seamless.
+const FRAME_PATHS = Array.from({ length: FRAMES + 1 }, (_, i) => wavyRectPath((i / FRAMES) * 2 * Math.PI));
+const PATH = FRAME_PATHS[0];
+const VALUES = FRAME_PATHS.join(";");
 
 export default function WavyFrame() {
   return (
@@ -46,7 +57,9 @@ export default function WavyFrame() {
       preserveAspectRatio="none"
       aria-hidden="true"
     >
-      <path d={PATH} vectorEffect="non-scaling-stroke" />
+      <path d={PATH} vectorEffect="non-scaling-stroke">
+        <animate attributeName="d" values={VALUES} dur={DURATION} repeatCount="indefinite" calcMode="linear" />
+      </path>
     </svg>
   );
 }

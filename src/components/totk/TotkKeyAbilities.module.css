@@ -29,6 +29,12 @@
   border-color: var(--accent);
   background: color-mix(in srgb, var(--accent) 14%, var(--bg-panel));
 }
+.icon {
+  width: 40px;
+  height: 40px;
+  object-fit: contain;
+  pointer-events: none;
+}
 .label {
   font-size: 0.8rem;
 }
