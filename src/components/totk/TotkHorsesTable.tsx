@@ -2,10 +2,15 @@ import type { TotkHorse } from "../../api";
 import * as api from "../../api";
 import EditableEntryTable, { ColumnDef } from "./EditableEntryTable";
 import TotkMotif from "../../theme/motifs/TotkMotif";
-
-function text(key: keyof TotkHorse, label: string): ColumnDef<TotkHorse> {
-  return { key, label, type: "text" };
-}
+import { TOTK_ITEM_NAMES } from "./totkItemNames.data";
+import {
+  MANE_OPTIONS,
+  SADDLE_OPTIONS,
+  REIN_OPTIONS,
+  STAT_STAR_OPTIONS,
+  STAMINA_STAR_OPTIONS,
+  HORSE_AVAILABILITY,
+} from "./totkHorseEnums.data";
 
 function num(key: keyof TotkHorse, label: string): ColumnDef<TotkHorse> {
   return { key, label, type: "number", parse: (raw) => Number(raw) as TotkHorse[keyof TotkHorse] };
@@ -14,19 +19,27 @@ function num(key: keyof TotkHorse, label: string): ColumnDef<TotkHorse> {
 // Appearance-only fields (icon_pattern, icon_eye_color, the five RGB tuples,
 // amiibo_uid_hash) are left out of this table. They're cosmetic icon rendering data, not
 // stats a save editor user would typically want to hand-edit. Add columns for them if that
-// changes.
+// changes. horse_type/color_type/foot_type stay plain number inputs, matching marcrobledo (which
+// derives horse_type from the id and exposes color/foot as ranged ints, not enums).
 const columns: ColumnDef<TotkHorse>[] = [
-  text("id", "Id"),
-  text("name", "Name"),
-  num("mane", "Mane"),
-  num("saddle", "Saddle"),
-  num("rein", "Rein"),
-  num("bond", "Bond"),
+  {
+    key: "id",
+    label: "Id",
+    type: "itempicker",
+    // Horses have no per-id icon (marcrobledo draws them procedurally from color data), so the
+    // picker shows just name + id.
+    picker: { items: HORSE_AVAILABILITY, renderIcon: () => null, nameFor: (id) => TOTK_ITEM_NAMES[id] },
+  },
+  { key: "name", label: "Name", type: "text" },
+  { key: "mane", label: "Mane", type: "select", options: MANE_OPTIONS },
+  { key: "saddle", label: "Saddle", type: "select", options: SADDLE_OPTIONS },
+  { key: "rein", label: "Rein", type: "select", options: REIN_OPTIONS },
+  num("bond", "Bond (0-100)"),
   { key: "bond_checked", label: "Bond Checked", type: "checkbox" },
-  num("stats_strength", "Strength"),
-  num("stats_speed", "Speed"),
-  num("stats_stamina", "Stamina"),
-  num("stats_pull", "Pull"),
+  num("stats_strength", "Strength (100-350)"),
+  { key: "stats_speed", label: "Speed", type: "select", options: STAT_STAR_OPTIONS },
+  { key: "stats_stamina", label: "Stamina", type: "select", options: STAMINA_STAR_OPTIONS },
+  { key: "stats_pull", label: "Pull", type: "select", options: STAT_STAR_OPTIONS },
   num("horse_type", "Type"),
   num("color_type", "Color"),
   num("foot_type", "Foot"),
