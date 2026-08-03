@@ -43,6 +43,19 @@ pub fn detect_and_build(bytes: Vec<u8>) -> Result<(Option<Save>, OpenResult), Sh
     }
 }
 
+/// Reads a save from `path`, detects its format, and (for an editable BOTW/TOTK save) stores it
+/// plus its path in `AppState`. Shared by the file-picker `open_save` and the path-based
+/// `open_save_at` used by the recent-files list.
+fn load_from_path(state: &AppState, path: PathBuf) -> Result<OpenResult, ShellError> {
+    let bytes = std::fs::read(&path).map_err(ShellError::io)?;
+    let (save, result) = detect_and_build(bytes)?;
+    if let Some(save) = save {
+        *state.save.lock().unwrap() = Some(save);
+        *state.path.lock().unwrap() = Some(path);
+    }
+    Ok(result)
+}
+
 #[tauri::command]
 pub fn open_save(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<OpenResult, ShellError> {
     let picked = app
@@ -54,13 +67,25 @@ pub fn open_save(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<Op
     let path: PathBuf = picked
         .into_path()
         .map_err(|e| ShellError::io(std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string())))?;
-    let bytes = std::fs::read(&path).map_err(ShellError::io)?;
-    let (save, result) = detect_and_build(bytes)?;
-    if let Some(save) = save {
-        *state.save.lock().unwrap() = Some(save);
-        *state.path.lock().unwrap() = Some(path);
-    }
-    Ok(result)
+    load_from_path(state.inner(), path)
+}
+
+/// Opens a save at a known path (a recent-files entry), skipping the file dialog.
+#[tauri::command]
+pub fn open_save_at(path: String, state: State<'_, AppState>) -> Result<OpenResult, ShellError> {
+    load_from_path(state.inner(), PathBuf::from(path))
+}
+
+/// The path of the currently-loaded save, if any, so the frontend can record it in its
+/// recent-files list after a successful open.
+#[tauri::command]
+pub fn current_path(state: State<'_, AppState>) -> Option<String> {
+    state
+        .path
+        .lock()
+        .unwrap()
+        .as_ref()
+        .map(|p| p.to_string_lossy().into_owned())
 }
 
 #[tauri::command]

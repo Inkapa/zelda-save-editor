@@ -2,6 +2,12 @@ import { useEffect, useRef, useState } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { OpenResult } from "./api";
 import * as api from "./api";
+import {
+  getRecentFiles,
+  recordRecentFile,
+  removeRecentFile,
+  type RecentFile,
+} from "./api/recentFiles";
 import BotwView from "./components/botw/BotwView";
 import TotkView from "./components/totk/TotkView";
 import CaptionView from "./components/totk/CaptionView";
@@ -25,6 +31,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [savedToast, setSavedToast] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [recents, setRecents] = useState<RecentFile[]>(getRecentFiles);
   const dirty = api.useDirty();
   const editable = loaded?.kind === "botw" || loaded?.kind === "totk";
   useThemeAttributes(loaded?.kind === "caption" ? "totk" : loaded?.kind ?? "neutral");
@@ -47,13 +54,35 @@ function App() {
     };
   }, []);
 
+  const recordIfEditable = async (result: OpenResult) => {
+    if (result.kind !== "botw" && result.kind !== "totk") return;
+    const path = await api.currentPath();
+    if (!path) return;
+    const name = path.split(/[\\/]/).pop() ?? path;
+    setRecents(recordRecentFile({ path, kind: result.kind, name }));
+  };
+
   const handleOpen = async () => {
     try {
       const result = await api.openSave();
       setLoaded(result);
       setError(null);
+      await recordIfEditable(result);
     } catch (err) {
       setError((err as api.ShellError).message ?? String(err));
+    }
+  };
+
+  const handleOpenRecent = async (file: RecentFile) => {
+    try {
+      const result = await api.openSaveAt(file.path);
+      setLoaded(result);
+      setError(null);
+      await recordIfEditable(result);
+    } catch (err) {
+      // The file may have been moved or deleted; drop it from the list.
+      setError((err as api.ShellError).message ?? String(err));
+      setRecents(removeRecentFile(file.path));
     }
   };
 
@@ -145,6 +174,23 @@ function App() {
             Open a save file...
           </button>
           <p className={styles.heroHint}>game_data.sav, progress.sav, or caption.sav</p>
+          {recents.length > 0 && (
+            <div className={styles.recents}>
+              <p className={styles.recentsTitle}>Recent</p>
+              {recents.map((file) => (
+                <button
+                  key={file.path}
+                  className={styles.recentItem}
+                  onClick={() => handleOpenRecent(file)}
+                  title={file.path}
+                >
+                  <span className={styles.recentName}>{file.name}</span>
+                  <span className={styles.recentKind}>{file.kind.toUpperCase()}</span>
+                  <span className={styles.recentPath}>{file.path}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       )}
       {savedToast && <Toast message="Saved" onDismiss={() => setSavedToast(false)} />}

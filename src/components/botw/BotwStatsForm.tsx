@@ -4,7 +4,9 @@ import * as api from "../../api";
 import SectionHeading from "../../theme/SectionHeading";
 import BotwMotif from "../../theme/motifs/BotwMotif";
 import Select from "../Select";
+import StringSelect from "../StringSelect";
 import { HEARTS_OPTIONS, STAMINA_OPTIONS } from "./botwEnums.data";
+import { MAP_OPTIONS, MAP_TYPE_OPTIONS } from "./botwMapOptions.data";
 import styles from "./BotwStatsForm.module.css";
 
 interface Props {
@@ -115,25 +117,14 @@ export default function BotwStatsForm({ state, onError }: Props) {
         </label>
       )}
       <SectionHeading level="h4" title="Map" />
-      <label className={styles.field}>
-        Map:{" "}
-        <input
-          className={styles.input}
-          type="text"
-          defaultValue={state.map}
-          onBlur={(e) => api.setMap(e.target.value).catch((err) => onError(String(err)))}
-        />
-      </label>
-      <label className={styles.field}>
-        Map Type:{" "}
-        <input
-          className={styles.input}
-          type="text"
-          defaultValue={state.map_type}
-          onBlur={(e) => api.setMapType(e.target.value).catch((err) => onError(String(err)))}
-        />
-      </label>
-      <SectionHeading level="h4" title="Positions" />
+      <StringSelect label="Map" value={state.map} options={MAP_OPTIONS} onCommit={api.setMap} onError={onError} />
+      <StringSelect
+        label="Map Type"
+        value={state.map_type}
+        options={MAP_TYPE_OPTIONS}
+        onCommit={api.setMapType}
+        onError={onError}
+      />
       <PositionField
         label="Player Position"
         value={state.player_position}

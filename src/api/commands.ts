@@ -22,8 +22,8 @@ import type {
   TotkWeapon,
 } from "./types";
 
-const READONLY_COMMANDS = new Set(["get_botw_state", "get_totk_state", "get_totk_hash_rows"]);
-const CLEARS_DIRTY_COMMANDS = new Set(["open_save", "save", "save_as"]);
+const READONLY_COMMANDS = new Set(["get_botw_state", "get_totk_state", "get_totk_hash_rows", "current_path"]);
+const CLEARS_DIRTY_COMMANDS = new Set(["open_save", "open_save_at", "save", "save_as"]);
 
 function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   return tauriInvoke<T>(cmd, args).then((result) => {
@@ -38,6 +38,14 @@ function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
 
 export function openSave(): Promise<OpenResult> {
   return invoke("open_save");
+}
+
+export function openSaveAt(path: string): Promise<OpenResult> {
+  return invoke("open_save_at", { path });
+}
+
+export function currentPath(): Promise<string | null> {
+  return invoke("current_path");
 }
 
 export function saveSave(): Promise<void> {

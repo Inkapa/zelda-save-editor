@@ -72,6 +72,8 @@ pub fn run() {
             commands::totk::get_totk_hash_rows,
             commands::totk::set_totk_hash_field,
             commands::file::open_save,
+            commands::file::open_save_at,
+            commands::file::current_path,
             commands::file::save,
             commands::file::save_as,
         ])
