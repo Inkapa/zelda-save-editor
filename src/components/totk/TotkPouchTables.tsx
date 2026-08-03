@@ -31,13 +31,44 @@ function nameFor(entry: { id: string }): string | undefined {
   return TOTK_ITEM_NAMES[entry.id];
 }
 
-// Every known item id, searchable by name or raw id via the browser's native <datalist>
-// autocomplete, shared by the "Id" column on every category table plus weapon/shield fuse
-// targets, so picking a real item doesn't mean typing its exact internal id from memory.
-const ITEM_DATALIST = {
-  id: "totk-item-ids",
-  options: Object.entries(TOTK_ITEM_NAMES).map(([value, label]) => ({ value, label: `${label} (${value})` })),
-};
+// Reverse map id -> category, so a cross-category value (a fuse target can be anything) can be
+// given the right icon. First category to claim an id wins; ids repeated across categories are
+// rare and the icon folder is the same shape regardless.
+const ITEM_CATEGORY: Record<string, TotkIconCategory> = {};
+for (const [cat, ids] of Object.entries(TOTK_CATEGORY_ITEMS)) {
+  for (const id of ids) if (!(id in ITEM_CATEGORY)) ITEM_CATEGORY[id] = cat as TotkIconCategory;
+}
+
+// Fuse targets are cross-category, but in practice you fuse materials far more than anything else,
+// so they lead the list; the rest stay selectable. Leading "" is the "no fusion" choice.
+const FUSE_ITEMS: string[] = [
+  "",
+  ...new Set(
+    (["material", "weapon", "bow", "shield", "device", "food", "keyItem", "arrow", "armor"] as const).flatMap(
+      (c) => TOTK_CATEGORY_ITEMS[c],
+    ),
+  ),
+];
+
+function fuseIcon(id: string, size: number) {
+  if (!id) return null;
+  const cat = ITEM_CATEGORY[id];
+  const url = cat === "armor" ? totkArmorIconUrl(id, 0) : cat ? totkIconUrl(cat, id) : totkUnknownIconUrl;
+  return totkIconImg(url, size);
+}
+
+function fuseColumn<T extends { fuse_id: string }>(): ColumnDef<T> {
+  return {
+    key: "fuse_id" as keyof T,
+    label: "Fuse Id",
+    type: "itempicker",
+    picker: {
+      items: FUSE_ITEMS,
+      renderIcon: fuseIcon,
+      nameFor: (id) => (id === "" ? "(none)" : TOTK_ITEM_NAMES[id]),
+    },
+  };
+}
 
 function text<T>(key: keyof T, label: string): ColumnDef<T> {
   return { key, label, type: "text" };
@@ -108,7 +139,7 @@ const weaponColumns: ColumnDef<TotkWeapon>[] = [
   num("durability", "Durability"),
   { key: "modifier", label: "Modifier", type: "select", options: WEAPON_MODIFIER_OPTIONS },
   { ...num("modifier_value", "Modifier Value"), iconFor: (e) => weaponModifierIconUrl(e.modifier) },
-  { key: "fuse_id", label: "Fuse Id", type: "text", datalist: ITEM_DATALIST },
+  fuseColumn<TotkWeapon>(),
   num("fuse_durability", "Fuse Durability"),
   num("extra_durability", "Extra Durability"),
   num("record_extra_durability", "Record Extra Durability"),
@@ -126,7 +157,7 @@ const shieldColumns: ColumnDef<TotkShield>[] = [
   num("durability", "Durability"),
   { key: "modifier", label: "Modifier", type: "select", options: SHIELD_MODIFIER_OPTIONS },
   { ...num("modifier_value", "Modifier Value"), iconFor: (e) => shieldModifierIconUrl(e.modifier) },
-  { key: "fuse_id", label: "Fuse Id", type: "text", datalist: ITEM_DATALIST },
+  fuseColumn<TotkShield>(),
   num("fuse_durability", "Fuse Durability"),
   num("extra_durability", "Extra Durability"),
 ];
