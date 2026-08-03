@@ -13,6 +13,9 @@ import HoverPreview from "../HoverPreview";
 import styles from "./BotwItemsTable.module.css";
 
 const ICON_SIZE = 48;
+// The flat item array's capacity; a new item goes in the first empty slot at the end, so adding
+// is blocked once every slot is used. Mirrors the engine's own MAX_ITEMS.
+const MAX_ITEMS = 420;
 
 // BOTW icons are sliced from shared sprite sheets (CSS background-position), not one file per item.
 function botwSpriteIcon(id: string, size: number, dyeColor?: number): ReactNode {
@@ -174,6 +177,15 @@ export function BotwCategoryTable({ title, valueLabel, items, category, modifier
   const modifierCategory: ModifierCategory | null =
     category === "weapon" || category === "bow" || category === "shield" ? category : null;
 
+  // A new item is appended into the first empty slot at the end of the flat array (index equal to
+  // the current item count), mirroring marcrobledo's addItem. The default id is the first entry of
+  // this tab's category so the row lands under the table the button belongs to.
+  const addItem = () => {
+    const id = BOTW_CATEGORY_ITEMS[category][0];
+    if (!id) return;
+    api.setItem(items.length, id, 1).catch((err) => onError(String(err)));
+  };
+
   return (
     <div>
       <SectionHeading title={`${title} (${entries.length})`} motif={<BotwMotif />} />
@@ -208,6 +220,14 @@ export function BotwCategoryTable({ title, valueLabel, items, category, modifier
           ))}
         </tbody>
       </table>
+      <button
+        type="button"
+        className={styles.addButton}
+        onClick={addItem}
+        disabled={items.length >= MAX_ITEMS}
+      >
+        + Add {title}
+      </button>
     </div>
   );
 }

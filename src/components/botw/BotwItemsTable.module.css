@@ -11,3 +11,8 @@
   display: block;
   image-rendering: pixelated;
 }
+.addButton {
+  composes: button from "../../theme/controls.module.css";
+  margin-top: 8px;
+  font-size: 0.85rem;
+}
