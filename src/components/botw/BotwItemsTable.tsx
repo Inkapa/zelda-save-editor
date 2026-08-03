@@ -91,6 +91,7 @@ function ItemRow({
   modifier,
   categoryIndex,
   pickerItems,
+  allowMaxQuantity,
   onError,
 }: {
   index: number;
@@ -100,6 +101,7 @@ function ItemRow({
   modifier: ItemModifier | undefined;
   categoryIndex: number;
   pickerItems: string[];
+  allowMaxQuantity: boolean;
   onError: (message: string) => void;
 }) {
   const [name, setName] = useState(item.name);
@@ -108,6 +110,12 @@ function ItemRow({
   const toggle = () => setExpanded((v) => !v);
   const commit = () =>
     api.setItem(index, name, Number(quantity)).catch((err) => onError(String(err)));
+  const remove = () => api.removeItem(index).catch((err) => onError(String(err)));
+  const duplicate = () => api.duplicateItem(index).catch((err) => onError(String(err)));
+  const maxQuantity = () => {
+    setQuantity("999");
+    api.setItem(index, name, 999).catch((err) => onError(String(err)));
+  };
   const isDye = valueLabel === "Dye Color";
 
   return (
@@ -180,6 +188,45 @@ function ItemRow({
             <td data-label="Modifier Value" />
           </>
         ))}
+      <td data-label="Actions">
+        <div className={styles.rowActions}>
+          {allowMaxQuantity && (
+            <button
+              type="button"
+              className={styles.rowAction}
+              title="Max quantity"
+              onClick={(e) => {
+                e.stopPropagation();
+                maxQuantity();
+              }}
+            >
+              999
+            </button>
+          )}
+          <button
+            type="button"
+            className={styles.rowAction}
+            title="Duplicate"
+            onClick={(e) => {
+              e.stopPropagation();
+              duplicate();
+            }}
+          >
+            ⧉
+          </button>
+          <button
+            type="button"
+            className={styles.rowAction}
+            title="Delete"
+            onClick={(e) => {
+              e.stopPropagation();
+              remove();
+            }}
+          >
+            ✕
+          </button>
+        </div>
+      </td>
     </tr>
   );
 }
@@ -244,6 +291,7 @@ export function BotwCategoryTable({
                   <th>Modifier Value</th>
                 </>
               )}
+              <th></th>
             </tr>
           </thead>
           <tbody>
@@ -257,6 +305,7 @@ export function BotwCategoryTable({
                 modifier={modifiers?.[categoryIndex]}
                 categoryIndex={categoryIndex}
                 pickerItems={pickerOptions}
+                allowMaxQuantity={valueLabel === "Quantity"}
                 onError={onError}
               />
             ))}

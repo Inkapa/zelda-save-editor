@@ -1,5 +1,6 @@
 pub mod binary;
 pub mod botw;
+pub mod completism;
 pub mod error;
 pub mod hashtable;
 pub mod totk;

@@ -474,10 +474,47 @@ fn completism_counts_are_read_only_and_match_real_fixture_contents() {
     assert_eq!(save.shrines_cleared().unwrap(), 144);
     assert_eq!(save.koroks_hidden().unwrap(), 341);
     assert_eq!(save.koroks_carried().unwrap(), 33);
-    assert_eq!(save.locations_visited().unwrap(), 286); // 288 raw array entries minus 2 duplicate hashes
+    assert_eq!(save.locations_visited().unwrap(), 285); // of 362 tracked locations
     assert_eq!(save.defeated_hinox().unwrap(), 18);
     assert_eq!(save.defeated_talus().unwrap(), 16);
     assert_eq!(save.defeated_molduga().unwrap(), 1);
+}
+
+#[test]
+fn completism_snapshot_exposes_every_category_with_source_totals() {
+    let save = load_totk();
+    let cats = save.completism().unwrap();
+    let by_id = |id: &str| cats.iter().find(|c| c.id == id).expect("category present");
+
+    // Two-metric cards and their curated totals, straight from the source's arrays.
+    let towers = by_id("towers");
+    assert_eq!(towers.metrics.len(), 2);
+    assert_eq!(towers.metrics[0].max, 15);
+    assert_eq!(by_id("shrines").metrics[1].max, 152);
+    assert_eq!(by_id("lightroots").metrics[0].max, 120);
+    // Categories that only exist after this port.
+    assert_eq!(by_id("caves").metrics[0].max, 147);
+    assert_eq!(by_id("wells").metrics[0].max, 58);
+    assert_eq!(by_id("chasms").metrics[0].max, 36);
+    assert_eq!(by_id("compendium").metrics[0].max, 509);
+    assert_eq!(by_id("gleeok").metrics[0].max, 14);
+}
+
+#[test]
+fn set_completism_flips_a_category_to_complete() {
+    let mut save = load_totk();
+    let before = save.completism().unwrap();
+    let hinox_before = before.iter().find(|c| c.id == "hinox").unwrap().metrics[0].clone();
+    assert!(hinox_before.value < hinox_before.max, "fixture should start with hinoxes left");
+
+    let changed = save.set_completism("hinox", 0).unwrap();
+    assert!(changed > 0, "some present hinox flags should flip");
+
+    let after = save.completism().unwrap();
+    let hinox_after = &after.iter().find(|c| c.id == "hinox").unwrap().metrics[0];
+    // Every flipped flag raises the count by exactly one; a second run is then a no-op.
+    assert_eq!(hinox_after.value, hinox_before.value + changed);
+    assert_eq!(save.set_completism("hinox", 0).unwrap(), 0, "idempotent");
 }
 
 #[test]

@@ -86,6 +86,8 @@ impl From<ModifierCategoryDto> for save_engine::botw::ModifierCategory {
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct BotwState {
+    pub version: String,
+    pub modded: bool,
     pub rupees: u32,
     pub mons: u32,
     pub max_hearts: u32,
@@ -108,10 +110,13 @@ pub struct BotwState {
     pub bow_modifiers: Vec<ItemModifierDto>,
     pub shield_modifiers: Vec<ItemModifierDto>,
     pub horses: Vec<BotwHorseDto>,
+    pub completism: Vec<CompletismCategoryDto>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct TotkState {
+    pub version: String,
+    pub modded: bool,
     pub max_life: u32,
     pub current_rupees: u32,
     pub max_stamina: u32,
@@ -133,22 +138,41 @@ pub struct TotkState {
     pub devices: Vec<TotkDeviceDto>,
     pub food: Vec<TotkFoodDto>,
     pub horses: Vec<TotkHorseDto>,
-    pub shrines_found: u32,
-    pub shrines_cleared: u32,
-    pub koroks_hidden: u32,
-    pub koroks_carried: u32,
-    pub locations_visited: u32,
-    pub defeated_hinox: u32,
-    pub defeated_talus: u32,
-    pub defeated_molduga: u32,
-    pub defeated_bubbuls: u32,
-    pub sage_wills_found: u32,
-    pub old_maps_found: u32,
-    pub addison_completed: u32,
+    pub completism: Vec<CompletismCategoryDto>,
     pub autobuilds: Vec<TotkAutoBuildEntryDto>,
     pub map_pins: Vec<TotkMapPinDto>,
     pub map_markers: Vec<TotkMapMarkerDto>,
     pub teleporters: Vec<TotkTeleporterDto>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CompletismMetricDto {
+    pub verb: String,
+    pub value: usize,
+    pub max: usize,
+}
+
+impl From<save_engine::completism::CompletismMetric> for CompletismMetricDto {
+    fn from(m: save_engine::completism::CompletismMetric) -> Self {
+        CompletismMetricDto { verb: m.verb.to_string(), value: m.value, max: m.max }
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct CompletismCategoryDto {
+    pub id: String,
+    pub label: String,
+    pub metrics: Vec<CompletismMetricDto>,
+}
+
+impl From<save_engine::completism::CompletismCategory> for CompletismCategoryDto {
+    fn from(c: save_engine::completism::CompletismCategory) -> Self {
+        CompletismCategoryDto {
+            id: c.id.to_string(),
+            label: c.label.to_string(),
+            metrics: c.metrics.into_iter().map(CompletismMetricDto::from).collect(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

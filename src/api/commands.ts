@@ -141,6 +141,14 @@ export function setItem(index: number, name: string, quantity: number): Promise<
   return invoke("set_item", { index, name, quantity });
 }
 
+export function removeItem(index: number): Promise<void> {
+  return invoke("remove_item", { index });
+}
+
+export function duplicateItem(index: number): Promise<void> {
+  return invoke("duplicate_item", { index });
+}
+
 export function setModifier(
   category: ModifierCategory,
   index: number,
@@ -184,6 +192,11 @@ export function unlockAllDefeatedMolduga(): Promise<number> {
 
 export function unlockAllLocations(): Promise<number> {
   return invoke("unlock_all_locations");
+}
+
+/** Sets one BOTW completionism category to complete. Returns how many entries changed. */
+export function setBotwCompletism(id: string, metric: number): Promise<number> {
+  return invoke("set_botw_completism", { id, metric });
 }
 
 // --- TOTK ---
@@ -302,6 +315,11 @@ export function unlockAllSageWills(): Promise<number> {
 
 export function unlockAllAddison(): Promise<number> {
   return invoke("unlock_all_addison");
+}
+
+/** Sets one TOTK completionism metric to complete. Returns how many entries changed. */
+export function setTotkCompletism(id: string, metric: number): Promise<number> {
+  return invoke("set_totk_completism", { id, metric });
 }
 
 export function getTotkHashRows(): Promise<TotkHashRow[]> {

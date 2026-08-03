@@ -11,6 +11,8 @@ use save_engine::{Save, SaveError};
 pub fn read_state(save: &BotwSave) -> Result<BotwState, ShellError> {
     let (weapon_modifiers, bow_modifiers, shield_modifiers) = save.modifiers()?;
     Ok(BotwState {
+        version: save_engine::botw::versions::VERSION[save.version_index].to_string(),
+        modded: save.modded,
         rupees: save.rupees()?,
         mons: save.mons()?,
         max_hearts: save.max_hearts()?,
@@ -33,6 +35,7 @@ pub fn read_state(save: &BotwSave) -> Result<BotwState, ShellError> {
         bow_modifiers: bow_modifiers.into_iter().map(crate::dto::ItemModifierDto::from).collect(),
         shield_modifiers: shield_modifiers.into_iter().map(crate::dto::ItemModifierDto::from).collect(),
         horses: save.horses()?.into_iter().map(crate::dto::BotwHorseDto::from).collect(),
+        completism: save.completism()?.into_iter().map(crate::dto::CompletismCategoryDto::from).collect(),
     })
 }
 
@@ -176,6 +179,16 @@ pub fn set_item(
 }
 
 #[tauri::command]
+pub fn remove_item(state: State<'_, AppState>, index: usize) -> Result<(), ShellError> {
+    with_botw(state.inner(), |save| save.remove_item(index))
+}
+
+#[tauri::command]
+pub fn duplicate_item(state: State<'_, AppState>, index: usize) -> Result<(), ShellError> {
+    with_botw(state.inner(), |save| save.duplicate_item(index))
+}
+
+#[tauri::command]
 pub fn set_modifier(
     state: State<'_, AppState>,
     category: ModifierCategoryDto,
@@ -229,6 +242,13 @@ pub fn unlock_all_defeated_molduga(state: State<'_, AppState>) -> Result<usize, 
 #[tauri::command]
 pub fn unlock_all_locations(state: State<'_, AppState>) -> Result<usize, ShellError> {
     with_botw(state.inner(), |save| save.unlock_all_locations())
+}
+
+/// Mass-completes one BOTW completionism category by id (from the state's `completism` list).
+/// `metric` is accepted for symmetry with TOTK but unused (every BOTW card has one metric).
+#[tauri::command]
+pub fn set_botw_completism(state: State<'_, AppState>, id: String, metric: usize) -> Result<usize, ShellError> {
+    with_botw(state.inner(), |save| save.set_completism(&id, metric))
 }
 
 #[cfg(test)]

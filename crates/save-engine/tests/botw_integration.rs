@@ -106,6 +106,62 @@ fn horses_returns_six_slots_with_last_slot_nameless() {
 }
 
 #[test]
+fn duplicate_and_remove_keep_modifiers_aligned() {
+    let mut save = load_botw();
+    let items = save.items().unwrap();
+    let (weapons, _, _) = save.modifiers().unwrap();
+    if weapons.is_empty() {
+        return; // fixture has no weapons; nothing to align
+    }
+    let widx = items
+        .iter()
+        .position(|it| {
+            it.name.starts_with("Weapon_Sword_")
+                || it.name.starts_with("Weapon_Lsword_")
+                || it.name.starts_with("Weapon_Spear_")
+        })
+        .expect("weapon count > 0 implies a weapon item exists");
+
+    // Tag the first weapon's modifier so we can prove it stays on the right item.
+    save.set_modifier(ModifierCategory::Weapon, 0, 0x80000002, 7).unwrap();
+
+    save.duplicate_item(widx).unwrap();
+    let items_after = save.items().unwrap();
+    let (w_after, _, _) = save.modifiers().unwrap();
+    assert_eq!(items_after.len(), items.len() + 1);
+    assert_eq!(w_after.len(), weapons.len() + 1);
+    assert_eq!(items_after[widx + 1].name, items[widx].name);
+    // Both the original and its copy carry the tagged modifier: no shift onto neighbours.
+    assert_eq!(w_after[0].modifier, 0x80000002);
+    assert_eq!(w_after[1].modifier, 0x80000002);
+
+    save.remove_item(widx + 1).unwrap();
+    let items_back = save.items().unwrap();
+    let (w_back, _, _) = save.modifiers().unwrap();
+    assert_eq!(items_back.len(), items.len());
+    assert_eq!(w_back.len(), weapons.len());
+    assert_eq!(w_back[0].modifier, 0x80000002);
+}
+
+#[test]
+fn completism_snapshot_and_set_complete_a_category() {
+    let mut save = load_botw();
+    let cats = save.completism().unwrap();
+    for id in ["koroks", "locations", "hinox", "talus", "molduga"] {
+        assert!(cats.iter().any(|c| c.id == id), "missing category {id}");
+    }
+    let koroks = cats.iter().find(|c| c.id == "koroks").unwrap();
+    assert_eq!(koroks.metrics[0].max, 900);
+
+    let molduga_before = cats.iter().find(|c| c.id == "molduga").unwrap().metrics[0].clone();
+    let changed = save.set_completism("molduga", 0).unwrap();
+    let after = save.completism().unwrap();
+    let molduga_after = &after.iter().find(|c| c.id == "molduga").unwrap().metrics[0];
+    assert_eq!(molduga_after.value, molduga_before.value + changed);
+    assert_eq!(save.set_completism("molduga", 0).unwrap(), 0, "idempotent");
+}
+
+#[test]
 fn set_item_out_of_range_returns_error() {
     let mut save = load_botw();
     let result = save.set_item(save_engine::botw::MAX_ITEMS, "Weapon_Sword_070", 1);

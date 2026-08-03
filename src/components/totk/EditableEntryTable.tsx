@@ -22,6 +22,14 @@ export interface PickerDef {
   nameFor: (id: string) => string | undefined;
 }
 
+/** A one-click field preset shown in a row's actions cell (e.g. "Restore durability"). `apply`
+ * returns the whole row with the preset fields changed. */
+export interface QuickFill<T> {
+  label: string;
+  icon: string;
+  apply: (entry: T) => T;
+}
+
 export interface ColumnDef<T> {
   key: keyof T;
   label: string;
@@ -174,14 +182,24 @@ interface RowProps<T> {
   onError: (message: string) => void;
   iconFor?: (entry: T) => string;
   nameFor?: (entry: T) => string | undefined;
+  /** When true, renders per-row delete/duplicate controls. */
+  rowActions?: boolean;
+  quickFills?: QuickFill<T>[];
 }
 
-function EntryRow<T>({ entries, index, columns, setter, onError, iconFor, nameFor }: RowProps<T>) {
+function EntryRow<T>({ entries, index, columns, setter, onError, iconFor, nameFor, rowActions, quickFills }: RowProps<T>) {
   // Rows start collapsed; the flag only takes effect at narrow widths (see `.table` media query),
   // where a chevron in the header expands the detail fields. At wide widths it's ignored.
   const [expanded, setExpanded] = useState(false);
   const toggle = () => setExpanded((v) => !v);
   const entry = entries[index];
+  const remove = () => setter(entries.filter((_, i) => i !== index)).catch((err) => onError(String(err)));
+  const duplicate = () =>
+    setter([...entries.slice(0, index + 1), entries[index], ...entries.slice(index + 1)]).catch((err) =>
+      onError(String(err)),
+    );
+  const applyFill = (fill: QuickFill<T>) =>
+    setter(entries.map((e, i) => (i === index ? fill.apply(e) : e))).catch((err) => onError(String(err)));
   return (
     <tr data-collapsed={expanded ? "false" : "true"} onClick={(e) => rowHeaderToggle(e, toggle)}>
       <td data-summary>
@@ -212,6 +230,48 @@ function EntryRow<T>({ entries, index, columns, setter, onError, iconFor, nameFo
       {columns.map((c) => (
         <Cell key={String(c.key)} entries={entries} index={index} column={c} setter={setter} onError={onError} />
       ))}
+      {rowActions && (
+        <td data-label="Actions">
+          <div className={styles.rowActions}>
+            {quickFills?.map((q) => (
+              <button
+                key={q.label}
+                type="button"
+                className={styles.rowAction}
+                title={q.label}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  applyFill(q);
+                }}
+              >
+                {q.icon}
+              </button>
+            ))}
+            <button
+              type="button"
+              className={styles.rowAction}
+              title="Duplicate"
+              onClick={(e) => {
+                e.stopPropagation();
+                duplicate();
+              }}
+            >
+              ⧉
+            </button>
+            <button
+              type="button"
+              className={styles.rowAction}
+              title="Delete"
+              onClick={(e) => {
+                e.stopPropagation();
+                remove();
+              }}
+            >
+              ✕
+            </button>
+          </div>
+        </td>
+      )}
     </tr>
   );
 }
@@ -228,6 +288,8 @@ interface Props<T> {
   nameFor?: (entry: T) => string | undefined;
   /** Renders an "Add" button below the table when provided. */
   onAdd?: () => void;
+  /** One-click field presets shown per row (only rendered alongside the delete/duplicate actions). */
+  quickFills?: QuickFill<T>[];
 }
 
 export default function EditableEntryTable<T>({
@@ -241,6 +303,7 @@ export default function EditableEntryTable<T>({
   iconFor,
   nameFor,
   onAdd,
+  quickFills,
 }: Props<T>) {
   return (
     <div>
@@ -266,6 +329,7 @@ export default function EditableEntryTable<T>({
               {columns.map((c) => (
                 <th key={String(c.key)}>{c.label}</th>
               ))}
+              {onAdd && <th></th>}
             </tr>
           </thead>
           <tbody>
@@ -279,6 +343,8 @@ export default function EditableEntryTable<T>({
                 onError={onError}
                 iconFor={iconFor}
                 nameFor={nameFor}
+                rowActions={Boolean(onAdd)}
+                quickFills={quickFills}
               />
             ))}
           </tbody>

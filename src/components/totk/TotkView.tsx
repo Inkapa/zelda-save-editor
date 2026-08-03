@@ -252,7 +252,7 @@ export default function TotkView({ state, onError, onRefresh }: Props) {
             id: "completionism",
             label: "Completionism",
             icon: <StarSprite />,
-            content: <TotkCompletionismPanel state={state} onError={onError} onUnlocked={onRefresh} />,
+            content: <TotkCompletionismPanel state={state} onError={onError} />,
           },
           {
             id: "hashes",

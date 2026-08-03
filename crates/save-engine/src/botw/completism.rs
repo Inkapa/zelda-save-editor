@@ -6,6 +6,7 @@
 //! since these are only ever touched in bulk, not individually by name.
 
 use crate::binary::SaveBuffer;
+use crate::completism::{metric, CompletismCategory};
 use crate::error::SaveError;
 use crate::hashtable::build_full_index;
 use std::collections::HashMap;
@@ -179,6 +180,52 @@ pub(crate) fn unlock_all_defeated_molduga(buf: &mut SaveBuffer) -> Result<usize,
 pub(crate) fn unlock_all_locations(buf: &mut SaveBuffer) -> Result<usize, SaveError> {
     let index = build_full_index(buf);
     unlock_all(buf, &index, &LOCATION_HASHES)
+}
+
+/// Counts how many present flags in `hashes` are set (== 1); the max is the array length.
+fn count_set(buf: &SaveBuffer, index: &HashMap<u32, usize>, hashes: &[u32]) -> Result<usize, SaveError> {
+    let mut count = 0;
+    for &hash in hashes {
+        if let Some(&offset) = index.get(&hash) {
+            if buf.read_u32(offset)? != 0 {
+                count += 1;
+            }
+        }
+    }
+    Ok(count)
+}
+
+/// Found/total for each BOTW completionism category, in the source's display order. Same card
+/// shape as TOTK so both games share one panel.
+pub fn snapshot(buf: &SaveBuffer) -> Result<Vec<CompletismCategory>, SaveError> {
+    let index = build_full_index(buf);
+    Ok(vec![
+        CompletismCategory {
+            id: "koroks",
+            label: "Koroks",
+            metrics: vec![metric("found", count_set(buf, &index, &KOROK_HASHES)?, KOROK_HASHES.len())],
+        },
+        CompletismCategory {
+            id: "locations",
+            label: "Locations",
+            metrics: vec![metric("visited", count_set(buf, &index, &LOCATION_HASHES)?, LOCATION_HASHES.len())],
+        },
+        CompletismCategory {
+            id: "hinox",
+            label: "Hinox",
+            metrics: vec![metric("defeated", count_set(buf, &index, &DEFEATED_HINOX_HASHES)?, DEFEATED_HINOX_HASHES.len())],
+        },
+        CompletismCategory {
+            id: "talus",
+            label: "Talus",
+            metrics: vec![metric("defeated", count_set(buf, &index, &DEFEATED_TALUS_HASHES)?, DEFEATED_TALUS_HASHES.len())],
+        },
+        CompletismCategory {
+            id: "molduga",
+            label: "Molduga",
+            metrics: vec![metric("defeated", count_set(buf, &index, &DEFEATED_MOLDUGA_HASHES)?, DEFEATED_MOLDUGA_HASHES.len())],
+        },
+    ])
 }
 
 #[cfg(test)]

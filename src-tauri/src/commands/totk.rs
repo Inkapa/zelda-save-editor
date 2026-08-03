@@ -12,6 +12,8 @@ use save_engine::{Save, SaveError};
 
 pub fn read_state(save: &TotkSave) -> Result<TotkState, ShellError> {
     Ok(TotkState {
+        version: save.version_label.to_string(),
+        modded: save.modded,
         max_life: save.max_life()?,
         current_rupees: save.current_rupees()?,
         max_stamina: save.max_stamina()?,
@@ -33,18 +35,7 @@ pub fn read_state(save: &TotkSave) -> Result<TotkState, ShellError> {
         devices: save.devices()?.into_iter().map(TotkDeviceDto::from).collect(),
         food: save.food()?.into_iter().map(TotkFoodDto::from).collect(),
         horses: save.horses()?.into_iter().map(TotkHorseDto::from).collect(),
-        shrines_found: save.shrines_found()? as u32,
-        shrines_cleared: save.shrines_cleared()? as u32,
-        koroks_hidden: save.koroks_hidden()? as u32,
-        koroks_carried: save.koroks_carried()? as u32,
-        locations_visited: save.locations_visited()? as u32,
-        defeated_hinox: save.defeated_hinox()? as u32,
-        defeated_talus: save.defeated_talus()? as u32,
-        defeated_molduga: save.defeated_molduga()? as u32,
-        defeated_bubbuls: save.defeated_bubbuls()? as u32,
-        sage_wills_found: save.sage_wills_found()? as u32,
-        old_maps_found: save.old_maps_found()? as u32,
-        addison_completed: save.addison_completed()? as u32,
+        completism: save.completism()?.into_iter().map(crate::dto::CompletismCategoryDto::from).collect(),
         autobuilds: save.autobuilds()?.into_iter().map(TotkAutoBuildEntryDto::from).collect(),
         map_pins: save.map_pins()?.into_iter().map(TotkMapPinDto::from).collect(),
         map_markers: save.map_markers()?.into_iter().map(TotkMapMarkerDto::from).collect(),
@@ -237,6 +228,14 @@ pub fn unlock_all_addison(state: State<'_, AppState>) -> Result<usize, ShellErro
     with_totk(state.inner(), |save| save.unlock_all_addison())
 }
 
+/// Sets one completionism metric to complete. `id` is a category id from the state's `completism`
+/// list; `metric` is that card's metric index (0 = primary, 1 = the secondary line on the
+/// towers/shrines/lightroots cards). Returns how many entries changed.
+#[tauri::command]
+pub fn set_totk_completism(state: State<'_, AppState>, id: String, metric: usize) -> Result<usize, ShellError> {
+    with_totk(state.inner(), |save| save.set_completism(&id, metric))
+}
+
 // --- Advanced: generic hash browser. Kept out of `TotkState`/`read_state`: the full table is
 // ~30k rows, and every edit already triggers a `get_totk_state` refresh, so folding this in
 // would send that whole payload on every single unrelated edit. Fetched on demand instead. ---
@@ -388,23 +387,12 @@ mod tests {
     fn get_totk_state_impl_includes_completism_counts() {
         let app_state = loaded_app_state();
         let dto = get_totk_state_impl(&app_state).unwrap();
-        // Cross-check against the engine's own accessors directly, not just "didn't panic".
-        let (expected_shrines_found, expected_bubbuls, expected_sage_wills, expected_old_maps, expected_addison) =
-            match Save::detect(totk_fixture_bytes()).unwrap() {
-                Save::Totk(save) => (
-                    save.shrines_found().unwrap() as u32,
-                    save.defeated_bubbuls().unwrap() as u32,
-                    save.sage_wills_found().unwrap() as u32,
-                    save.old_maps_found().unwrap() as u32,
-                    save.addison_completed().unwrap() as u32,
-                ),
-                Save::Botw(_) => panic!("fixture should be TOTK"),
-            };
-        assert_eq!(dto.shrines_found, expected_shrines_found);
-        assert_eq!(dto.defeated_bubbuls, expected_bubbuls);
-        assert_eq!(dto.sage_wills_found, expected_sage_wills);
-        assert_eq!(dto.old_maps_found, expected_old_maps);
-        assert_eq!(dto.addison_completed, expected_addison);
+        let shrines = dto.completism.iter().find(|c| c.id == "shrines").unwrap();
+        assert_eq!(shrines.metrics[0].max, 152);
+        // The whole card grid is present, including categories only added by the parity work.
+        for id in ["towers", "lightroots", "caves", "wells", "chasms", "gleeok", "compendium"] {
+            assert!(dto.completism.iter().any(|c| c.id == id), "missing category {id}");
+        }
     }
 
     #[test]
@@ -474,12 +462,15 @@ mod tests {
     #[test]
     fn unlock_all_bubbuls_command_returns_newly_unlocked_count_and_persists() {
         let app_state = loaded_app_state();
-        let before = get_totk_state_impl(&app_state).unwrap().defeated_bubbuls;
+        let bubbuls = |s: &crate::dto::TotkState| {
+            s.completism.iter().find(|c| c.id == "bubbuls").unwrap().metrics[0].value
+        };
+        let before = bubbuls(&get_totk_state_impl(&app_state).unwrap());
 
         let count = with_totk(&app_state, |save| save.unlock_all_bubbuls()).unwrap();
 
         assert!(count > 0);
-        let after = get_totk_state_impl(&app_state).unwrap().defeated_bubbuls;
+        let after = bubbuls(&get_totk_state_impl(&app_state).unwrap());
         assert_eq!(after, 147);
         assert!(after > before);
     }

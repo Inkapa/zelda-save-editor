@@ -153,6 +153,13 @@ function App() {
           Refresh
         </button>
       </div>
+      {(loaded?.kind === "botw" || loaded?.kind === "totk") && (
+        <p className={styles.versionLine}>
+          {loaded.kind === "botw" ? "Breath of the Wild" : "Tears of the Kingdom"} version{" "}
+          {loaded.state.version}
+          {loaded.state.modded ? " (modded)" : ""}
+        </p>
+      )}
       {loaded?.kind === "botw" && (
         <BotwView state={loaded.state} onError={setError} onRefresh={refreshCurrent} />
       )}

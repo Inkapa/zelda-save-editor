@@ -159,7 +159,7 @@ export default function BotwView({ state, onError, onRefresh }: Props) {
             id: "completionism",
             label: "Completionism",
             icon: <StarSprite />,
-            content: <BotwCompletionismPanel onError={onError} onUnlocked={onRefresh} />,
+            content: <BotwCompletionismPanel state={state} onError={onError} />,
           },
         ]}
       />

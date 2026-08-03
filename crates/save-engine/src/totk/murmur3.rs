@@ -85,6 +85,17 @@ mod tests {
         assert_eq!(hash32("None"), 0xb6eede09);
     }
 
+    // Cross-check 4: completionism status-value names, hashed by the source's bundled
+    // `murmurHash3.x86.hash32` (used to generate `completism_data.rs`). Guards the generated
+    // data against any drift between this algorithm and the one that produced those constants.
+    #[test]
+    fn matches_completism_status_value_hashes() {
+        assert_eq!(hash32("Clear"), 0x62965740);
+        assert_eq!(hash32("Open"), 0x1818ec02);
+        assert_eq!(hash32("Unopened"), 0x8d96a2c5);
+        assert_eq!(hash32("Buy"), 0xbedf2a35);
+    }
+
     #[test]
     fn empty_string_does_not_panic() {
         // exercises the zero-length remainder path

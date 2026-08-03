@@ -21,6 +21,8 @@ export interface BotwHorse {
 export type ModifierCategory = "weapon" | "bow" | "shield";
 
 export interface BotwState {
+  version: string;
+  modded: boolean;
   rupees: number;
   mons: number;
   max_hearts: number;
@@ -43,6 +45,7 @@ export interface BotwState {
   bow_modifiers: ItemModifier[];
   shield_modifiers: ItemModifier[];
   horses: BotwHorse[];
+  completism: CompletismCategory[];
 }
 
 export interface TotkWeapon {
@@ -166,7 +169,22 @@ export interface TotkTeleporter {
   rot: [number, number, number];
 }
 
+export interface CompletismMetric {
+  /** Past-tense action word, e.g. "found", "activated", "defeated"; also drives the button label. */
+  verb: string;
+  value: number;
+  max: number;
+}
+
+export interface CompletismCategory {
+  id: string;
+  label: string;
+  metrics: CompletismMetric[];
+}
+
 export interface TotkState {
+  version: string;
+  modded: boolean;
   max_life: number;
   current_rupees: number;
   max_stamina: number;
@@ -188,18 +206,7 @@ export interface TotkState {
   devices: TotkDevice[];
   food: TotkFood[];
   horses: TotkHorse[];
-  shrines_found: number;
-  shrines_cleared: number;
-  koroks_hidden: number;
-  koroks_carried: number;
-  locations_visited: number;
-  defeated_hinox: number;
-  defeated_talus: number;
-  defeated_molduga: number;
-  defeated_bubbuls: number;
-  sage_wills_found: number;
-  old_maps_found: number;
-  addison_completed: number;
+  completism: CompletismCategory[];
   autobuilds: TotkAutoBuildEntry[];
   map_pins: TotkMapPin[];
   map_markers: TotkMapMarker[];

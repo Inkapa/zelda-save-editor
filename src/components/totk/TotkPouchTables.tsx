@@ -11,7 +11,7 @@ import type {
 } from "../../api";
 import * as api from "../../api";
 import type { SyntheticEvent } from "react";
-import EditableEntryTable, { ColumnDef } from "./EditableEntryTable";
+import EditableEntryTable, { ColumnDef, QuickFill } from "./EditableEntryTable";
 import { totkArmorIconUrl, totkIconUrl, totkUnknownIconUrl, type TotkIconCategory } from "./totkIcons";
 import { TOTK_ITEM_NAMES } from "./totkItemNames.data";
 import { TOTK_CATEGORY_ITEMS } from "./totkCategoryItems.data";
@@ -30,6 +30,44 @@ import {
 function nameFor(entry: { id: string }): string | undefined {
   return TOTK_ITEM_NAMES[entry.id];
 }
+
+// Durability is a raw hit-count (a fresh weapon reads ~40); overshooting just gives more hits, so
+// a single comfortably-full value covers every item without a per-weapon max table. 999 is the
+// standard stack cap these editors use for quantities.
+const FULL_DURABILITY = 100;
+const MAX_QUANTITY = 999;
+
+const maxQuantityFill = <T extends { quantity: number }>(): QuickFill<T> => ({
+  label: "Max quantity",
+  icon: "999",
+  apply: (e) => ({ ...e, quantity: MAX_QUANTITY }),
+});
+
+const weaponDurabilityFill: QuickFill<TotkWeapon> = {
+  label: "Restore durability",
+  icon: "🛠",
+  apply: (e) => ({
+    ...e,
+    durability: FULL_DURABILITY,
+    fuse_durability: e.fuse_id ? FULL_DURABILITY : e.fuse_durability,
+  }),
+};
+
+const bowDurabilityFill: QuickFill<TotkBow> = {
+  label: "Restore durability",
+  icon: "🛠",
+  apply: (e) => ({ ...e, durability: FULL_DURABILITY }),
+};
+
+const shieldDurabilityFill: QuickFill<TotkShield> = {
+  label: "Restore durability",
+  icon: "🛠",
+  apply: (e) => ({
+    ...e,
+    durability: FULL_DURABILITY,
+    fuse_durability: e.fuse_id ? FULL_DURABILITY : e.fuse_durability,
+  }),
+};
 
 // Reverse map id -> category, so a cross-category value (a fuse target can be anything) can be
 // given the right icon. First category to claim an id wins; ids repeated across categories are
@@ -217,6 +255,7 @@ export function TotkWeaponsTable({ weapons, onError }: { weapons: TotkWeapon[] }
       setter={api.setPouchWeapons}
       onError={onError}
       onAdd={() => addEntry(weapons, "weapon", BLANK_WEAPON, api.setPouchWeapons, onError)}
+      quickFills={[weaponDurabilityFill]}
       iconFor={(e) => totkIconUrl("weapon", e.id)}
       nameFor={nameFor}
     />
@@ -232,6 +271,7 @@ export function TotkBowsTable({ bows, onError }: { bows: TotkBow[] } & ErrorProp
       setter={api.setPouchBows}
       onError={onError}
       onAdd={() => addEntry(bows, "bow", BLANK_BOW, api.setPouchBows, onError)}
+      quickFills={[bowDurabilityFill]}
       iconFor={(e) => totkIconUrl("bow", e.id)}
       nameFor={nameFor}
     />
@@ -247,6 +287,7 @@ export function TotkShieldsTable({ shields, onError }: { shields: TotkShield[] }
       setter={api.setPouchShields}
       onError={onError}
       onAdd={() => addEntry(shields, "shield", BLANK_SHIELD, api.setPouchShields, onError)}
+      quickFills={[shieldDurabilityFill]}
       iconFor={(e) => totkIconUrl("shield", e.id)}
       nameFor={nameFor}
     />
@@ -277,6 +318,7 @@ export function TotkArrowsTable({ arrows, onError }: { arrows: TotkArrow[] } & E
       setter={api.setArrows}
       onError={onError}
       onAdd={() => addEntry(arrows, "arrow", BLANK_ARROW, api.setArrows, onError)}
+      quickFills={[maxQuantityFill<TotkArrow>()]}
       iconFor={(e) => totkIconUrl("arrow", e.id)}
       nameFor={nameFor}
     />
@@ -292,6 +334,7 @@ export function TotkMaterialsTable({ materials, onError }: { materials: TotkMate
       setter={api.setMaterials}
       onError={onError}
       onAdd={() => addEntry(materials, "material", BLANK_MATERIAL, api.setMaterials, onError)}
+      quickFills={[maxQuantityFill<TotkMaterial>()]}
       iconFor={(e) => totkIconUrl("material", e.id)}
       nameFor={nameFor}
     />
@@ -307,6 +350,7 @@ export function TotkKeyItemsTable({ keyItems, onError }: { keyItems: TotkKeyItem
       setter={api.setKeyItems}
       onError={onError}
       onAdd={() => addEntry(keyItems, "keyItem", BLANK_KEYITEM, api.setKeyItems, onError)}
+      quickFills={[maxQuantityFill<TotkKeyItem>()]}
       iconFor={(e) => totkIconUrl("keyItem", e.id)}
       nameFor={nameFor}
     />
@@ -322,6 +366,7 @@ export function TotkDevicesTable({ devices, onError }: { devices: TotkDevice[] }
       setter={api.setDevices}
       onError={onError}
       onAdd={() => addEntry(devices, "device", BLANK_DEVICE, api.setDevices, onError)}
+      quickFills={[maxQuantityFill<TotkDevice>()]}
       iconFor={(e) => totkIconUrl("device", e.id)}
       nameFor={nameFor}
     />
@@ -337,6 +382,7 @@ export function TotkFoodTable({ food, onError }: { food: TotkFood[] } & ErrorPro
       setter={api.setFood}
       onError={onError}
       onAdd={() => addEntry(food, "food", BLANK_FOOD, api.setFood, onError)}
+      quickFills={[maxQuantityFill<TotkFood>()]}
       iconFor={(e) => totkIconUrl("food", e.id)}
       nameFor={nameFor}
     />

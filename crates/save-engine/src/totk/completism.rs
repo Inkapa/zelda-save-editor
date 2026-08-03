@@ -1,271 +1,29 @@
-//! Completionism counts: shrines, koroks, defeated hinox/talus/molduga, visited locations, and
-//! the GUID-based categories (bubbuls, sage wills, Addison, old maps). The hash-based categories
-//! stay read-only (the source has no mass-unlock for them); the GUID-based categories now
-//! support mass-unlock, matching BOTW's `unlock_all_*` functions, built on
-//! `totk::guids::append_guids`'s safe buffer-growing insertion.
+//! Completionism counts and mass-set actions for every tracked category (towers, shrines,
+//! lightroots, koroks, locations/caves/wells/chasms, bosses, schematics, compendium, and the
+//! GUID-based bubbuls/sage wills/Addison).
 //!
-//! Field hashes here are literal pre-computed constants (ported directly from
-//! `CompletismHashes`), not name-derived like pouch/horse fields, so no `murmur3::hash32` call
-//! is needed to resolve them, only to compute the expected *value* for enum-typed fields
-//! (shrine/korok status, stored as a hash of the string state name, e.g. `hash("Clear")`).
+//! All category data (flag hashes and discovery GUIDs) lives in [`completism_data`], generated
+//! directly from the source's `CompletismHashes`. Flag categories are counted by matching a
+//! stored value against an expected one and mass-set by writing that value to every present
+//! flag (`Completism._count`/`_set`); GUID categories are counted against the save's discovered
+//! list and mass-set by appending the missing GUIDs (`_countGuids`/`_setGuids`).
+//!
+//! `_set` only touches flags whose hash is already present in the save, exactly like the source's
+//! `_getOffsetsByHashes`: a location the game has never written can't be forced. Item rewards
+//! and the secondary map-marker writes the source performs alongside some sets are intentionally
+//! not reproduced here; this layer only moves the completion flags themselves.
 
 use crate::binary::SaveBuffer;
+use crate::completism::{metric, CompletismCategory};
 use crate::error::SaveError;
-use crate::totk::guids::read_discovered_guids;
+use crate::totk::completism_data as data;
+use crate::totk::guids::{append_guids, read_discovered_guids};
 use crate::totk::hashtable::resolve_present_hashes;
 use crate::totk::murmur3::hash32;
 
-const SHRINE_FOUND_HASHES: [u32; 152] = [
-    0xa487c021, 0xab281eb6, 0xda2de4a7, 0x4e2394a9, 0x3ccbcd89, 0xf736a246, 0x9c9e1c68, 0xa091a056, 0x39afd018, 0x180db7f3, 0x39c9d1d4, 0x13cc9bd7,
-    0xa540ccd2, 0x01dd0595, 0xd580cb86, 0x67c337b0, 0x107d9629, 0xe0e3ff58, 0x3f03af01, 0xb6fc752d, 0x4ee4f23f, 0x3a35c441, 0x724b3238, 0x569730c6,
-    0x5e531088, 0x7cc25004, 0x5dc9e001, 0x84d38c3c, 0xc139022d, 0x2e7c10e5, 0x298deca4, 0xa70e70d9, 0xae9406f6, 0x96b9c41d, 0xa70ef442, 0xec088269,
-    0x29e63d24, 0x48d9a29f, 0x1070fba4, 0x503465a8, 0xcbfa18c1, 0x821453d0, 0xc85630ec, 0x9165b447, 0x6ef0a41c, 0x879a218f, 0x5add5c20, 0xfa982dbe,
-    0xfb362b82, 0x4c436d40, 0xb2a10197, 0xe3be1265, 0xa9ed9e29, 0x07044ad8, 0x8b7c26bf, 0xfedda4fc, 0xd0fee17c, 0x7c21361d, 0x771d3ccf, 0x39e0db9c,
-    0x5f6180d7, 0xa157e40f, 0xdf539d50, 0x69dfea08, 0x5b469590, 0x4e6a1638, 0xd56689f4, 0xf7353b01, 0xaa40992e, 0x477a5925, 0x4b867efc, 0x74932295,
-    0x8db68a3e, 0x4d237a04, 0x8a25ecfd, 0x755e6fb9, 0x5ab40b4c, 0xd1ece5c8, 0x42659e1a, 0xb8f77bba, 0x13efa92f, 0x838a107b, 0x4f7b0efc, 0xfdb67136,
-    0x9fd9c53c, 0x47a34677, 0x62a921fa, 0xc76dd98f, 0xe8ed3cbc, 0xe7624117, 0x31a1e31a, 0xffb918b2, 0x550c112e, 0x87f8cee6, 0x7be84fb7, 0xd7cf23e7,
-    0xe6483308, 0xb9c6e801, 0xef1fab75, 0x6ebb8cf7, 0x61612bc6, 0x64e6ceb6, 0x43d851e9, 0x56ba76fc, 0x7d7311e9, 0x9367ab72, 0xfd985cf2, 0x2f6a787e,
-    0x242c6acc, 0x09cd13e8, 0xc7f643f5, 0x34ef0752, 0xbf8e91ac, 0xe5ac2a19, 0xdc08634e, 0xe11e7651, 0xffe9a5f0, 0x16096020, 0x335381c5, 0xa9f3ecfb,
-    0xa223778b, 0x0503fe33, 0x441d05cd, 0xd00ee7d1, 0x16105bfe, 0xba365dab, 0x0a28eee4, 0x8c62ab9f, 0x392b0114, 0xdcb9a2bf, 0x224c4765, 0x54c7c108,
-    0x4f77d09f, 0x7feca57b, 0x021ab370, 0x03afdbbb, 0xa9086479, 0x9795be29, 0xce206725, 0x688d9322, 0xe32a554e, 0xe82db3c3, 0xddba6a33, 0x337949fc,
-    0xfd51c2cf, 0x8a7be5a2, 0x8658418d, 0x589b2de1, 0xeb5995d4, 0xd8b78288, 0xeb0fdc1b, 0x70dc6f25,
-];
-
-const SHRINE_STATUS_HASHES: [u32; 152] = [
-    0x3eb899d5, 0xaba78c20, 0x71f66c0a, 0x188708f8, 0xdc567b20, 0x8b0f3d4e, 0xc589e54a, 0x0a71a913, 0xbd9c3f11, 0x1603e634, 0x0897a195, 0x50b05884,
-    0x47310fe8, 0x5ba580f7, 0xdcfddda0, 0xb0a1f717, 0x19a6c29d, 0x2636f89f, 0xf583efb8, 0x310a78d5, 0x2cc8206e, 0xcd9c47d9, 0xc0001b13, 0xa90dfa37,
-    0xc66641dc, 0xa1d0b517, 0xb3421b7c, 0x9f98fdf6, 0x0243b01f, 0xf8e6d311, 0xda4b2bbe, 0x3b219b4b, 0xd1c47602, 0x00e03162, 0x23717d79, 0x158d9363,
-    0x40111fde, 0x80ab4ea1, 0xe3f7931d, 0xc64d0291, 0x75b0ce50, 0xb3d4db5c, 0x9feb4c99, 0x1f210d1c, 0x3d7e72eb, 0xe5461c22, 0x9039c6ac, 0x4b6d77ff,
-    0x9ae206d3, 0x6e1e89e4, 0xe956c974, 0xe4a03313, 0x4f8c7d71, 0x9a92991a, 0x61f39b77, 0x0ce573ff, 0x5dc2a1cc, 0x882a6a8a, 0xc3e555ab, 0x1fe4e7d7,
-    0x03b85cae, 0xeb662ff7, 0x635a7fec, 0x75a7866a, 0x7adf647f, 0xf41c214f, 0x20f9ea11, 0xa19ef491, 0x0400707c, 0xd01b6667, 0x60ddaf28, 0xf4798f96,
-    0xd1851f63, 0x1a60a05b, 0x6b5651e2, 0x9356b9cf, 0x0bbf88b9, 0xcc216ab8, 0x00c44710, 0x8def4fd2, 0x4479d9b4, 0x4ce116fc, 0x5821879f, 0x52ab2c2c,
-    0x559e494f, 0xcac370bc, 0x4381d3e3, 0x4e1d51cc, 0x10d6706c, 0xf85d93b1, 0x764f2259, 0xc2b95f42, 0x46d3a5cf, 0xe4e38bc0, 0xb9bc74f4, 0xf3e20435,
-    0x62db5348, 0xf38397b5, 0xc2261966, 0xa0126c26, 0x830c71b5, 0x0f9410ba, 0xcd3d992a, 0xe8882446, 0xbe035f89, 0x2131d53e, 0x3603e898, 0xc3322c01,
-    0x7445c20c, 0xabe8b158, 0x4554c022, 0xeeb938f5, 0x4983cb33, 0x98d0cad4, 0xcc69e5e9, 0x8a4f5f90, 0x11c67990, 0xe8d56c4f, 0x2c54c4cd, 0x7bd07e53,
-    0xfdc7415b, 0x9ff1d245, 0xb4a0dafe, 0xb9b82618, 0x5ab62997, 0x20b07ac7, 0x01779d8d, 0x66974794, 0x0ee473d5, 0xcf7c5633, 0xd644e361, 0x69217c8f,
-    0x22786cb5, 0xa727f3e7, 0x2f152a5a, 0x05641932, 0x90a2bcd3, 0xab6f6cac, 0x0cee37a9, 0xe8a5ab17, 0xec2bccf3, 0x8d1db823, 0x7869ca50, 0x28c279e4,
-    0xeb216531, 0xd1c8656a, 0x740e2ded, 0x7757a518, 0x76780513, 0x0b0a7e4e, 0x7996beaa, 0x4d1ef1f3,
-];
-
-const KOROK_HIDDEN_HASHES: [u32; 800] = [
-    0x865134f7, 0x43a84d09, 0x89830c69, 0xfddd4242, 0x2facd2d0, 0x6873103b, 0x0f4d0002, 0xfb1c0822, 0x43aedac0, 0x68ad27ba, 0x9243b590, 0x673a6172,
-    0x786f1961, 0x76bbb480, 0xb3d6c02d, 0xc53706ef, 0xd18258a4, 0x5f38f557, 0xa3a973fb, 0xc4d4d7b8, 0xe9b1c895, 0x9ef83928, 0xea27eab9, 0xfd2d1303,
-    0x99316c9d, 0x928687ec, 0x7b8dc6ca, 0xb953b77c, 0x5c5d22cf, 0xe428ec4b, 0x835b7e1c, 0xafb76fe6, 0x2d186ae9, 0xc992f65a, 0xd4e574af, 0x4aab361e,
-    0x684bdb5c, 0x29d2e607, 0x6c7aa137, 0x361af384, 0xcb71a63b, 0x4a50d6c6, 0x3a83e677, 0xb4d2111f, 0xd30ece2c, 0x7e89c6c4, 0x72b672ef, 0xd43eaa43,
-    0x6e83b011, 0x8a69f9e7, 0x03b3f52d, 0xd1d920bd, 0x2664e817, 0x8dc6b079, 0x9ec01992, 0x5d5701fd, 0x4393e95f, 0xe8af22fb, 0xa530d5a6, 0x16b40482,
-    0x4107fb43, 0x66b78bca, 0x5f8b2c8c, 0x66fae1aa, 0x07f6c973, 0x5aca2d3f, 0x985a07f9, 0xd454c203, 0x7fa6e25d, 0x9814eedb, 0x6665a057, 0x482fcd1d,
-    0xee391d28, 0xe055d5ad, 0x66ef92ab, 0xc0623171, 0x5ef13209, 0xc38249fc, 0x565282ed, 0x4cf7c862, 0xdeb9b841, 0xbe759820, 0xb16ed570, 0x0b39d863,
-    0xddfa346c, 0x13476999, 0x4869ed13, 0x38111006, 0x6f88b8ec, 0x5caf6ae1, 0x202f442e, 0xa3d01f32, 0x7860de3a, 0x61f6493a, 0xa26a20ed, 0x281c1434,
-    0x7667a2af, 0x95bfab1d, 0x9fd2a5b0, 0xb6b5c1c2, 0x58b405e7, 0xeb9f88af, 0x5afd2d6b, 0x7aa69b76, 0xf98d2468, 0xaeebbf2b, 0xebdbfb8f, 0xf48ed32c,
-    0xeb65c526, 0xe64370ee, 0x4f9e4bd5, 0xd5490716, 0x3519de68, 0x8f7624a9, 0x2ee56865, 0x49826d11, 0x6d8ac334, 0x9127a52f, 0x48f6a390, 0xa95e2967,
-    0xddd3dc54, 0xc83433d5, 0x94d7ed40, 0x93ec745e, 0xff4d3b63, 0x7f3ba575, 0x2f82f5b4, 0xffc94fc9, 0x6798cbbe, 0x96573023, 0xb8e02767, 0x6014c97a,
-    0x49b0a2b2, 0x9ae4a2bc, 0xd15486b2, 0x096c2aa5, 0x5f422674, 0x31295d7e, 0xf9c8425a, 0xb5cc197c, 0x98441d5f, 0x91b8ad87, 0xd2846a74, 0xafa82118,
-    0x73d241ea, 0x9eb2b140, 0x13588b22, 0x32b358e2, 0x4ff28b2a, 0x35b46f76, 0x448424f8, 0x99da3209, 0x0002a21a, 0xb546dbc0, 0xfe65eb3c, 0xaa728fd7,
-    0xe802667f, 0x296abb68, 0xf6160031, 0xd42c6086, 0xf189d5eb, 0x92c9490c, 0x5f78e273, 0xa3b90f41, 0x1b4767b6, 0x5c630682, 0x61acedbf, 0x58ccb384,
-    0xba6d8714, 0xf4e49766, 0x8a78b233, 0x0e1c2580, 0x1582746c, 0x68741cf4, 0x1dbb0290, 0xe20a4a44, 0x707e371a, 0x9d66a11b, 0x08996c9e, 0x5ebf5d11,
-    0x21e47dd2, 0xf91afea2, 0xccda573e, 0xcb474084, 0xc1864771, 0x465aba38, 0x821dac63, 0x8defd074, 0x83c2755a, 0x8210f87a, 0xcc577306, 0x38fbccd8,
-    0xd7374ad1, 0xbb7a3971, 0x51810eb1, 0xe36ea7c1, 0xdade1556, 0xe58cf90f, 0xf120d78a, 0x56c4413c, 0x9dbcfd33, 0xab67c51b, 0x5d82ede3, 0xefa97212,
-    0xf4b5b1d3, 0x95ecfe71, 0x94a30fae, 0x70bcd777, 0x7fb030fa, 0x77d59230, 0x55acf4aa, 0x9f8ad829, 0x9dcd3382, 0xb33c6725, 0xc9e2f53a, 0xb73a941e,
-    0x9d217cab, 0x0b8bd765, 0x7aed11b6, 0x99aaad36, 0x0918fc03, 0xc2229aba, 0x3dcfc5b1, 0xc473ae8f, 0x6f3642f9, 0xfa20c4a7, 0x35751ffe, 0x8db05cf8,
-    0xde431b1c, 0xa7014096, 0xce758546, 0xabd5a31a, 0x94bd0ad6, 0x53cbacef, 0x61fa40e4, 0xfdadeb4e, 0x533f4bdf, 0x303ea124, 0x44f21fe3, 0x8e06c360,
-    0x2b3bc094, 0xb36baf13, 0x45b0448f, 0x75820145, 0x4d85a3e8, 0x08dd478d, 0x8ff442a8, 0xf9b12557, 0x6b3ba922, 0xd2501d7c, 0xa5e8caed, 0xc665a37e,
-    0xd60fa8be, 0xc908fb91, 0x087fc0cc, 0xc6e26acb, 0x3d2acad4, 0x11ad66f4, 0x122afb1b, 0xee083b14, 0x60ce7bed, 0xd4346012, 0x71730a65, 0x9c5a9800,
-    0x1dd5af26, 0xecbae61a, 0x1b0f5626, 0xd309507f, 0xc1965457, 0x13f25962, 0xba22d572, 0xf8ad2615, 0xa4c0e214, 0x2df04a2f, 0x90d93436, 0x247498e5,
-    0x01102f1e, 0xcbfbcc61, 0xbdeef796, 0x1674caab, 0x22da58f3, 0xd815bba0, 0x9eb6c2cf, 0x7dba397f, 0xb109319f, 0xf22def77, 0xa384cf92, 0x710d7dc4,
-    0x7d27c106, 0x0c70e302, 0x7dfe0c26, 0x4b0676be, 0x6e7d4c07, 0x114fe3b5, 0xc9ca7cd2, 0x57ce3d25, 0xb3401df6, 0x66cd0f7b, 0xf1aaba45, 0x470509f2,
-    0xfd5ab59c, 0xde37db6b, 0xdc56e463, 0xf1b58b4a, 0xff21b531, 0xd4e328e4, 0x6ae80b72, 0xeeef717d, 0x813fde56, 0x6c2bdadb, 0xde14829f, 0x5ce131a9,
-    0x9b450a3c, 0x3b84dc16, 0x48b7181e, 0xee3ec008, 0x3ce5677b, 0xa983eb47, 0xb24b01ba, 0x777dd1e4, 0x770548cd, 0xbed0bf80, 0xf3962161, 0x54c17924,
-    0x9b06892b, 0xdc1a209e, 0x06c31519, 0xdc4e0873, 0xc185cb4a, 0x143303a2, 0xb5f9ec78, 0x4799f37e, 0xb1d98d5c, 0x224a2254, 0xb72fb0d0, 0x41b14a44,
-    0x24a0faf6, 0x92d2ce81, 0x37828748, 0x6afd9445, 0x3842d9e2, 0xd3560308, 0xd1c6c83c, 0x273a57fc, 0xea5c1079, 0xe745c983, 0x5f0391cb, 0x8f6ea117,
-    0x83de3a68, 0x2d5738ff, 0x2ce3a429, 0xc6a2e864, 0x5fe72299, 0x0db017ac, 0x864522fc, 0x1c55cfaa, 0xd53a5b76, 0x871049b8, 0xc19d0c58, 0x399897ac,
-    0x921ab9be, 0xdd745cba, 0xab8cebf1, 0x67ed06d2, 0x9fa5d670, 0x821f7dbb, 0x12ec4ddd, 0xb6ed13c1, 0x8d69b4ae, 0xa7a7ccca, 0x5e8a5a34, 0x0610f317,
-    0x0c9ad789, 0xcc3c333a, 0xc43ee7cc, 0x9a0baabe, 0xe194dbb4, 0xe23f48bb, 0x22252769, 0xf56c3378, 0xa26a1833, 0x90bd0b64, 0xfcd5522c, 0x23a6aca1,
-    0xa49d0e2f, 0xffb8af38, 0x49ffcac6, 0x020922ee, 0xf095c412, 0x1e5826d2, 0x7531f38b, 0x348097f2, 0x8dc171c9, 0x23d8a3d4, 0xdbbe9265, 0xa83a30fb,
-    0x0e0f6ce5, 0x69517da0, 0x3c40751f, 0x401a677f, 0xcf05200c, 0xc91eb0bf, 0xaf4b71e2, 0x88fc8372, 0x35da8f3e, 0x5c09b4c1, 0x23540456, 0x302a12ff,
-    0xd06eb149, 0x71ccc6ab, 0xed202ebb, 0x5ad06b9c, 0x97b4d81e, 0x5e0d6507, 0x9d020e86, 0xed7d33a4, 0xbdc9f62b, 0xff32a312, 0x88d9065b, 0x97b15591,
-    0x3fb6f6ea, 0xa1199e76, 0xe5793eae, 0xd853ecf5, 0xb72585ea, 0x435a4f4f, 0x422c0842, 0x4ca24fba, 0x001fed55, 0x74b4491c, 0x5f17d4df, 0x73e911d0,
-    0x2b65a8c6, 0x799444dc, 0xa43cafb1, 0x6901d090, 0x80aadabb, 0x1d645134, 0x54398438, 0xc1781562, 0x8d0eb23c, 0xe29ec082, 0x5989c7ba, 0x1695f69d,
-    0xae3f3df1, 0xaf8751cf, 0xb41a53d3, 0xef6224c1, 0xfdb15d00, 0xeec59eb6, 0x01c9e59b, 0xf9e59ae8, 0x9f5966cc, 0x50276a77, 0x721f53b3, 0x50b066aa,
-    0x3afe7b53, 0xdb51ed81, 0x5e1ff11d, 0x98995ffb, 0x5f6ac32d, 0x352fd128, 0x1b8c8a00, 0xd7cdca8d, 0x8d96a5d7, 0x70916dde, 0xc22698b1, 0x15d4e182,
-    0x6aac7202, 0xf88d27e7, 0xb2483fe4, 0xde7ec45e, 0x004e504f, 0x10944b46, 0xa1b1c8e7, 0x6d915427, 0xe5203d31, 0xdcbba17c, 0x3507f731, 0x7529063f,
-    0xedcef0a2, 0xed4e491c, 0x2deaad0b, 0x60d529b8, 0x3d4b6033, 0x4d285674, 0xbf515c41, 0xe0a5bd71, 0xbba19e4f, 0xf369c400, 0x5f08bf0b, 0x712a709d,
-    0x5d333eb4, 0xeae8f08f, 0x49de90a2, 0x379a2dc3, 0x9619f656, 0x982cb437, 0x14b0fd66, 0x20be71cc, 0xf66e2cbd, 0xb246217e, 0xb7b33ded, 0x6774b494,
-    0x1d9abf57, 0x90f29af6, 0xc584bc54, 0xd1ad8f8f, 0x5858d126, 0x95595663, 0x1357dfbf, 0xb081828a, 0x05f9461e, 0x29c1f602, 0x36a6d937, 0xf7b50b77,
-    0x9bd9ecae, 0x3aaa3165, 0x32780e48, 0xe9e0ab81, 0x1a3660b6, 0x26f297cb, 0x6f3cee24, 0xae94706b, 0x85e184e1, 0x26fe73d2, 0x3bafd364, 0x09710330,
-    0x47d71d7d, 0x5e05faf4, 0x30802cab, 0xcd9b92ae, 0xc0382714, 0x5509c7ad, 0x88943a0d, 0xa6346974, 0x46cf5503, 0xdff3cb3b, 0x52cb0ee6, 0xd32e7550,
-    0xd03ba3ab, 0x551b27fd, 0x7d53d67c, 0x84f2f1c8, 0xba41d8aa, 0x781656a9, 0xb2628953, 0xeff42057, 0x398fc894, 0xe8e3af61, 0x11a40a2f, 0x8f4ec44f,
-    0xae50d28b, 0x1af1972b, 0xa04046ce, 0xf0da7b5e, 0x90b9e7b5, 0xe5926868, 0x76391a3f, 0xeac0df3c, 0x8ae183af, 0x7dae13f6, 0x9adc36b9, 0xa809268f,
-    0xb10839ef, 0xf6d06ede, 0x4b5bab7f, 0x40377018, 0x4a270cc1, 0x20342c53, 0x9c191836, 0xadb47437, 0x724fb0b5, 0xa8e67718, 0x23096434, 0xdb6080d3,
-    0x1df874b5, 0x5d462c29, 0x93d69a76, 0xddb5a823, 0xb6bc7430, 0xfe167dc0, 0x2f3d0070, 0x3b73040e, 0xd61fb0a9, 0x204842fb, 0xe07018c6, 0xdc15b8b9,
-    0x060224ce, 0xb3f00105, 0xa81fb8f0, 0x193f499b, 0x4f212a29, 0x708c9ec5, 0xe7fa42e4, 0xe5deb668, 0x1eec39f3, 0x4bae77eb, 0x27660bfb, 0x0f10ed2c,
-    0xea3bc1b5, 0xfc64c78d, 0x87bb7b3f, 0x0e0fcf9a, 0xbf905d72, 0x4b0eb28d, 0x57476108, 0xe8c264d6, 0x73a3911a, 0x46ac5420, 0xdb60bb89, 0xe1eaf716,
-    0x9a7503dd, 0x0d75a65e, 0x4e58d512, 0x5979aa93, 0x2e5458f8, 0xe658f2eb, 0x21c73468, 0x98b38107, 0xcee5272a, 0xe6b4735b, 0xac758e35, 0xc1469931,
-    0xef7434bc, 0x8ae2f96d, 0x0e41100a, 0x37fb97bc, 0xd1ee076a, 0xbb262ef4, 0x3fbbf35b, 0xbfdc6372, 0x1aade81c, 0xd0b01c67, 0x60fe0284, 0xa6c5a988,
-    0x88b5632c, 0x7bdcbffa, 0x96f61ad4, 0x119d3bc1, 0x7c3e126c, 0x298ecd93, 0x195b806d, 0x88898186, 0x31b855fb, 0x905ba3b3, 0xdf4f9d85, 0xc084ad2c,
-    0x4fc2ae3d, 0x21a7a21f, 0x924cfafe, 0x79b3480c, 0x09cb1ef6, 0xe5460850, 0x2261eecd, 0xbe857c26, 0x2f52e7b7, 0x030ff002, 0x7587fcf4, 0x77a13c3b,
-    0x35474823, 0x35e72922, 0xa1b77233, 0x40a23592, 0x72be73ee, 0x602b1a90, 0xd2aa5165, 0x230625fc, 0x07de698b, 0x93cf3f5f, 0x66a17944, 0x97363eb7,
-    0x063fcea3, 0x530356cc, 0x8a3a22b1, 0xce90d4bc, 0x5dba834a, 0xe2af9c72, 0xaece9d99, 0x3a3b9a81, 0x39d592e1, 0xa18c33bf, 0x1b2e3573, 0x29c5d794,
-    0x682a4440, 0xf9822345, 0x6ada18a0, 0xb6947d8a, 0x0e84e692, 0x2cfb591e, 0xc96e818b, 0x99dd3e7d, 0xf2c33e29, 0x95656f84, 0xbbee2a48, 0xe452fad4,
-    0xd2b30709, 0xdc3f2642, 0x7419d23b, 0xd7a58346, 0xb34d13bc, 0xe57a6bab, 0xa72f3021, 0x54a21540, 0x9dc76772, 0xae147124, 0xde49334d, 0x69e933d8,
-    0xb47a1aa6, 0xec7e0734, 0xdee9d280, 0x213eb124, 0x6772ac66, 0x21ad1c72, 0xc967e2de, 0xe96b0474, 0x13890bab, 0x9673fd93, 0xd17f887e, 0xb84d3457,
-    0x98f0e9fc, 0x6db2bb12, 0xec9a9715, 0xf1ab4865, 0x79f9c410, 0xf492701a, 0xec56429c, 0x660f7af0, 0xdcae2b20, 0xf43f3b6a, 0x32d95ff0, 0xff0e8c44,
-    0x427fdb6a, 0xf69a7c23, 0x737e24f4, 0x3fb260ef, 0x7697a5a9, 0xee65a99e, 0x4dfe5a70, 0x7b211666, 0xb1f68e05, 0x941d370f, 0x8c39d7b2, 0x926b2d98,
-    0x63c8ab28, 0x91aac0de, 0x3ec9723c, 0x8466a6a6, 0xfa20f6e6, 0xca55f0d6, 0x64388431, 0x2231cf8b, 0x3aaad8c3, 0xcf0c470f, 0x354ce93d, 0xf4adeb32,
-    0x62b64035, 0x2bb626ad, 0x1cf1e638, 0xcd42e323, 0xf5c77544, 0x52337376, 0x062b8caa, 0x2e01efd9, 0x3f67ea52, 0x4237b24d, 0xa1879895, 0x6990b0e8,
-    0x938674c9, 0xdcd538c7, 0x0bd9f995, 0x441af9ee, 0xc6b2672d, 0x6fbd94d8, 0x27774128, 0xcaeee6a5, 0xdfc1ebe6, 0xe8e56187, 0xaa5f46f6, 0x8da291b2,
-    0x7a3e9e48, 0xe4de67d8, 0x423bb6cc, 0xb4cf4681, 0xc0b0f899, 0x97d732c6, 0xc28f7bcc, 0x1784089e, 0x7b5245a4, 0x64bcee3f, 0x4bd8883a, 0x9bbf5c29,
-    0x526a12a1, 0x225fd744, 0xd00fc6b7, 0x8c062246, 0xb5fe3455, 0x1d3414af, 0xaa6f1ed9, 0xa478e5b4,
-];
-
-const KOROK_CARRY_HASHES: [u32; 100] = [
-    0x3cb982aa, 0x5edc5dd8, 0xfba408c6, 0x36f4db74, 0x1c896cb6, 0x5546fb7c, 0xd7892e5f, 0xaee235b1, 0x444a9935, 0x93099b8d, 0xc95e1b19, 0x7433e3b6,
-    0x2378f79e, 0x603e2b23, 0x806d03fa, 0x0fc7d184, 0x2f641302, 0x5c15afd9, 0xf7711bc5, 0xc0647f18, 0xd534b437, 0x75111918, 0xe5ef09a4, 0x9b238d13,
-    0xd3384f6f, 0x35d7b73a, 0x1f6f5594, 0x77eefd81, 0x24dd7307, 0x8c50a6e6, 0xc636740a, 0xa46061b3, 0x83c9a618, 0x320e2f92, 0xd1bac1a3, 0x98a8ea6e,
-    0xe81c25dc, 0x8403cd39, 0x1945f1ed, 0x1bf36240, 0x59b2d344, 0x7484835e, 0xf7587343, 0xbd349337, 0x79ee2b64, 0xa1ca6bc5, 0x2d36e2b3, 0x795ce59e,
-    0x79233e89, 0x4f678b19, 0xab9d58a9, 0x4e840184, 0x953b7301, 0x6df2bb19, 0xe98baf17, 0x1bb2e064, 0xb9b66c74, 0x95456ad9, 0x09163939, 0xd665fa2d,
-    0x83ad37d1, 0x1a16b03b, 0x26a3f326, 0xeb2e5cdb, 0x789e98ba, 0x12471f7a, 0x3813078c, 0xdeea959f, 0xf94361f0, 0x77fd5fd2, 0xc68205e3, 0x5fa3b730,
-    0x94b7d100, 0x6dcb0444, 0x09b38c59, 0x8713591b, 0x2668ebd0, 0x34ff575e, 0x98653d23, 0x64400f10, 0xf9763d6e, 0x52ceed49, 0x8a42ea55, 0x5131eb97,
-    0x8b3060c3, 0xee82f9fa, 0x21b5e04c, 0x8486a7ed, 0x7291c3e6, 0xfa6a7e0e, 0x6900bece, 0xbeb9d2f1, 0xc53b6047, 0x14fa8ee9, 0xce9d0eae, 0x71f5d0fd,
-    0xfc767553, 0x5b313433, 0xfc2ba0f2, 0xa6c32a38,
-];
-
-const LOCATION_VISITED_HASHES: [u32; 378] = [
-    0xfb13b419, 0x616cf09d, 0x288e4de0, 0x2f0da36f, 0x6ae9ac86, 0x7bc0b61d, 0x68de6f7f, 0x5590062f, 0x68319c68, 0x3dadb5c1, 0x117d4622, 0x238ab22b,
-    0x998be0c4, 0xdffebf73, 0xca6bf03f, 0x8c7167fe, 0x81c11ef8, 0xa57f976c, 0xfb310aa6, 0xbb5164aa, 0xb1edc93b, 0xe2a2e703, 0x69959dff, 0x2fcf0fba,
-    0xcac3b7c6, 0x3f7ef432, 0x4aefb6c0, 0x3b3f3d2f, 0x9c64d6b3, 0x0b5ef0a4, 0x5874b1c4, 0x841343e4, 0x351490f1, 0x05c0ffee, 0x7a4eeedb, 0xa417e0cd,
-    0x7d2e7927, 0xf1f6957e, 0x3616febe, 0x6aad71b3, 0x01dc675a, 0x36ae09f8, 0xa31bb5df, 0x5818344a, 0xae8f1132, 0x5553c550, 0x198df8ca, 0x948b73b6,
-    0x23183f93, 0xb62d7763, 0x8a438156, 0x8edd599f, 0x597e39f9, 0xefd7b249, 0xc7da90c9, 0xdd863fe3, 0xee4c1579, 0xfddac7be, 0xe183776e, 0xea1c6d02,
-    0xbe5a743e, 0xbbcf8a47, 0xea37e45f, 0xd0a21597, 0x04498585, 0x789e7d50, 0xbb5a2377, 0xc590bde9, 0x2b0c8196, 0xab5b0b69, 0xbd2ecbb5, 0xb4d1b4a2,
-    0x90a8de31, 0x8239c124, 0x744917ba, 0xd8e12f1e, 0x87bc22c4, 0x682a404b, 0x7b3fae10, 0x6a3d8240, 0x64d9407e, 0xb80e861c, 0xdf53033c, 0x9ff4c977,
-    0xacba1f68, 0x7b32e4d0, 0x758f53e4, 0xa04a579b, 0x3174eefa, 0x0f81d8cb, 0xd670d956, 0x5714cc64, 0x2d45bad6, 0xdd4d4145, 0x6efafc70, 0xd3ee319d,
-    0xae230cb8, 0xfb26ebd3, 0x1ab9d07d, 0xad76c04a, 0x72c746aa, 0x8077cddf, 0xf284db4d, 0xdfec24c8, 0xa8150e35, 0x9822144b, 0xec35d2d5, 0xe253e61e,
-    0xd9b344a6, 0x811595a7, 0x680962e4, 0x0a85b0fe, 0x9c11ce11, 0xbd3807c8, 0x5a3061fa, 0x0965c1af, 0x9c3ae865, 0x358712cc, 0xde90cfd1, 0x7bb6f758,
-    0x41ef6ae2, 0xc299b788, 0x4d2c11a7, 0x15d228f2, 0x406926a9, 0xacfa74ab, 0xeba2414c, 0x8be6efde, 0x8caade2d, 0x044cd418, 0x643872f9, 0x83301f8c,
-    0x15c45f21, 0xb8c5ead4, 0x6b727ddc, 0xc9cad6c9, 0x3b8da62a, 0xd49c97d2, 0x5cc9c49e, 0x8cec1959, 0x1d02048a, 0x36ec6432, 0x67907aec, 0xe59cf483,
-    0x45124684, 0xd6f1b2b5, 0x76b3f39f, 0xed043ce7, 0x10e6075f, 0xf06323cf, 0x5157eca1, 0x9b9497f7, 0xaae7bf2b, 0x7cc7e3c2, 0xa1dfb6a3, 0xd1a68749,
-    0x1558300f, 0xbd1b2bfb, 0xce2dd88e, 0x49a07733, 0x49cebca8, 0xe2ca4349, 0xbc2b91f0, 0xd789999f, 0x2b6714e0, 0x93f201e4, 0x6dc02c59, 0x7c706260,
-    0xcecae2cd, 0x9834a18f, 0xd59c94a7, 0xf275de00, 0xe84fdcbf, 0x3890ae3c, 0xc5ef4db7, 0x68731ada, 0x5c72ab2b, 0x3683a703, 0x20a5e012, 0xb7fd3b6d,
-    0x304ba27f, 0xec080ac0, 0xdb743b6d, 0xdf52db8d, 0xd2a8fe72, 0x986fa02d, 0xe7fe42ca, 0xb246cf6c, 0x4b40203c, 0x4cd6e422, 0xc8908a78, 0xb977b86a,
-    0x008ca97b, 0x97ab17b2, 0xd34c45fa, 0x006a3402, 0x71202cd9, 0x947a6743, 0x4b93f8dc, 0x43543536, 0x7601da74, 0xdfb45a2e, 0xa6ef6adf, 0xae43e9ff,
-    0xc5a8712b, 0xd15f2c30, 0x920054ff, 0x8da85ae7, 0xa2c912a3, 0xf841b5d1, 0x1a7676d4, 0x03c75af1, 0x00b6beff, 0x73939b2e, 0x90debd15, 0x0f13122b,
-    0x798f9158, 0xf46635d7, 0xc9fdafde, 0x81bea185, 0xc523c7ad, 0x9d01f574, 0x0a16ca31, 0xaf2c6d34, 0xa651a26f, 0xb632a884, 0x53cc8106, 0x4736b75d,
-    0xbeab06e7, 0xf19df4ef, 0x1c6b4d0a, 0xc3fb10cd, 0x0eb67b68, 0x5ad9919b, 0x203fc529, 0xb99f66b5, 0xd580bb46, 0xf2aa888a, 0x431a9eb1, 0x795b6876,
-    0xfe48383d, 0x0c37150c, 0x19de6c03, 0x7711f34a, 0x9d60004f, 0xb9467571, 0xf1a80985, 0xb51347a2, 0xc61ab3ae, 0x7de4b0bf, 0x48a27e90, 0xd430573f,
-    0x15f3453f, 0x95154972, 0xa8e97ab6, 0x314b0ded, 0xc93f34c5, 0x7cc00ed8, 0x08cd4f31, 0xe43be583, 0x9993dfdc, 0xcf08c7a8, 0xfea6a59e, 0x1f35bc5f,
-    0xa587ce03, 0xaa88c7e4, 0xe873b241, 0xf7b2e295, 0xe94dfbd0, 0xeab58fa4, 0x6affe58e, 0x033e076a, 0x822e39fd, 0xfb81d87f, 0x8deb0f9b, 0xe051d4dc,
-    0xef757605, 0x643f2b1a, 0x392b7290, 0x3279dbdd, 0x72012b2d, 0xe9f6c71e, 0x47096bad, 0x303ecb7d, 0xd9434a21, 0xbefa81cb, 0xcf6a892e, 0xf356fdc7,
-    0x239faf20, 0x4deb0a7e, 0xdca20005, 0xeab58fa4, 0x646fdc72, 0x951ae6d0, 0xa587ce03, 0xc14ae332, 0x1a95a2c3, 0x5ad5be95, 0xc1d11035, 0xae38be8e,
-    0x7669aaf8, 0x271d7767, 0xeb4316da, 0x11796a9c, 0xb5972943, 0x3bfe4eaa, 0xc28f5e5b, 0x6567c950, 0xc9260338, 0x0d2be416, 0xb3131cb8, 0x8640e042,
-    0xe9f8d8a5, 0x8c7f44ad, 0xfb6c9086, 0xf465d65b, 0x9dc92f29, 0x179d880d, 0xe5c46072, 0x95eaf7f7, 0xd8f6148f, 0xea112a5c, 0x0ba4de99, 0x5a630ce5,
-    0x2146bc12, 0x9061714b, 0x7cc0375a, 0xa14c6ed1, 0x587df5b0, 0x5279d33f, 0xc595c991, 0x7fdf3de2, 0xce69eee8, 0xe8c15c64, 0x603bb97b, 0x95dfbc64,
-    0x9b6a5c7d, 0x33bed6b9, 0xa4a0c1e1, 0x80ad67ca, 0xcb37cba6, 0xaf95d7f2, 0x9ea4dc51, 0x6e27e851, 0x7fe19c4e, 0x20c6ab34, 0x8196cef8, 0xba01ae92,
-    0x9dcd1483, 0xb17658ee, 0xe16fe679, 0xa747e6d8, 0x10f54076, 0x96297877, 0x816d62ee, 0x82ca53e2, 0x885441e9, 0x90c2c180, 0x5b2c65ec, 0x63ae4b5c,
-    0x6612d7b4, 0xd93c006a, 0xbbe67181, 0xd40cb282, 0xec359b9e, 0x698c7010, 0x47336bb0, 0xac6ec598, 0x31a3787b, 0xe294f6d1, 0xff0cd9d5, 0x3cb1e8bf,
-    0xbbe384d1, 0x5ab7008c, 0x3918ef9e, 0xf068c74c, 0xb6b32e0f, 0x31dfc96d,
-];
-
-const BOSS_HINOX_HASHES: [u32; 70] = [
-    0x73cdc65f, 0x802a685b, 0xd5228754, 0x6a18a1f9, 0xc3244c7b, 0xe1a28b21, 0xc5b95329, 0x186f50e4, 0x548d830e, 0x339ada62, 0x70e03aea, 0xef027e9e,
-    0xe7d22a1e, 0x88d95135, 0x09eda448, 0x9cc2f318, 0x6ce3aae0, 0xcdd24dc3, 0x3ef68091, 0x29a424d5, 0x33123104, 0x271e2bf0, 0x0e385329, 0x8751a4d7,
-    0x4c5cbe28, 0xe55fde6d, 0xd1265861, 0x26a34449, 0x1d7597bc, 0xa735405a, 0xf87c46cb, 0x3b2726f4, 0x69ae65f0, 0x814595c9, 0xf00e5eaa, 0xf03a51ad,
-    0xcefc5ebc, 0x8c4d535e, 0xe067fd28, 0x5d3e9af6, 0x140b46d7, 0x3eafefdc, 0xe4d27c11, 0x0b4dcd92, 0x18295227, 0x8aa89797, 0xd50dd4cb, 0x165f835b,
-    0x1bd37a12, 0xa09409be, 0xbb68d751, 0x482c5a03, 0x112d0d53, 0xc78760f8, 0xabc9cce6, 0x6442b9ef, 0x6da07e01, 0xb5a837bc, 0x27ce40e5, 0xd735eed8,
-    0x15667b8e, 0x42211193, 0x8927dc6f, 0x1401fdb3, 0xcdebf5bd, 0x77761549, 0x568cc4bd, 0x0411bd1c, 0x57070b19, 0x8e1ccab1,
-];
-
-const BOSS_TALUS_HASHES: [u32; 87] = [
-    0x9f9b40d6, 0x8b486d07, 0x7ad63fa8, 0xe9a2ae7f, 0x905ea02e, 0xd43fd092, 0x4db447b9, 0xa4e8e50e, 0xa8756648, 0xbe5f233a, 0x9d6b4642, 0xb166db6c,
-    0xa2d4c991, 0x59f1c02e, 0xc84cbb8f, 0xc6dde95b, 0x0b50ee69, 0xb31a5983, 0x6fa68bac, 0xb27ef16f, 0xec2735c0, 0xb117ffaf, 0x95fbd37d, 0xa449182a,
-    0x7f7fa936, 0x36c21c1c, 0x5f379b38, 0xd58c280b, 0x889c540c, 0xaf9a5195, 0xbf7247d8, 0x51db4541, 0x6f741eef, 0xa94cdb3e, 0x890dca7f, 0x874571fe,
-    0x552acfc2, 0x57392eef, 0xc82b6159, 0x9af270b2, 0xd7119323, 0x4ecbbf59, 0xfc30fbc0, 0xc45b2ccc, 0x608c2d3a, 0x7980d385, 0x535c77bd, 0xb7ae3986,
-    0xdaacc45d, 0xad93f5bd, 0xd791063e, 0x803e47c2, 0x8f50f2c1, 0x61b1fbda, 0xa9aa4b3c, 0xe04021fa, 0x1b7b02d4, 0x12dee5a0, 0x4e416702, 0x58885f47,
-    0xfcc50129, 0x1e6c7853, 0x321a2ff1, 0x8051953b, 0x76147575, 0xd5999747, 0xb634393b, 0x37fbb785, 0x5bf863a5, 0x368df7ef, 0x509f3803, 0x50e7f4fd,
-    0x76177b24, 0xb579266b, 0xeb5f3cf3, 0x0dbd2e32, 0x27f36153, 0x07204562, 0x5d9e92da, 0x1b53507f, 0x86041e8f, 0x7a28cc7d, 0x4b7cd218, 0x9be62122,
-    0x9ebf7572, 0x38a9f859, 0x728cddfa,
-];
-
-const BOSS_MOLDUGA_HASHES: [u32; 4] = [
-    0x64eb3a85, 0x4c446633, 0x362e8f22, 0xa884f7b5,
-];
-
-/// `CompletismHashes.TREASURE_MAPS_FOUND` ("old maps"): hash-based like shrines/koroks/bosses
-/// above, not GUID-based, despite living next to the GUID categories in the source.
-const TREASURE_MAPS_FOUND_HASHES: [u32; 31] = [
-    0x78351b17, 0xa77d686d, 0x17110169, 0x2b60b4b7, 0x28ae6f1c, 0x7a1d84a5, 0x56aa6296, 0x5a06eebb, 0xdd8a40d8, 0x17aea64c, 0x29889eb8, 0xc576b6bd,
-    0x3044e564, 0xad134aed, 0x5aa6fa9f, 0xfb332413, 0xdfdded1c, 0x00e34536, 0xbb11e8f5, 0xb672271b, 0x7b5a8ac8, 0xeb171a92, 0x05b058c7, 0x91916a39,
-    0x24fd5dc6, 0xde966d31, 0x8a67682c, 0xa2c5ee99, 0x5875357a, 0x840cfa81, 0xe112f9e2,
-];
-
-/// One 64-bit GUID per known bubbul enemy instance in the world (`CompletismHashes.BUBBULS_GUIDS`
-/// in the source), checked against the save's separate discovered-GUIDs array
-/// (`totk::guids::read_discovered_guids`) rather than the normal hash-table field storage.
-const BUBBUL_GUIDS: [u64; 147] = [
-    0x4a2ef034a266c318, 0x156516036b5f7fc7, 0x6e50fe88e2738a3c, 0x155fed47fb6077bd, 0x9b41bd191c8bb899, 0xa9ff1552bc313753,
-    0x511159c4323fab13, 0x5bbd526f3daa3081, 0x7b7909c85ad79904, 0x1660d416b82cb91e, 0x50b82b2016f7452d, 0x58654bbba3c8d047,
-    0x1c2a653e0d7517d5, 0xb1cb80868f44056b, 0x97bbbc2bc486219d, 0x23b66324b2fbcd2c, 0x159d350c47a80e2b, 0x7dde1613bbe08fce,
-    0x1b60a95b467464e5, 0x321dc2e01aff8c82, 0xdefd953612e03084, 0x1b88a5b0512f7da7, 0x184db669cf152043, 0xe22736ed43f4a0b1,
-    0xa7ecb0ec036d9b51, 0x34518c9cecd51070, 0x69a87dc5d38237da, 0xb25955eb61a16781, 0xb6e3676cf0a11119, 0xc3552ebff380383b,
-    0xb6e06b49e63866ae, 0xa70272e5417b4a61, 0xdd7742ab1e6ede08, 0xcf9929ffddbfc07a, 0xfb519d90f20dc4ee, 0xc4355d66a6690f54,
-    0xd2ee79393cbbaad9, 0xb8a703d79052b5bc, 0x885e9854c01d1f50, 0x5ac2bd45c3f6e8a3, 0x458c6cef1846e12b, 0xc62e49bdd034722e,
-    0x632df3675d11e8a5, 0x38bd19020ca751c7, 0x31cc9701a074e3b0, 0x050c414f2b5651ca, 0x614231f0d886941b, 0xa2b05f3b5f7adc95,
-    0x7482ff34ebf0b87e, 0x29a44d4b7fd0af2a, 0xe3611f71daf6d5ba, 0x8f2597bea617d6e3, 0xddef122374bae30a, 0xe4c4b48aba3e28a0,
-    0x639b0aae3c2a3ab9, 0xddaa275cff3c1b9d, 0x0d8028a1c5d3e072, 0xaae790dff13c1d4a, 0x3deff0b2c6f35893, 0x2eaec0e8f7736bc1,
-    0x7c1f14d70520c5ac, 0x6d4f284dfe6f6350, 0x32d663740087df2b, 0xc0f95a0f2b1217d9, 0x8a2616dd9ff9a322, 0x05a685a4a4306b65,
-    0xae059d8746d758a6, 0xeb3296c003a30da4, 0xfc0c18ae5b379664, 0x129a6e312ba13e44, 0xe8a252e7e3073d05, 0xecc4ee76c55ec302,
-    0x07b6222221fa43cf, 0x5462549c77949ebb, 0xc5ff4da5c9cbe283, 0x8bc80ac5501a53e2, 0x0e3190ebdc4c448e, 0xb1677475d92742cd,
-    0xdd6da5a8ec813b90, 0x539de1395915eaf9, 0x146889d8bcc6ebb9, 0x01f22fdd1ac86e1b, 0x2cf40b1ba20d4010, 0x31eb915eb9b87e34,
-    0xef574dace04289a3, 0x8b881420387231b3, 0xb214a36c335cf983, 0xb442f2023e8b6895, 0x4c7d8fe80da677fb, 0xae002ffdbf50795c,
-    0x0157e7f59ed6706a, 0x9e6e0d4ee8807b92, 0x05ec4f99e19c1280, 0xef055e0e3b8e0af5, 0x5a7aaa06f4e9c10c, 0x4ea99762c0eafe65,
-    0xd77738ea615e5c1e, 0xcb63483daa6338f9, 0xacb3135d3bce3194, 0xbb2c259ad23f4780, 0xd9cb9c64a5ccc2c0, 0x7f088bcb3a457925,
-    0x45956a5cc5866db6, 0x2d1cf51b8cdcc098, 0x1f71702a095bc012, 0x04fb29137792797f, 0xe73dca57734e79c3, 0x172ed460a0200fe2,
-    0x03abb931e9b1aa2e, 0x18246b7d61b09e14, 0x660aa6a247d78655, 0x6d93e5630f546a65, 0x6cfcecf99438ae66, 0xdd7bee885ecdd646,
-    0x530d92647e6c8791, 0x0cacfa038648c55c, 0x0ad9f3123d0c10e7, 0x84e2e5b45a1ba0cb, 0xfc1296e19576855c, 0xc608bb69be07fecb,
-    0xbbde7a7a61d4fcaf, 0xd4f4c4181d407220, 0xa15f6b4b88baef04, 0xcc0e9a1b4171f855, 0x71bb8b935a627496, 0x09e5bb13bec6243d,
-    0x28a1ee52d72d06ae, 0x072241f662d35cd4, 0x1233a2e566944158, 0xb817aeb2581b040c, 0x4caa26d3ccac26c9, 0x58f8f85f62f83a7c,
-    0xef5aec2cc2af160f, 0x74ce078aec920a9d, 0xd7a7dd2925dc8546, 0xee4636bcc57dd2a7, 0xdc667d3492986314, 0x40faac044e21ecde,
-    0xc159d85ff81e95c0, 0x1ea384237cc3eee4, 0xdbff2f278d4d84e9, 0x0b393196afa554a8, 0xf9afb298ca80e833, 0x81eeb24216b54e96,
-    0x100e8f73ebff5c75, 0x2a818c0b3e6b54d2, 0x06dad54583da93de,
-];
-
-/// One 64-bit GUID per known sage-will pedestal (`CompletismHashes.SAGE_WILLS_FOUND` in the
-/// source, given there as decimal strings rather than hex; converted to hex here for
-/// consistency with `BUBBUL_GUIDS`, same value).
-const SAGE_WILL_GUIDS: [u64; 20] = [
-    17027564096477698406, 16551922775305595721, 8923401910321011575, 7638258738140520749,
-    17834526685843804832, 12415947737911523872, 10777930978159296231, 9878961607953221501,
-    14297746811944729045, 10158452085007421266, 14300441561420407308, 3040862838791505171,
-    7530653482124541386, 1950552174935191379, 15362114318872927496, 1734683952980485907,
-    15149725342529566916, 8433656076063719808, 1984953898143305789, 12826721193418470354,
-];
-
-/// One 64-bit GUID per Addison sign-carrying quest completion (`CompletismHashes.ADDISON_COMPLETED`
-/// in the source).
-const ADDISON_GUIDS: [u64; 81] = [
-    0x70d0ac829afa29d1, 0xac8dfd4892ec1064, 0xf63328e966a44b29, 0x7ce90c4cf9bc1d28, 0xea228bcd84f57195, 0x58066ae9cc5c7e30,
-    0x7dfc58d391aaaa1a, 0xb12f5cc2bc50e436, 0x795394aa6853aacd, 0x1e2ea6eea615f9af, 0xd6e50a904b1498d6, 0x2cdabb21b0740be2,
-    0x2dae0a784e3f3b42, 0x6b63076055d795c2, 0x88ca2b1f6a4c7d78, 0x28fad8cf1e69f736, 0xb3f22d628157d6e1, 0x5a5cbfadd5c96e98,
-    0x36d526832b916afb, 0x7b4ef5bc17c55313, 0x52c54803916367ae, 0x5487c62938ff5305, 0xa9a9392f01d9f7b7, 0x054e0c4e09696316,
-    0x025ad5777d625fd4, 0x18edf5f881bf78b7, 0x992af038c05e340b, 0xef4ab339bd078291, 0x0775a083f6fc7cbb, 0x12670c7211a67e49,
-    0x04e71b3f13f3fb87, 0x90277e182c6f7068, 0xcb4bddf41421132c, 0x898a7779403b7a4d, 0x5cf07a31a80e90db, 0x45ba9e23614ba0ef,
-    0xcff2a66b38719aa5, 0x4e5cf820e38d1059, 0x6ef8c1f46cf25d53, 0x8a51d0b213e3422c, 0xfd0db0d8c3e9ad20, 0x66624a2520ef9987,
-    0xac0c82a7e9005872, 0x78ffced82e203f26, 0x0250007c986f2a38, 0xf474dd13ff28caa7, 0xf3339731c1f40d7c, 0x165306cd7acf32e9,
-    0x9a8c42b4f5700dbc, 0xcdae104e2fbbe2da, 0x9ac24a0527ff904e, 0xefe03484f79019d4, 0xa3f0d7b685f83f79, 0x38d3fe883550084a,
-    0x9e2156178428fc30, 0x6905967649cc682d, 0x96d92450f68a70d4, 0x6262fc9b464b6c8e, 0x50fba6ce25a07b0a, 0x1aa259403014052a,
-    0xaa9aa98e2439914a, 0xc6fda5df0f2a87aa, 0x7c03b68e95da69b9, 0x8c2f9f021e4f14b3, 0xe1c6dcdc73c52ae6, 0x7832f9e29db1022e,
-    0x0aba53552fd141ee, 0x16a9efd110615889, 0xe4661fe1d68bab2c, 0x5d71afde97895b29, 0x7027f477f1bf0c85, 0xadc55a058327fab5,
-    0x11dd08c754771a01, 0xcfbf7fe07769846c, 0x4f2bccad0f7677b0, 0x5b1c6145cab7b62d, 0x26fdbcb5335cb130, 0x6f91ae9d5a01e2a4,
-    0x118aa3c276be57b8, 0xabec660dc1ff14ed, 0x65201b78877fa778,
-];
-
-/// Counts how many *distinct* locations in `hashes` are present and currently hold `expected`.
-/// This is the shared shape behind every count function below (`_count(booleanHashes, valueTrue)`
-/// in the source, always called with a fixed default `valueTrue` per category).
-///
-/// `LOCATION_VISITED_HASHES` has 2 entries that repeat an earlier hash value (378 array
-/// entries, 376 distinct locations). The source's own `_count` iterates the raw array and
-/// would count a repeated, already-visited location twice, inflating the true total. Counting
-/// distinct offsets here (via `resolve_present_hashes`'s deduplicated map) fixes that rather
-/// than reproducing it.
+/// Counts how many *distinct* hashes in `hashes` are present in the save and hold `expected`.
+/// Shared shape behind `Completism._count`. Counting distinct offsets (rather than raw array
+/// positions) means a hash repeated in the source's own list is never double-counted.
 fn count_matching(
     buf: &SaveBuffer,
     hash_table_end: usize,
@@ -282,85 +40,307 @@ fn count_matching(
     Ok(count)
 }
 
-pub fn shrines_found(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    count_matching(buf, hash_table_end, &SHRINE_FOUND_HASHES, 1)
+/// Writes `value_true` to every present flag in `hashes` whose current value isn't already
+/// `value_true` and (when `only_when` is `Some`) currently equals it. Returns how many changed.
+/// Mirrors `Completism._set`; flags absent from the save are skipped like `_getOffsetsByHashes`.
+fn set_all_matching(
+    buf: &mut SaveBuffer,
+    hash_table_end: usize,
+    hashes: &[u32],
+    value_true: u32,
+    only_when: Option<u32>,
+) -> Result<usize, SaveError> {
+    let offsets = resolve_present_hashes(buf, hash_table_end, hashes)?;
+    let mut count = 0;
+    for &offset in offsets.values() {
+        let val = buf.read_u32(offset)?;
+        if val != value_true && only_when.map_or(true, |w| val == w) {
+            buf.write_u32(offset, value_true)?;
+            count += 1;
+        }
+    }
+    Ok(count)
 }
 
-/// `SHRINES_STATUS` holds a hash of the state name (`Hidden`/`Appear`/`Open`/`Enter`/`Clear`);
-/// "cleared" means the stored value equals `hash("Clear")`.
-pub fn shrines_cleared(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    count_matching(buf, hash_table_end, &SHRINE_STATUS_HASHES, hash32("Clear"))
-}
-
-pub fn koroks_hidden(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    count_matching(buf, hash_table_end, &KOROK_HIDDEN_HASHES, 1)
-}
-
-/// `KOROKS_CARRY` holds a hash of `NotClear`/`Clear`. "Delivered to Hestu" means `Clear`.
-pub fn koroks_carried(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    count_matching(buf, hash_table_end, &KOROK_CARRY_HASHES, hash32("Clear"))
-}
-
-pub fn locations_visited(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    count_matching(buf, hash_table_end, &LOCATION_VISITED_HASHES, 1)
-}
-
-pub fn defeated_hinox(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    count_matching(buf, hash_table_end, &BOSS_HINOX_HASHES, 1)
-}
-
-pub fn defeated_talus(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    count_matching(buf, hash_table_end, &BOSS_TALUS_HASHES, 1)
-}
-
-pub fn defeated_molduga(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    count_matching(buf, hash_table_end, &BOSS_MOLDUGA_HASHES, 1)
-}
-
-/// Counts how many of `guids` appear in the save's discovered-GUIDs array, mirroring
-/// `Completism._countGuids`. Shared shape behind `defeated_bubbuls`/`sage_wills_found`.
+/// Counts how many of `guids` appear in the save's discovered-GUIDs array (`_countGuids`).
 fn count_guids(buf: &SaveBuffer, hash_table_end: usize, guids: &[u64]) -> Result<usize, SaveError> {
     let discovered = read_discovered_guids(buf, hash_table_end)?;
     Ok(guids.iter().filter(|g| discovered.contains(g)).count())
 }
 
-pub fn defeated_bubbuls(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    count_guids(buf, hash_table_end, &BUBBUL_GUIDS)
-}
-
-pub fn sage_wills_found(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    count_guids(buf, hash_table_end, &SAGE_WILL_GUIDS)
-}
-
-pub fn old_maps_found(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    count_matching(buf, hash_table_end, &TREASURE_MAPS_FOUND_HASHES, 1)
-}
-
-pub fn addison_completed(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    count_guids(buf, hash_table_end, &ADDISON_GUIDS)
-}
-
-/// Diffs `guids` (the source's own literal list for a category) against what's already
-/// discovered and appends whatever's missing in one batch, mirroring `Completism._setGuids`.
-/// Returns the number of newly-unlocked items.
+/// Appends whatever GUIDs in `guids` aren't already discovered (`_setGuids`). Returns the count
+/// newly added.
 fn unlock_all_guids(buf: &mut SaveBuffer, hash_table_end: usize, guids: &[u64]) -> Result<usize, SaveError> {
     let discovered = read_discovered_guids(buf, hash_table_end)?;
     let missing: Vec<u64> = guids.iter().copied().filter(|g| !discovered.contains(g)).collect();
     let count = missing.len();
-    crate::totk::guids::append_guids(buf, hash_table_end, &missing)?;
+    append_guids(buf, hash_table_end, &missing)?;
     Ok(count)
 }
 
+// --- individual counts kept for direct/legacy callers and unit tests ---
+
+pub fn shrines_found(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_matching(buf, hash_table_end, &data::SHRINES_FOUND, 1)
+}
+
+/// `SHRINES_STATUS` holds a hash of the state name (`Hidden`/`Appear`/`Open`/`Enter`/`Clear`);
+/// "cleared" means the stored value equals `hash("Clear")`.
+pub fn shrines_cleared(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_matching(buf, hash_table_end, &data::SHRINES_STATUS, hash32("Clear"))
+}
+
+pub fn koroks_hidden(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_matching(buf, hash_table_end, &data::KOROKS_HIDDEN, 1)
+}
+
+/// `KOROKS_CARRY` holds a hash of `NotClear`/`Clear`. "Delivered to Hestu" means `Clear`.
+pub fn koroks_carried(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_matching(buf, hash_table_end, &data::KOROKS_CARRY, hash32("Clear"))
+}
+
+pub fn locations_visited(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_matching(buf, hash_table_end, &data::LOCATIONS_VISITED, 1)
+}
+
+pub fn defeated_hinox(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_matching(buf, hash_table_end, &data::BOSSES_HINOXES_DEFEATED, 1)
+}
+
+pub fn defeated_talus(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_matching(buf, hash_table_end, &data::BOSSES_TALUSES_DEFEATED, 1)
+}
+
+pub fn defeated_molduga(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_matching(buf, hash_table_end, &data::BOSSES_MOLDUGAS_DEFEATED, 1)
+}
+
+pub fn defeated_bubbuls(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_guids(buf, hash_table_end, &data::BUBBULS_GUIDS)
+}
+
+pub fn sage_wills_found(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_guids(buf, hash_table_end, &data::SAGE_WILLS_FOUND)
+}
+
+pub fn old_maps_found(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_matching(buf, hash_table_end, &data::TREASURE_MAPS_FOUND, 1)
+}
+
+pub fn addison_completed(buf: &SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
+    count_guids(buf, hash_table_end, &data::ADDISON_COMPLETED)
+}
+
 pub fn unlock_all_bubbuls(buf: &mut SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    unlock_all_guids(buf, hash_table_end, &BUBBUL_GUIDS)
+    unlock_all_guids(buf, hash_table_end, &data::BUBBULS_GUIDS)
 }
 
 pub fn unlock_all_sage_wills(buf: &mut SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    unlock_all_guids(buf, hash_table_end, &SAGE_WILL_GUIDS)
+    unlock_all_guids(buf, hash_table_end, &data::SAGE_WILLS_FOUND)
 }
 
 pub fn unlock_all_addison(buf: &mut SaveBuffer, hash_table_end: usize) -> Result<usize, SaveError> {
-    unlock_all_guids(buf, hash_table_end, &ADDISON_GUIDS)
+    unlock_all_guids(buf, hash_table_end, &data::ADDISON_COMPLETED)
+}
+
+// --- structured snapshot for the completionism panel ---
+
+/// Builds every category card with its current found/total figures, in the source's display order.
+pub fn snapshot(buf: &SaveBuffer, hte: usize) -> Result<Vec<CompletismCategory>, SaveError> {
+    let clear = hash32("Clear");
+    let open = hash32("Open");
+    let unopened = hash32("Unopened");
+    let m = |hashes: &[u32], expected: u32| count_matching(buf, hte, hashes, expected);
+    let g = |guids: &[u64]| count_guids(buf, hte, guids);
+
+    let cats = vec![
+        CompletismCategory {
+            id: "towers",
+            label: "Skyview Towers",
+            metrics: vec![
+                metric("found", m(&data::TOWERS_FOUND, 1)?, data::TOWERS_FOUND.len()),
+                metric("activated", m(&data::TOWERS_ACTIVATED, 1)?, data::TOWERS_ACTIVATED.len()),
+            ],
+        },
+        CompletismCategory {
+            id: "shrines",
+            label: "Shrines",
+            metrics: vec![
+                metric("found", m(&data::SHRINES_FOUND, 1)?, data::SHRINES_FOUND.len()),
+                metric("cleared", m(&data::SHRINES_STATUS, clear)?, data::SHRINES_STATUS.len()),
+            ],
+        },
+        CompletismCategory {
+            id: "lightroots",
+            label: "Lightroots",
+            metrics: vec![
+                metric("found", m(&data::LIGHTROOTS_FOUND, 1)?, data::LIGHTROOTS_FOUND.len()),
+                metric("activated", m(&data::LIGHTROOTS_STATUS, open)?, data::LIGHTROOTS_STATUS.len()),
+            ],
+        },
+        CompletismCategory {
+            id: "koroks",
+            label: "Koroks",
+            metrics: vec![metric("found", m(&data::KOROKS_HIDDEN, 1)?, data::KOROKS_HIDDEN.len())],
+        },
+        CompletismCategory {
+            id: "strayed_koroks",
+            label: "Strayed koroks",
+            metrics: vec![metric("carried", m(&data::KOROKS_CARRY, clear)?, data::KOROKS_CARRY.len())],
+        },
+        CompletismCategory {
+            id: "bubbuls",
+            label: "Bubbuls",
+            metrics: vec![metric("defeated", g(&data::BUBBULS_GUIDS)?, data::BUBBULS_GUIDS.len())],
+        },
+        CompletismCategory {
+            id: "locations",
+            label: "Locations",
+            metrics: vec![metric("visited", m(&data::LOCATIONS_VISITED, 1)?, data::LOCATIONS_VISITED.len())],
+        },
+        CompletismCategory {
+            id: "caves",
+            label: "Caves",
+            metrics: vec![metric("visited", m(&data::LOCATION_CAVES_VISITED, 1)?, data::LOCATION_CAVES_VISITED.len())],
+        },
+        CompletismCategory {
+            id: "wells",
+            label: "Wells",
+            metrics: vec![metric("visited", m(&data::LOCATION_WELLS_VISITED, 1)?, data::LOCATION_WELLS_VISITED.len())],
+        },
+        CompletismCategory {
+            id: "chasms",
+            label: "Chasms",
+            metrics: vec![metric("visited", m(&data::LOCATION_CHASMS_VISITED, 1)?, data::LOCATION_CHASMS_VISITED.len())],
+        },
+        CompletismCategory {
+            id: "hinox",
+            label: "Hinox",
+            metrics: vec![metric("defeated", m(&data::BOSSES_HINOXES_DEFEATED, 1)?, data::BOSSES_HINOXES_DEFEATED.len())],
+        },
+        CompletismCategory {
+            id: "talus",
+            label: "Talus",
+            metrics: vec![metric("defeated", m(&data::BOSSES_TALUSES_DEFEATED, 1)?, data::BOSSES_TALUSES_DEFEATED.len())],
+        },
+        CompletismCategory {
+            id: "molduga",
+            label: "Molduga",
+            metrics: vec![metric("defeated", m(&data::BOSSES_MOLDUGAS_DEFEATED, 1)?, data::BOSSES_MOLDUGAS_DEFEATED.len())],
+        },
+        CompletismCategory {
+            id: "flux",
+            label: "Flux Construct",
+            metrics: vec![metric("defeated", m(&data::BOSSES_FLUX_CONSTRUCT_DEFEATED, 1)?, data::BOSSES_FLUX_CONSTRUCT_DEFEATED.len())],
+        },
+        CompletismCategory {
+            id: "frox",
+            label: "Frox",
+            metrics: vec![metric("defeated", m(&data::BOSSES_FROXS_DEFEATED, 1)?, data::BOSSES_FROXS_DEFEATED.len())],
+        },
+        CompletismCategory {
+            id: "gleeok",
+            label: "Gleeok",
+            metrics: vec![metric("defeated", m(&data::BOSSES_GLEEOKS_DEFEATED, 1)?, data::BOSSES_GLEEOKS_DEFEATED.len())],
+        },
+        CompletismCategory {
+            id: "sage_wills",
+            label: "Sage's Wills",
+            metrics: vec![metric("found", g(&data::SAGE_WILLS_FOUND)?, data::SAGE_WILLS_FOUND.len())],
+        },
+        CompletismCategory {
+            id: "old_maps",
+            label: "Old maps",
+            metrics: vec![metric("found", m(&data::TREASURE_MAPS_FOUND, 1)?, data::TREASURE_MAPS_FOUND.len())],
+        },
+        CompletismCategory {
+            id: "addison",
+            label: "Addison signposts",
+            metrics: vec![metric("completed", g(&data::ADDISON_COMPLETED)?, data::ADDISON_COMPLETED.len())],
+        },
+        CompletismCategory {
+            id: "schema_stones",
+            label: "Schema stones",
+            metrics: vec![metric("found", m(&data::SCHEMATICS_STONE_FOUND, 1)?, data::SCHEMATICS_STONE_FOUND.len())],
+        },
+        CompletismCategory {
+            id: "yiga_schematics",
+            label: "Yiga schematics",
+            metrics: vec![metric("found", m(&data::SCHEMATICS_YIGA_FOUND, 1)?, data::SCHEMATICS_YIGA_FOUND.len())],
+        },
+        CompletismCategory {
+            id: "compendium",
+            label: "Hyrule Compendium",
+            metrics: vec![metric(
+                "unlocked",
+                data::COMPENDIUM_STATUS.len() - m(&data::COMPENDIUM_STATUS, unopened)?,
+                data::COMPENDIUM_STATUS.len(),
+            )],
+        },
+    ];
+    Ok(cats)
+}
+
+/// Mass-sets one metric of a category to complete, returning how many entries changed. `id`
+/// matches [`CompletismCategory::id`]; `metric` is the index into that card's `metrics`
+/// (0 = primary, 1 = the secondary line on the towers/shrines/lightroots cards).
+pub fn set_all(
+    buf: &mut SaveBuffer,
+    hte: usize,
+    id: &str,
+    metric: usize,
+) -> Result<usize, SaveError> {
+    let clear = hash32("Clear");
+    let open = hash32("Open");
+    match (id, metric) {
+        ("towers", 0) => set_all_matching(buf, hte, &data::TOWERS_FOUND, 1, None),
+        ("towers", 1) => {
+            let changed = set_all_matching(buf, hte, &data::TOWERS_ACTIVATED, 1, None)?;
+            set_all_matching(buf, hte, &data::TOWERS_MAP_REVEALED, 1, None)?;
+            Ok(changed)
+        }
+        ("shrines", 0) => {
+            let changed = set_all_matching(buf, hte, &data::SHRINES_FOUND, 1, None)?;
+            set_all_matching(buf, hte, &data::SHRINES_STATUS, open, Some(hash32("Hidden")))?;
+            set_all_matching(buf, hte, &data::SHRINES_STATUS, open, Some(hash32("Appear")))?;
+            Ok(changed)
+        }
+        ("shrines", 1) => set_all_matching(buf, hte, &data::SHRINES_STATUS, clear, None),
+        ("lightroots", 0) => set_all_matching(buf, hte, &data::LIGHTROOTS_FOUND, 1, None),
+        ("lightroots", 1) => set_all_matching(buf, hte, &data::LIGHTROOTS_STATUS, open, None),
+        ("koroks", 0) => set_all_matching(buf, hte, &data::KOROKS_HIDDEN, 1, None),
+        ("strayed_koroks", 0) => set_all_matching(buf, hte, &data::KOROKS_CARRY, clear, None),
+        ("bubbuls", 0) => unlock_all_guids(buf, hte, &data::BUBBULS_GUIDS),
+        ("locations", 0) => set_all_matching(buf, hte, &data::LOCATIONS_VISITED, 1, None),
+        ("caves", 0) => {
+            let changed = set_all_matching(buf, hte, &data::LOCATION_CAVES_VISITED, 1, None)?;
+            set_all_matching(buf, hte, &data::LOCATION_CAVES_VISITED2, 1, None)?;
+            Ok(changed)
+        }
+        ("wells", 0) => {
+            let changed = set_all_matching(buf, hte, &data::LOCATION_WELLS_VISITED, 1, None)?;
+            set_all_matching(buf, hte, &data::LOCATION_WELLS_VISITED2, 1, None)?;
+            Ok(changed)
+        }
+        ("chasms", 0) => {
+            let changed = set_all_matching(buf, hte, &data::LOCATION_CHASMS_VISITED, 1, None)?;
+            set_all_matching(buf, hte, &data::LOCATION_CHASMS_VISITED2, 1, None)?;
+            Ok(changed)
+        }
+        ("hinox", 0) => set_all_matching(buf, hte, &data::BOSSES_HINOXES_DEFEATED, 1, None),
+        ("talus", 0) => set_all_matching(buf, hte, &data::BOSSES_TALUSES_DEFEATED, 1, None),
+        ("molduga", 0) => set_all_matching(buf, hte, &data::BOSSES_MOLDUGAS_DEFEATED, 1, None),
+        ("flux", 0) => set_all_matching(buf, hte, &data::BOSSES_FLUX_CONSTRUCT_DEFEATED, 1, None),
+        ("frox", 0) => set_all_matching(buf, hte, &data::BOSSES_FROXS_DEFEATED, 1, None),
+        ("gleeok", 0) => set_all_matching(buf, hte, &data::BOSSES_GLEEOKS_DEFEATED, 1, None),
+        ("sage_wills", 0) => unlock_all_guids(buf, hte, &data::SAGE_WILLS_FOUND),
+        ("old_maps", 0) => set_all_matching(buf, hte, &data::TREASURE_MAPS_FOUND, 1, None),
+        ("addison", 0) => unlock_all_guids(buf, hte, &data::ADDISON_COMPLETED),
+        ("schema_stones", 0) => set_all_matching(buf, hte, &data::SCHEMATICS_STONE_FOUND, 1, None),
+        ("yiga_schematics", 0) => set_all_matching(buf, hte, &data::SCHEMATICS_YIGA_FOUND, 1, None),
+        ("compendium", 0) => set_all_matching(buf, hte, &data::COMPENDIUM_STATUS, hash32("Buy"), None),
+        _ => Err(SaveError::MissingField("unknown completism category")),
+    }
 }
 
 #[cfg(test)]
@@ -370,27 +350,25 @@ mod tests {
     #[test]
     fn hash_lists_have_no_accidental_duplicates() {
         let mut seen = std::collections::HashSet::new();
-        for &h in KOROK_HIDDEN_HASHES.iter() {
+        for &h in data::KOROKS_HIDDEN.iter() {
             assert!(seen.insert(h), "duplicate korok hidden hash {h:#x}");
         }
     }
 
     #[test]
     fn guid_lists_have_no_accidental_duplicates() {
-        let mut seen = std::collections::HashSet::new();
-        for &g in BUBBUL_GUIDS.iter() {
-            assert!(seen.insert(g), "duplicate bubbul guid {g:#x}");
+        for (name, guids) in [
+            ("bubbul", &data::BUBBULS_GUIDS[..]),
+            ("sage will", &data::SAGE_WILLS_FOUND[..]),
+            ("addison", &data::ADDISON_COMPLETED[..]),
+        ] {
+            let mut seen = std::collections::HashSet::new();
+            for &g in guids {
+                assert!(seen.insert(g), "duplicate {name} guid {g:#x}");
+            }
         }
         let mut seen = std::collections::HashSet::new();
-        for &g in SAGE_WILL_GUIDS.iter() {
-            assert!(seen.insert(g), "duplicate sage will guid {g:#x}");
-        }
-        let mut seen = std::collections::HashSet::new();
-        for &g in ADDISON_GUIDS.iter() {
-            assert!(seen.insert(g), "duplicate addison guid {g:#x}");
-        }
-        let mut seen = std::collections::HashSet::new();
-        for &h in TREASURE_MAPS_FOUND_HASHES.iter() {
+        for &h in data::TREASURE_MAPS_FOUND.iter() {
             assert!(seen.insert(h), "duplicate old-map hash {h:#x}");
         }
     }
@@ -408,11 +386,19 @@ mod tests {
 
     #[test]
     fn count_matching_does_not_double_count_a_repeated_hash() {
-        // 0xaaaa appears twice in `hashes`, same underlying slot; a naive per-array-position
-        // count (mirroring the source's `_count`) would count it twice if visited.
         let buf = buffer_with_slots(&[(0xaaaa, 1), (0xbbbb, 0)]);
         let hash_table_end = buf.len();
         let count = count_matching(&buf, hash_table_end, &[0xaaaa, 0xaaaa, 0xbbbb], 1).unwrap();
         assert_eq!(count, 1);
+    }
+
+    #[test]
+    fn set_all_matching_flips_only_present_flags_and_reports_changes() {
+        let mut buf = buffer_with_slots(&[(0xaaaa, 0), (0xbbbb, 1)]);
+        let hte = buf.len();
+        // 0xcccc is absent from the save, so it can't be forced and isn't counted.
+        let changed = set_all_matching(&mut buf, hte, &[0xaaaa, 0xbbbb, 0xcccc], 1, None).unwrap();
+        assert_eq!(changed, 1, "only the one present-and-unset flag changes");
+        assert_eq!(count_matching(&buf, hte, &[0xaaaa, 0xbbbb], 1).unwrap(), 2);
     }
 }

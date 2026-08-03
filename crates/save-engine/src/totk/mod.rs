@@ -2,6 +2,7 @@ pub mod abilities;
 pub mod autobuilder;
 pub mod caption;
 pub mod completism;
+pub mod completism_data;
 pub mod guids;
 pub mod hashbrowser;
 pub mod hashdict;
@@ -285,6 +286,12 @@ impl TotkSave {
     }
     pub fn unlock_all_addison(&mut self) -> Result<usize, SaveError> {
         completism::unlock_all_addison(&mut self.buf, self.hash_table_end)
+    }
+    pub fn completism(&self) -> Result<Vec<crate::completism::CompletismCategory>, SaveError> {
+        completism::snapshot(&self.buf, self.hash_table_end)
+    }
+    pub fn set_completism(&mut self, id: &str, metric: usize) -> Result<usize, SaveError> {
+        completism::set_all(&mut self.buf, self.hash_table_end, id, metric)
     }
 
     // --- AutoBuild ---

@@ -333,12 +333,17 @@ impl BotwSave {
     /// Returns (weapon, bow, shield) modifier lists. Slot counts are derived by walking
     /// the item list and tracking which contiguous category block is currently active,
     /// ported 1:1 from the upstream `search` state machine in `load()`.
-    pub fn modifiers(&self) -> Result<(Vec<ItemModifier>, Vec<ItemModifier>, Vec<ItemModifier>), SaveError> {
-        let items = self.items()?;
+    /// Maps each item (by global slot) to the modifier slot it owns, if any. Weapons, bows and
+    /// shields each occupy a contiguous leading block; within a block the position is the index
+    /// into that category's parallel modifier array. Items with no modifier (or past the blocks)
+    /// map to `None`. This is the single source of truth for both reading modifiers and keeping
+    /// them aligned when an item is added or removed.
+    fn item_modifier_slots(&self, items: &[BotwItem]) -> Vec<Option<(ModifierCategory, usize)>> {
         let mut counts = [0usize; 3]; // weapon, bow, shield
         let mut search = 0u8; // 0: weapons, 1: bows, 2: shields, 3: done
+        let mut out = Vec::with_capacity(items.len());
 
-        for item in &items {
+        for item in items {
             let kind = classify(&item.name);
             if search == 0 && kind == ItemKind::Bow {
                 search = 1;
@@ -350,12 +355,35 @@ impl BotwSave {
                 search = 3;
             }
 
-            if kind == ItemKind::Weapon && search == 0 {
+            let slot = if kind == ItemKind::Weapon && search == 0 {
+                let p = counts[0];
                 counts[0] += 1;
+                Some((ModifierCategory::Weapon, p))
             } else if kind == ItemKind::Bow && search == 1 && item.name.starts_with("Weapon_") {
+                let p = counts[1];
                 counts[1] += 1;
+                Some((ModifierCategory::Bow, p))
             } else if kind == ItemKind::Shield && search == 2 {
+                let p = counts[2];
                 counts[2] += 1;
+                Some((ModifierCategory::Shield, p))
+            } else {
+                None
+            };
+            out.push(slot);
+        }
+        out
+    }
+
+    pub fn modifiers(&self) -> Result<(Vec<ItemModifier>, Vec<ItemModifier>, Vec<ItemModifier>), SaveError> {
+        let items = self.items()?;
+        let mut counts = [0usize; 3]; // weapon, bow, shield
+        for slot in self.item_modifier_slots(&items) {
+            match slot {
+                Some((ModifierCategory::Weapon, _)) => counts[0] += 1,
+                Some((ModifierCategory::Bow, _)) => counts[1] += 1,
+                Some((ModifierCategory::Shield, _)) => counts[2] += 1,
+                None => {}
             }
         }
 
@@ -403,6 +431,87 @@ impl BotwSave {
         let value_offset = self.offset(value_hash)?;
         self.buf.write_u32(flag_offset + index * 8, modifier)?;
         self.buf.write_u32(value_offset + index * 8, value)?;
+        Ok(())
+    }
+
+    /// Writes `items` back into the flat inventory in order and clears the slot just past the end
+    /// so the array stays null-terminated (the read loop stops at the first empty name).
+    fn write_items(&mut self, items: &[BotwItem]) -> Result<(), SaveError> {
+        for (i, item) in items.iter().enumerate() {
+            self.set_item(i, &item.name, item.quantity)?;
+        }
+        if items.len() < MAX_ITEMS {
+            self.set_item(items.len(), "", 0)?;
+        }
+        Ok(())
+    }
+
+    fn write_modifiers(
+        &mut self,
+        weapons: &[ItemModifier],
+        bows: &[ItemModifier],
+        shields: &[ItemModifier],
+    ) -> Result<(), SaveError> {
+        for (i, m) in weapons.iter().enumerate() {
+            self.set_modifier(ModifierCategory::Weapon, i, m.modifier, m.value)?;
+        }
+        for (i, m) in bows.iter().enumerate() {
+            self.set_modifier(ModifierCategory::Bow, i, m.modifier, m.value)?;
+        }
+        for (i, m) in shields.iter().enumerate() {
+            self.set_modifier(ModifierCategory::Shield, i, m.modifier, m.value)?;
+        }
+        Ok(())
+    }
+
+    /// Removes the item at `index`, shifting later items down one so the inventory stays
+    /// contiguous. If the removed item carried a weapon/bow/shield modifier, its slot is pulled
+    /// out of the matching modifier array too so the remaining bonuses don't shift onto the wrong
+    /// items.
+    pub fn remove_item(&mut self, index: usize) -> Result<(), SaveError> {
+        let mut items = self.items()?;
+        if index >= items.len() {
+            return Err(SaveError::IndexOutOfRange { index, max: items.len() });
+        }
+        let removed = self.item_modifier_slots(&items)[index];
+        let (mut weapons, mut bows, mut shields) = self.modifiers()?;
+        if let Some((cat, pos)) = removed {
+            match cat {
+                ModifierCategory::Weapon => drop(weapons.remove(pos)),
+                ModifierCategory::Bow => drop(bows.remove(pos)),
+                ModifierCategory::Shield => drop(shields.remove(pos)),
+            }
+        }
+        items.remove(index);
+        self.write_items(&items)?;
+        self.write_modifiers(&weapons, &bows, &shields)?;
+        Ok(())
+    }
+
+    /// Inserts a copy of the item at `index` immediately after it, shifting later items (and, for
+    /// weapon/bow/shield, the matching modifier slot) up one. Fails if the inventory is already at
+    /// `MAX_ITEMS`.
+    pub fn duplicate_item(&mut self, index: usize) -> Result<(), SaveError> {
+        let mut items = self.items()?;
+        if index >= items.len() {
+            return Err(SaveError::IndexOutOfRange { index, max: items.len() });
+        }
+        if items.len() >= MAX_ITEMS {
+            return Err(SaveError::IndexOutOfRange { index: items.len(), max: MAX_ITEMS });
+        }
+        let source = self.item_modifier_slots(&items)[index];
+        let (mut weapons, mut bows, mut shields) = self.modifiers()?;
+        if let Some((cat, pos)) = source {
+            match cat {
+                ModifierCategory::Weapon => weapons.insert(pos, weapons[pos]),
+                ModifierCategory::Bow => bows.insert(pos, bows[pos]),
+                ModifierCategory::Shield => shields.insert(pos, shields[pos]),
+            }
+        }
+        let copy = items[index].clone();
+        items.insert(index + 1, copy);
+        self.write_items(&items)?;
+        self.write_modifiers(&weapons, &bows, &shields)?;
         Ok(())
     }
 }
@@ -529,5 +638,23 @@ impl BotwSave {
     /// `visitAllLocations` doesn't have one either.
     pub fn unlock_all_locations(&mut self) -> Result<usize, SaveError> {
         completism::unlock_all_locations(&mut self.buf)
+    }
+
+    pub fn completism(&self) -> Result<Vec<crate::completism::CompletismCategory>, SaveError> {
+        completism::snapshot(&self.buf)
+    }
+
+    /// Mass-completes one completionism category by id (the ids from [`Self::completism`]),
+    /// routing to the matching `unlock_all_*` (which also bump the scalar counter and, for koroks,
+    /// add Korok Nut items). `metric` is unused: every BOTW card has a single metric.
+    pub fn set_completism(&mut self, id: &str, _metric: usize) -> Result<usize, SaveError> {
+        match id {
+            "koroks" => self.unlock_all_koroks(),
+            "locations" => self.unlock_all_locations(),
+            "hinox" => self.unlock_all_defeated_hinox(),
+            "talus" => self.unlock_all_defeated_talus(),
+            "molduga" => self.unlock_all_defeated_molduga(),
+            _ => Err(SaveError::MissingField("unknown completism category")),
+        }
     }
 }
