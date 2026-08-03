@@ -56,7 +56,7 @@ function ModifierCell({
     api.setModifier(category, categoryIndex, modifier.modifier, Number(value)).catch((err) => onError(String(err)));
   return (
     <>
-      <td>
+      <td data-label="Modifier">
         <select
           className={styles.input}
           value={String(modifier.modifier)}
@@ -69,7 +69,7 @@ function ModifierCell({
           ))}
         </select>
       </td>
-      <td>
+      <td data-label="Modifier Value">
         <input
           className={styles.input}
           type="number"
@@ -101,18 +101,30 @@ function ItemRow({
 }) {
   const [name, setName] = useState(item.name);
   const [quantity, setQuantity] = useState(String(item.quantity));
+  const [expanded, setExpanded] = useState(false);
   const commit = () =>
     api.setItem(index, name, Number(quantity)).catch((err) => onError(String(err)));
   const isDye = valueLabel === "Dye Color";
 
   return (
-    <tr>
-      <td>
+    <tr data-collapsed={expanded ? undefined : "true"}>
+      <td data-summary>
+        <button
+          type="button"
+          className={styles.rowToggle}
+          aria-expanded={expanded}
+          aria-label={expanded ? "Collapse" : "Expand"}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? "▾" : "▸"}
+        </button>
+        <span>{index}</span>
+      </td>
+      <td data-summary>
         <ItemIcon item={item} />
       </td>
-      <td>{index}</td>
-      <td>{BOTW_ITEM_NAMES[item.name] ?? ""}</td>
-      <td>
+      <td data-summary>{BOTW_ITEM_NAMES[item.name] ?? ""}</td>
+      <td data-label="Id">
         <ItemPicker
           value={name}
           items={BOTW_CATEGORY_ITEMS[item.category]}
@@ -124,7 +136,7 @@ function ItemRow({
           }}
         />
       </td>
-      <td>
+      <td data-label={valueLabel}>
         {isDye ? (
           <select
             className={styles.input}
@@ -155,8 +167,8 @@ function ItemRow({
           <ModifierCell category={modifierCategory} categoryIndex={categoryIndex} modifier={modifier} onError={onError} />
         ) : (
           <>
-            <td />
-            <td />
+            <td data-label="Modifier" />
+            <td data-label="Modifier Value" />
           </>
         ))}
     </tr>
@@ -189,37 +201,39 @@ export function BotwCategoryTable({ title, valueLabel, items, category, modifier
   return (
     <div>
       <SectionHeading title={`${title} (${entries.length})`} motif={<BotwMotif />} />
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            <th></th>
-            <th>#</th>
-            <th>Name</th>
-            <th>Id</th>
-            <th>{valueLabel}</th>
-            {modifierCategory && (
-              <>
-                <th>Modifier</th>
-                <th>Modifier Value</th>
-              </>
-            )}
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map(({ item, index }, categoryIndex) => (
-            <ItemRow
-              key={index}
-              index={index}
-              item={item}
-              valueLabel={valueLabel}
-              modifierCategory={modifierCategory}
-              modifier={modifiers?.[categoryIndex]}
-              categoryIndex={categoryIndex}
-              onError={onError}
-            />
-          ))}
-        </tbody>
-      </table>
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th></th>
+              <th>Name</th>
+              <th>Id</th>
+              <th>{valueLabel}</th>
+              {modifierCategory && (
+                <>
+                  <th>Modifier</th>
+                  <th>Modifier Value</th>
+                </>
+              )}
+            </tr>
+          </thead>
+          <tbody>
+            {entries.map(({ item, index }, categoryIndex) => (
+              <ItemRow
+                key={index}
+                index={index}
+                item={item}
+                valueLabel={valueLabel}
+                modifierCategory={modifierCategory}
+                modifier={modifiers?.[categoryIndex]}
+                categoryIndex={categoryIndex}
+                onError={onError}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
       <button
         type="button"
         className={styles.addButton}

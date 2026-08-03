@@ -4,6 +4,8 @@
   background: var(--bg);
   color: var(--text);
   font-family: system-ui, sans-serif;
+  /* The window must never scroll horizontally; wide content reflows or stays inside its own box. */
+  overflow-x: hidden;
 }
 .title {
   font-family: var(--font-display);
@@ -16,6 +18,7 @@
 .toolbar {
   margin-bottom: 16px;
   display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 .button {

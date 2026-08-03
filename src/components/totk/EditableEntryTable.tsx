@@ -71,7 +71,7 @@ function TextCell<T>({ entries, index, column, setter, onError }: CellProps<T>) 
     setter(replaceAt(entries, index, column.key, parse(text))).catch((err) => onError(String(err)));
   };
   return (
-    <td>
+    <td data-label={column.label}>
       <div className={styles.cellRow}>
         <input
           className={styles.input}
@@ -95,7 +95,7 @@ function SelectCell<T>({ entries, index, column, setter, onError }: CellProps<T>
     setter(replaceAt(entries, index, column.key, value)).catch((err) => onError(String(err)));
   };
   return (
-    <td>
+    <td data-label={column.label}>
       <div className={styles.cellRow}>
         <select className={styles.select} value={String(rawValue)} onChange={(e) => commit(e.target.value)}>
           {options.map((o) => (
@@ -118,7 +118,7 @@ function PickerCell<T>({ entries, index, column, setter, onError }: CellProps<T>
       onError(String(err)),
     );
   return (
-    <td>
+    <td data-label={column.label}>
       <ItemPicker
         value={value}
         items={picker.items}
@@ -138,7 +138,7 @@ function CheckboxCell<T>({ entries, index, column, setter, onError }: CellProps<
     );
   };
   return (
-    <td>
+    <td data-label={column.label}>
       <input type="checkbox" checked={checked} onChange={(e) => commit(e.target.checked)} />
     </td>
   );
@@ -146,7 +146,7 @@ function CheckboxCell<T>({ entries, index, column, setter, onError }: CellProps<
 
 function ReadOnlyCell<T>({ entries, index, column }: CellProps<T>) {
   const format = column.format ?? defaultFormat;
-  return <td>{format(entries[index][column.key])}</td>;
+  return <td data-label={column.label}>{format(entries[index][column.key])}</td>;
 }
 
 function Cell<T>(props: CellProps<T>) {
@@ -155,6 +155,48 @@ function Cell<T>(props: CellProps<T>) {
   if (props.column.type === "select") return <SelectCell {...props} />;
   if (props.column.type === "itempicker") return <PickerCell {...props} />;
   return <TextCell {...props} />;
+}
+
+interface RowProps<T> {
+  entries: T[];
+  index: number;
+  columns: ColumnDef<T>[];
+  setter: (entries: T[]) => Promise<void>;
+  onError: (message: string) => void;
+  iconFor?: (entry: T) => string;
+  nameFor?: (entry: T) => string | undefined;
+}
+
+function EntryRow<T>({ entries, index, columns, setter, onError, iconFor, nameFor }: RowProps<T>) {
+  // Rows start collapsed; the flag only takes effect at narrow widths (see `.table` media query),
+  // where a chevron in the header expands the detail fields. At wide widths it's ignored.
+  const [expanded, setExpanded] = useState(false);
+  const entry = entries[index];
+  return (
+    <tr data-collapsed={expanded ? undefined : "true"}>
+      <td data-summary>
+        <button
+          type="button"
+          className={styles.rowToggle}
+          aria-expanded={expanded}
+          aria-label={expanded ? "Collapse" : "Expand"}
+          onClick={() => setExpanded((v) => !v)}
+        >
+          {expanded ? "▾" : "▸"}
+        </button>
+        <span>{index}</span>
+      </td>
+      {iconFor && (
+        <td data-summary>
+          <ItemIcon url={iconFor(entry)} />
+        </td>
+      )}
+      {nameFor && <td data-summary>{nameFor(entry) ?? ""}</td>}
+      {columns.map((c) => (
+        <Cell key={String(c.key)} entries={entries} index={index} column={c} setter={setter} onError={onError} />
+      ))}
+    </tr>
+  );
 }
 
 interface Props<T> {
@@ -197,34 +239,34 @@ export default function EditableEntryTable<T>({
           </datalist>
         ),
       )}
-      <table className={styles.table}>
-        <thead>
-          <tr>
-            {iconFor && <th></th>}
-            <th>#</th>
-            {nameFor && <th>Name</th>}
-            {columns.map((c) => (
-              <th key={String(c.key)}>{c.label}</th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {entries.map((entry, i) => (
-            <tr key={i}>
-              {iconFor && (
-                <td>
-                  <ItemIcon url={iconFor(entry)} />
-                </td>
-              )}
-              <td>{i}</td>
-              {nameFor && <td>{nameFor(entry) ?? ""}</td>}
+      <div className={styles.tableWrap}>
+        <table className={styles.table}>
+          <thead>
+            <tr>
+              <th>#</th>
+              {iconFor && <th></th>}
+              {nameFor && <th>Name</th>}
               {columns.map((c) => (
-                <Cell key={String(c.key)} entries={entries} index={i} column={c} setter={setter} onError={onError} />
+                <th key={String(c.key)}>{c.label}</th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {entries.map((_, i) => (
+              <EntryRow
+                key={i}
+                entries={entries}
+                index={i}
+                columns={columns}
+                setter={setter}
+                onError={onError}
+                iconFor={iconFor}
+                nameFor={nameFor}
+              />
+            ))}
+          </tbody>
+        </table>
+      </div>
       {onAdd && (
         <button type="button" className={styles.addButton} onClick={onAdd}>
           + Add {title}
