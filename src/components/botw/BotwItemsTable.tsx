@@ -10,13 +10,26 @@ import { MODIFIER_OPTIONS, DYE_COLOR_OPTIONS } from "./botwEnums.data";
 import { withCurrentValue } from "../Select";
 import ItemPicker from "../ItemPicker";
 import HoverPreview from "../HoverPreview";
-import { rowHeaderToggle } from "../totk/EditableEntryTable";
+import { rowHeaderToggle, guardBounds } from "../totk/EditableEntryTable";
 import styles from "./BotwItemsTable.module.css";
 
 const ICON_SIZE = 48;
 // The flat item array's capacity; a new item goes in the first empty slot at the end, so adding
 // is blocked once every slot is used. Mirrors the engine's own MAX_ITEMS.
 const MAX_ITEMS = 420;
+
+// Per-item quantity ceilings, mirroring the real editor: stackables cap at 999, equipment stores
+// durability*100 (so ~65535 durability), and the two counter items have their own limits. Used as
+// a soft guard, so a first over-limit entry snaps down but a repeat entry still goes through.
+function itemMaxQuantity(item: BotwItem): number {
+  const id = item.name;
+  if (id.endsWith("Arrow") || id.endsWith("Arrow_A") || item.category === "material" || item.category === "food")
+    return 999;
+  if (item.category === "weapon" || item.category === "bow" || item.category === "shield") return 6553500;
+  if (id === "Obj_DungeonClearSeal") return 120;
+  if (id === "Obj_KorokNuts") return 900;
+  return 0xffffffff;
+}
 
 // BOTW icons are sliced from shared sprite sheets (CSS background-position), not one file per item.
 function botwSpriteIcon(id: string, size: number, dyeColor?: number): ReactNode {
@@ -77,6 +90,7 @@ function ModifierCell({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onBlur={commitValue}
+          disabled={modifier.modifier === 0}
         />
       </td>
     </>
@@ -108,8 +122,11 @@ function ItemRow({
   const [quantity, setQuantity] = useState(String(item.quantity));
   const [expanded, setExpanded] = useState(false);
   const toggle = () => setExpanded((v) => !v);
-  const commit = () =>
-    api.setItem(index, name, Number(quantity)).catch((err) => onError(String(err)));
+  const commit = () => {
+    const guarded = guardBounds(Number(quantity), item.quantity, 0, itemMaxQuantity(item));
+    if (guarded !== Number(quantity)) setQuantity(String(guarded));
+    api.setItem(index, name, guarded).catch((err) => onError(String(err)));
+  };
   const remove = () => api.removeItem(index).catch((err) => onError(String(err)));
   const duplicate = () => api.duplicateItem(index).catch((err) => onError(String(err)));
   const maxQuantity = () => {

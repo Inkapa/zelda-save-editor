@@ -47,6 +47,21 @@ export interface ColumnDef<T> {
   /** Small icon shown next to this cell, derived from the whole row (e.g. a bonus icon
    * matching a sibling `modifier` column's current value). */
   iconFor?: (entry: T) => string | undefined;
+  /** Soft bounds for a number cell. May depend on the row (e.g. a per-item durability cap).
+   * See `guardBounds` for the clamp-once-then-allow behavior. */
+  min?: number | ((entry: T) => number);
+  max?: number | ((entry: T) => number);
+  /** Greys out and blocks editing when true (e.g. a modifier value with no modifier set). */
+  disabled?: (entry: T) => boolean;
+}
+
+/** Soft upper/lower guard. The first time a value lands outside [min, max] (the previous value
+ * was still inside the bound) it snaps to that bound; a repeat out-of-range entry passes through,
+ * so it nudges rather than hard-caps. */
+export function guardBounds(value: number, prev: number, min?: number, max?: number): number {
+  if (typeof max === "number" && value > max && prev < max) return max;
+  if (typeof min === "number" && value < min && prev > min) return min;
+  return value;
 }
 
 interface CellProps<T> {
@@ -83,9 +98,19 @@ function CellIcon<T>({ column, entry }: { column: ColumnDef<T>; entry: T }) {
 function TextCell<T>({ entries, index, column, setter, onError }: CellProps<T>) {
   const format = column.format ?? defaultFormat;
   const [text, setText] = useState(format(entries[index][column.key]));
+  const entry = entries[index];
+  const bound = (b?: number | ((entry: T) => number)) => (typeof b === "function" ? b(entry) : b);
   const commit = () => {
     const parse = column.parse ?? ((raw: string) => raw as unknown as T[keyof T]);
-    setter(replaceAt(entries, index, column.key, parse(text))).catch((err) => onError(String(err)));
+    const parsed = parse(text);
+    let toStore = parsed;
+    const prev = entry[column.key];
+    if (typeof parsed === "number" && typeof prev === "number") {
+      const guarded = guardBounds(parsed, prev, bound(column.min), bound(column.max));
+      if (guarded !== parsed) setText(String(guarded));
+      toStore = guarded as T[keyof T];
+    }
+    setter(replaceAt(entries, index, column.key, toStore)).catch((err) => onError(String(err)));
   };
   return (
     <td data-label={column.label}>
@@ -96,9 +121,10 @@ function TextCell<T>({ entries, index, column, setter, onError }: CellProps<T>) 
           value={text}
           onChange={(e) => setText(e.target.value)}
           onBlur={commit}
+          disabled={column.disabled?.(entry)}
           list={column.datalist?.id}
         />
-        <CellIcon column={column} entry={entries[index]} />
+        <CellIcon column={column} entry={entry} />
       </div>
     </td>
   );

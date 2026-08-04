@@ -139,8 +139,18 @@ function idPicker<T extends { id: string }>(category: TotkIconCategory): ColumnD
   };
 }
 
-function num<T>(key: keyof T, label: string): ColumnDef<T> {
-  return { key, label, type: "number", parse: (raw) => Number(raw) as T[keyof T] };
+// murmur3 hash of "None" (Equipment.OPTIONS_MODIFIERS' no-bonus value); a modifier value is
+// meaningless without a modifier, so its input is disabled while this is selected.
+const NO_MODIFIER = 0xb6eede09;
+
+interface NumOpts<T> {
+  min?: number | ((entry: T) => number);
+  max?: number | ((entry: T) => number);
+  disabled?: (entry: T) => boolean;
+}
+
+function num<T>(key: keyof T, label: string, opts: NumOpts<T> = {}): ColumnDef<T> {
+  return { key, label, type: "number", parse: (raw) => Number(raw) as T[keyof T], ...opts };
 }
 
 // Append a new entry to a category, defaulting to the next id after the last row (wrapping),
@@ -172,32 +182,43 @@ const BLANK_KEYITEM: Omit<TotkKeyItem, "id"> = { quantity: 1 };
 const BLANK_DEVICE: Omit<TotkDevice, "id"> = { quantity: 1, use_order: 0 };
 const BLANK_FOOD: Omit<TotkFood, "id"> = { quantity: 1, hearts_heal: 0, effect: 0, effect_multiplier: 0, effect_time: 0, price: 0, recipe: ["", "", "", "", ""] };
 
+// Fuse durability records cap at 25 for most fusables in the real editor; durability defaults
+// vary per weapon but 70 is the fallback the source uses, so it makes a sensible soft ceiling.
 const weaponColumns: ColumnDef<TotkWeapon>[] = [
   idPicker<TotkWeapon>("weapon"),
-  num("durability", "Durability"),
+  num("durability", "Durability", { min: 1, max: 70 }),
   { key: "modifier", label: "Modifier", type: "select", options: WEAPON_MODIFIER_OPTIONS },
-  { ...num("modifier_value", "Modifier Value"), iconFor: (e) => weaponModifierIconUrl(e.modifier) },
+  {
+    ...num("modifier_value", "Modifier Value", { disabled: (e) => e.modifier === NO_MODIFIER }),
+    iconFor: (e) => weaponModifierIconUrl(e.modifier),
+  },
   fuseColumn<TotkWeapon>(),
-  num("fuse_durability", "Fuse Durability"),
-  num("extra_durability", "Extra Durability"),
-  num("record_extra_durability", "Record Extra Durability"),
+  num("fuse_durability", "Fuse Durability", { min: 0, max: 25 }),
+  num("extra_durability", "Extra Durability", { min: 0, max: 25 }),
+  num("record_extra_durability", "Record Extra Durability", { min: 0, max: 25 }),
 ];
 
 const bowColumns: ColumnDef<TotkBow>[] = [
   idPicker<TotkBow>("bow"),
-  num("durability", "Durability"),
+  num("durability", "Durability", { min: 1, max: 70 }),
   { key: "modifier", label: "Modifier", type: "select", options: BOW_MODIFIER_OPTIONS },
-  { ...num("modifier_value", "Modifier Value"), iconFor: (e) => bowModifierIconUrl(e.modifier) },
+  {
+    ...num("modifier_value", "Modifier Value", { disabled: (e) => e.modifier === NO_MODIFIER }),
+    iconFor: (e) => bowModifierIconUrl(e.modifier),
+  },
 ];
 
 const shieldColumns: ColumnDef<TotkShield>[] = [
   idPicker<TotkShield>("shield"),
-  num("durability", "Durability"),
+  num("durability", "Durability", { min: 1, max: 70 }),
   { key: "modifier", label: "Modifier", type: "select", options: SHIELD_MODIFIER_OPTIONS },
-  { ...num("modifier_value", "Modifier Value"), iconFor: (e) => shieldModifierIconUrl(e.modifier) },
+  {
+    ...num("modifier_value", "Modifier Value", { disabled: (e) => e.modifier === NO_MODIFIER }),
+    iconFor: (e) => shieldModifierIconUrl(e.modifier),
+  },
   fuseColumn<TotkShield>(),
-  num("fuse_durability", "Fuse Durability"),
-  num("extra_durability", "Extra Durability"),
+  num("fuse_durability", "Fuse Durability", { min: 0, max: 25 }),
+  num("extra_durability", "Extra Durability", { min: 0, max: 25 }),
 ];
 
 const armorColumns: ColumnDef<TotkArmor>[] = [
@@ -205,31 +226,37 @@ const armorColumns: ColumnDef<TotkArmor>[] = [
   { key: "dye_color", label: "Dye Color", type: "select", options: DYE_COLOR_OPTIONS },
 ];
 
-const arrowColumns: ColumnDef<TotkArrow>[] = [idPicker<TotkArrow>("arrow"), num("quantity", "Quantity")];
+const arrowColumns: ColumnDef<TotkArrow>[] = [
+  idPicker<TotkArrow>("arrow"),
+  num("quantity", "Quantity", { min: 0, max: MAX_QUANTITY }),
+];
 
 const materialColumns: ColumnDef<TotkMaterial>[] = [
   idPicker<TotkMaterial>("material"),
-  num("quantity", "Quantity"),
+  num("quantity", "Quantity", { min: 0, max: MAX_QUANTITY }),
   num("get_order", "Get Order"),
   num("use_order", "Use Order"),
 ];
 
-const keyItemColumns: ColumnDef<TotkKeyItem>[] = [idPicker<TotkKeyItem>("keyItem"), num("quantity", "Quantity")];
+const keyItemColumns: ColumnDef<TotkKeyItem>[] = [
+  idPicker<TotkKeyItem>("keyItem"),
+  num("quantity", "Quantity", { min: 0, max: MAX_QUANTITY }),
+];
 
 const deviceColumns: ColumnDef<TotkDevice>[] = [
   idPicker<TotkDevice>("device"),
-  num("quantity", "Quantity"),
+  num("quantity", "Quantity", { min: 0, max: MAX_QUANTITY }),
   num("use_order", "Use Order"),
 ];
 
 const foodColumns: ColumnDef<TotkFood>[] = [
   idPicker<TotkFood>("food"),
-  num("quantity", "Quantity"),
-  num("hearts_heal", "Hearts Heal"),
+  num("quantity", "Quantity", { min: 0, max: MAX_QUANTITY }),
+  num("hearts_heal", "Hearts Heal", { min: -1, max: 160 }),
   { key: "effect", label: "Food Effect", type: "select", options: FOOD_EFFECT_OPTIONS },
-  { ...num("effect_multiplier", "Multiplier"), iconFor: (e) => foodEffectIconUrl(e.effect) },
-  num("effect_time", "Duration (in seconds)"),
-  num("price", "Price"),
+  { ...num("effect_multiplier", "Multiplier", { min: 0, max: 250 }), iconFor: (e) => foodEffectIconUrl(e.effect) },
+  num("effect_time", "Duration (in seconds)", { min: 0, max: 59999 }),
+  num("price", "Price", { min: 0, max: 999999 }),
   {
     key: "recipe",
     label: "Recipe (comma-separated)",
