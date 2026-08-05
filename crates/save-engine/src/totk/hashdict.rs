@@ -43,27 +43,9 @@ const POINTER_TYPES: &[&str] = &[
     "BinaryArray",
 ];
 
-fn parse_dictionary() -> HashMap<u32, bool> {
-    let mut map = HashMap::new();
-    for line in RAW_CSV.lines() {
-        if line.starts_with('#') || line.starts_with("EnumValues;") || line.trim().is_empty() {
-            continue;
-        }
-        let mut fields = line.splitn(3, ';');
-        let (Some(hash_str), Some(type_str)) = (fields.next(), fields.next()) else {
-            continue;
-        };
-        let Ok(hash) = u32::from_str_radix(hash_str, 16) else {
-            continue;
-        };
-        map.insert(hash, POINTER_TYPES.contains(&type_str));
-    }
-    map
-}
-
 fn dictionary() -> &'static HashMap<u32, bool> {
     static DICT: OnceLock<HashMap<u32, bool>> = OnceLock::new();
-    DICT.get_or_init(parse_dictionary)
+    DICT.get_or_init(|| full_dictionary().iter().map(|(&hash, entry)| (hash, entry.is_pointer)).collect())
 }
 
 /// Whether `hash`'s stored value in the TOTK hash table is a pointer into the blob heap.

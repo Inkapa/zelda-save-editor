@@ -44,7 +44,7 @@ pub fn read_state(save: &TotkSave) -> Result<TotkState, ShellError> {
 }
 
 pub fn get_totk_state_impl(app_state: &AppState) -> Result<TotkState, ShellError> {
-    let guard = app_state.save.lock().unwrap();
+    let guard = crate::state::lock(&app_state.save);
     match guard.as_ref() {
         Some(Save::Totk(save)) => read_state(save),
         Some(Save::Botw(_)) => Err(ShellError::wrong_game("TOTK")),
@@ -61,7 +61,7 @@ pub fn with_totk<T>(
     app_state: &AppState,
     f: impl FnOnce(&mut TotkSave) -> Result<T, SaveError>,
 ) -> Result<T, ShellError> {
-    let mut guard = app_state.save.lock().unwrap();
+    let mut guard = crate::state::lock(&app_state.save);
     match guard.as_mut() {
         Some(Save::Totk(save)) => f(save).map_err(ShellError::from),
         Some(Save::Botw(_)) => Err(ShellError::wrong_game("TOTK")),
@@ -241,7 +241,7 @@ pub fn set_totk_completism(state: State<'_, AppState>, id: String, metric: usize
 // would send that whole payload on every single unrelated edit. Fetched on demand instead. ---
 
 pub fn get_totk_hash_rows_impl(app_state: &AppState) -> Result<Vec<TotkHashRowDto>, ShellError> {
-    let guard = app_state.save.lock().unwrap();
+    let guard = crate::state::lock(&app_state.save);
     match guard.as_ref() {
         Some(Save::Totk(save)) => Ok(save.browse_hashes()?.into_iter().map(TotkHashRowDto::from).collect()),
         Some(Save::Botw(_)) => Err(ShellError::wrong_game("TOTK")),
@@ -262,7 +262,7 @@ pub fn set_totk_hash_field(state: State<'_, AppState>, hash: u32, value: f64) ->
 // --- Key-item ability toggles ---
 
 pub fn get_totk_abilities_impl(app_state: &AppState) -> Result<Vec<TotkAbilityDto>, ShellError> {
-    let guard = app_state.save.lock().unwrap();
+    let guard = crate::state::lock(&app_state.save);
     match guard.as_ref() {
         Some(Save::Totk(save)) => Ok(save.abilities()?.into_iter().map(TotkAbilityDto::from).collect()),
         Some(Save::Botw(_)) => Err(ShellError::wrong_game("TOTK")),

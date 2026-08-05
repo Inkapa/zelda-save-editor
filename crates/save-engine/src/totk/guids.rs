@@ -20,6 +20,15 @@ use crate::error::SaveError;
 /// `SavegameEditor.guidsArray`'s load loop (`lower`/`upper` u32 halves, low word first, stopping
 /// at the first all-zero entry).
 pub fn read_discovered_guids(buf: &SaveBuffer, hash_table_end: usize) -> Result<HashSet<u64>, SaveError> {
+    let (guids, _) = read_discovered_guids_with_end(buf, hash_table_end)?;
+    Ok(guids)
+}
+
+/// Same scan as [`read_discovered_guids`], but also returns the offset of the array's zero
+/// terminator (the true end of the raw slot range). Kept separate so `append_guids` can compute
+/// its insertion point from the actual scanned byte range instead of from `guids.len()`, which
+/// silently under-counts if the array ever contains a duplicate entry (a `HashSet` dedups).
+fn read_discovered_guids_with_end(buf: &SaveBuffer, hash_table_end: usize) -> Result<(HashSet<u64>, usize), SaveError> {
     let array_addr = buf.read_u32(hash_table_end)? as usize;
     let mut guids = HashSet::new();
     let mut offset = array_addr;
@@ -31,7 +40,7 @@ pub fn read_discovered_guids(buf: &SaveBuffer, hash_table_end: usize) -> Result<
         guids.insert(value);
         offset += 8;
     }
-    Ok(guids)
+    Ok((guids, offset))
 }
 
 /// Adds every GUID in `new_guids` that isn't already in the discovered set, in one batched
@@ -41,14 +50,12 @@ pub fn read_discovered_guids(buf: &SaveBuffer, hash_table_end: usize) -> Result<
 /// per item but only calls the real file write once after the whole batch, critical for mass-
 /// unlocking dozens or hundreds of items without dozens or hundreds of separate buffer shifts.
 pub fn append_guids(buf: &mut SaveBuffer, hash_table_end: usize, new_guids: &[u64]) -> Result<(), SaveError> {
-    let discovered = read_discovered_guids(buf, hash_table_end)?;
+    let (discovered, terminator_offset) = read_discovered_guids_with_end(buf, hash_table_end)?;
     let missing: Vec<u64> = new_guids.iter().copied().filter(|g| !discovered.contains(g)).collect();
     if missing.is_empty() {
         return Ok(());
     }
 
-    let array_addr = buf.read_u32(hash_table_end)? as usize;
-    let terminator_offset = array_addr + discovered.len() * 8;
     let additional_bytes = missing.len() * 8;
 
     crate::totk::hashtable::insert_and_relocate(buf, hash_table_end, terminator_offset, additional_bytes)?;

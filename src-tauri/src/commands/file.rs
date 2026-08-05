@@ -14,6 +14,21 @@ fn backup_path(path: &Path) -> PathBuf {
     PathBuf::from(name)
 }
 
+fn tmp_path(path: &Path) -> PathBuf {
+    let mut name = path.as_os_str().to_os_string();
+    name.push(".tmp");
+    PathBuf::from(name)
+}
+
+/// Writes `bytes` to `path` via write-to-temp-then-rename, so a crash or disk-full failure
+/// mid-write can never leave `path` itself truncated: it either keeps its old content or gets
+/// the new content in full, never a partial mix of both.
+fn write_atomic(path: &Path, bytes: &[u8]) -> std::io::Result<()> {
+    let tmp = tmp_path(path);
+    std::fs::write(&tmp, bytes)?;
+    std::fs::rename(&tmp, path)
+}
+
 /// Detects the save format from raw bytes and builds the DTO to return to the frontend,
 /// without touching `AppState`. The caller is responsible for storing the resulting
 /// `Save` and file path. Pure and Tauri-free: directly unit-testable against real fixtures.
@@ -50,8 +65,8 @@ fn load_from_path(state: &AppState, path: PathBuf) -> Result<OpenResult, ShellEr
     let bytes = std::fs::read(&path).map_err(ShellError::io)?;
     let (save, result) = detect_and_build(bytes)?;
     if let Some(save) = save {
-        *state.save.lock().unwrap() = Some(save);
-        *state.path.lock().unwrap() = Some(path);
+        *crate::state::lock(&state.save) = Some(save);
+        *crate::state::lock(&state.path) = Some(path);
     }
     Ok(result)
 }
@@ -80,17 +95,14 @@ pub fn open_save_at(path: String, state: State<'_, AppState>) -> Result<OpenResu
 /// recent-files list after a successful open.
 #[tauri::command]
 pub fn current_path(state: State<'_, AppState>) -> Option<String> {
-    state
-        .path
-        .lock()
-        .unwrap()
+    crate::state::lock(&state.path)
         .as_ref()
         .map(|p| p.to_string_lossy().into_owned())
 }
 
 #[tauri::command]
 pub fn save(state: State<'_, AppState>) -> Result<(), ShellError> {
-    let path = state.path.lock().unwrap().clone().ok_or_else(ShellError::no_save_loaded)?;
+    let path = crate::state::lock(&state.path).clone().ok_or_else(ShellError::no_save_loaded)?;
     write_current_save(state.inner(), &path)
 }
 
@@ -106,7 +118,7 @@ pub fn save_as(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<(), 
         .into_path()
         .map_err(|e| ShellError::io(std::io::Error::new(std::io::ErrorKind::InvalidInput, e.to_string())))?;
     write_current_save(state.inner(), &path)?;
-    *state.path.lock().unwrap() = Some(path);
+    *crate::state::lock(&state.path) = Some(path);
     Ok(())
 }
 
@@ -119,18 +131,25 @@ pub fn save_as(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<(), 
 /// any previous backup), so a bad edit is always one file away from recoverable. Done before
 /// `AppState.save` is taken, so a failed backup leaves the in-memory edits untouched instead
 /// of silently discarding them.
+///
+/// The write itself goes through `write_atomic` (write-to-temp-then-rename) so a partial write
+/// never corrupts `path` in place; on any write failure the pre-existing `.bak` is still exactly
+/// what was there before this call.
 fn write_current_save(app_state: &AppState, path: &PathBuf) -> Result<(), ShellError> {
     if path.exists() {
         std::fs::copy(path, backup_path(path)).map_err(ShellError::io)?;
     }
-    let save = app_state.save.lock().unwrap().take().ok_or_else(ShellError::no_save_loaded)?;
+    let save = crate::state::lock(&app_state.save).take().ok_or_else(ShellError::no_save_loaded)?;
     let bytes = save.to_bytes();
-    let write_result = std::fs::write(path, &bytes);
+    let write_result = write_atomic(path, &bytes);
     // Re-detect and restore state before propagating any write error, otherwise a disk-write
     // failure would permanently empty AppState.save, discarding in-memory edits until the user
-    // manually reopens the file.
+    // manually reopens the file. If re-detection itself fails, the freshly written bytes don't
+    // round-trip back into a Save (an engine invariant this crate's own tests otherwise cover),
+    // and there's no prior Save left to restore either since `to_bytes` above consumed it: the
+    // error propagates and AppState.save is left empty, same as a save that was never loaded.
     let (reloaded, _) = detect_and_build(bytes)?;
-    *app_state.save.lock().unwrap() = reloaded;
+    *crate::state::lock(&app_state.save) = reloaded;
     write_result.map_err(ShellError::io)?;
     Ok(())
 }

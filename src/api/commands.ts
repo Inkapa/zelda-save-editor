@@ -30,12 +30,20 @@ const READONLY_COMMANDS = new Set([
   "get_totk_abilities",
   "current_path",
 ]);
-const CLEARS_DIRTY_COMMANDS = new Set(["open_save", "open_save_at", "save", "save_as"]);
+const OPEN_COMMANDS = new Set(["open_save", "open_save_at"]);
+const CLEARS_DIRTY_COMMANDS = new Set(["save", "save_as"]);
 
 function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T> {
   return tauriInvoke<T>(cmd, args).then((result) => {
-    if (CLEARS_DIRTY_COMMANDS.has(cmd)) clearDirty();
-    else if (!READONLY_COMMANDS.has(cmd)) {
+    if (CLEARS_DIRTY_COMMANDS.has(cmd)) {
+      clearDirty();
+    } else if (OPEN_COMMANDS.has(cmd)) {
+      // caption.sav is a read-only preview: the backend leaves any already-loaded, possibly
+      // still-dirty save untouched when the opened file turns out to be one, so only clear
+      // dirty here when the open actually replaced the editable save.
+      const kind = (result as { kind?: string } | undefined)?.kind;
+      if (kind !== "caption") clearDirty();
+    } else if (!READONLY_COMMANDS.has(cmd)) {
       markDirty();
       notifyStateChanged();
     }

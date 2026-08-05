@@ -50,7 +50,7 @@ pub fn parse(bytes: Vec<u8>) -> Result<CaptionInfo, SaveError> {
         day: buf.read_u32(offsets["DAY"])?,
         hour: buf.read_u32(offsets["HOUR"])?,
         minute: buf.read_u32(offsets["MINUTE"])?,
-        is_autosave: buf.read_u8(offsets["IS_AUTOSAVE"])? == 1,
+        is_autosave: buf.read_u8(offsets["IS_AUTOSAVE"])? != 0,
         thumbnail_jpeg,
     })
 }

@@ -31,6 +31,7 @@ function App() {
   const [error, setError] = useState<string | null>(null);
   const [savedToast, setSavedToast] = useState(false);
   const [confirmClose, setConfirmClose] = useState(false);
+  const [pendingOpen, setPendingOpen] = useState<(() => Promise<void>) | null>(null);
   const [recents, setRecents] = useState<RecentFile[]>(getRecentFiles);
   const dirty = api.useDirty();
   const editable = loaded?.kind === "botw" || loaded?.kind === "totk";
@@ -62,7 +63,7 @@ function App() {
     setRecents(recordRecentFile({ path, kind: result.kind, name }));
   };
 
-  const handleOpen = async () => {
+  const openNow = async () => {
     try {
       const result = await api.openSave();
       setLoaded(result);
@@ -73,7 +74,7 @@ function App() {
     }
   };
 
-  const handleOpenRecent = async (file: RecentFile) => {
+  const openRecentNow = async (file: RecentFile) => {
     try {
       const result = await api.openSaveAt(file.path);
       setLoaded(result);
@@ -84,6 +85,25 @@ function App() {
       setError((err as api.ShellError).message ?? String(err));
       setRecents(removeRecentFile(file.path));
     }
+  };
+
+  // Opening a different file replaces whatever's currently loaded, so it needs the same
+  // unsaved-changes guard as closing the window: without it, picking a new file silently
+  // discards an in-progress edit with no warning.
+  const handleOpen = async () => {
+    if (api.isDirty()) {
+      setPendingOpen(() => openNow);
+      return;
+    }
+    await openNow();
+  };
+
+  const handleOpenRecent = async (file: RecentFile) => {
+    if (api.isDirty()) {
+      setPendingOpen(() => () => openRecentNow(file));
+      return;
+    }
+    await openRecentNow(file);
   };
 
   const handleSave = async () => {
@@ -201,6 +221,28 @@ function App() {
         </div>
       )}
       {savedToast && <Toast message="Saved" onDismiss={() => setSavedToast(false)} />}
+      {pendingOpen && (
+        <CloseConfirmModal
+          message="You have unsaved edits. Save them before opening a different file?"
+          onSave={async () => {
+            try {
+              await api.saveSave();
+              const run = pendingOpen;
+              setPendingOpen(null);
+              await run();
+            } catch (err) {
+              setError((err as api.ShellError).message ?? String(err));
+              setPendingOpen(null);
+            }
+          }}
+          onDiscard={async () => {
+            const run = pendingOpen;
+            setPendingOpen(null);
+            await run();
+          }}
+          onCancel={() => setPendingOpen(null)}
+        />
+      )}
       {confirmClose && (
         <CloseConfirmModal
           onSave={async () => {

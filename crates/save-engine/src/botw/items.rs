@@ -164,25 +164,42 @@ pub enum ItemCategory {
     KeyItem,
 }
 
-/// Mirrors `_getItemCategory`: membership in exactly one of the 7 id sets, checked in the same
-/// order as the source's `Translations` table, falling back to `KeyItem` (the source's `other`
-/// bucket) for anything not found, e.g. a modded save with an unrecognized item id.
+fn category_map() -> &'static std::collections::HashMap<&'static str, ItemCategory> {
+    use std::collections::HashMap;
+    use std::sync::OnceLock;
+    static MAP: OnceLock<HashMap<&'static str, ItemCategory>> = OnceLock::new();
+    MAP.get_or_init(|| {
+        let mut map = HashMap::with_capacity(
+            WEAPON_IDS.len() + BOW_IDS.len() + SHIELD_IDS.len() + ARMOR_IDS.len() + MATERIAL_IDS.len() + FOOD_IDS.len(),
+        );
+        for id in WEAPON_IDS {
+            map.insert(id, ItemCategory::Weapon);
+        }
+        for id in BOW_IDS {
+            map.insert(id, ItemCategory::Bow);
+        }
+        for id in SHIELD_IDS {
+            map.insert(id, ItemCategory::Shield);
+        }
+        for id in ARMOR_IDS {
+            map.insert(id, ItemCategory::Armor);
+        }
+        for id in MATERIAL_IDS {
+            map.insert(id, ItemCategory::Material);
+        }
+        for id in FOOD_IDS {
+            map.insert(id, ItemCategory::Food);
+        }
+        map
+    })
+}
+
+/// Mirrors `_getItemCategory`: membership in exactly one of the 7 id sets, falling back to
+/// `KeyItem` (the source's `other` bucket) for anything not found, e.g. a modded save with an
+/// unrecognized item id. Backed by a HashMap built once, since this runs for every item on
+/// every state refresh rather than a per-item linear scan over ~970 ids.
 pub fn categorize(name: &str) -> ItemCategory {
-    if WEAPON_IDS.contains(&name) {
-        ItemCategory::Weapon
-    } else if BOW_IDS.contains(&name) {
-        ItemCategory::Bow
-    } else if SHIELD_IDS.contains(&name) {
-        ItemCategory::Shield
-    } else if ARMOR_IDS.contains(&name) {
-        ItemCategory::Armor
-    } else if MATERIAL_IDS.contains(&name) {
-        ItemCategory::Material
-    } else if FOOD_IDS.contains(&name) {
-        ItemCategory::Food
-    } else {
-        ItemCategory::KeyItem
-    }
+    category_map().get(name).copied().unwrap_or(ItemCategory::KeyItem)
 }
 
 #[cfg(test)]

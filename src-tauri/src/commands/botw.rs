@@ -40,7 +40,7 @@ pub fn read_state(save: &BotwSave) -> Result<BotwState, ShellError> {
 }
 
 pub fn get_botw_state_impl(app_state: &AppState) -> Result<BotwState, ShellError> {
-    let guard = app_state.save.lock().unwrap();
+    let guard = crate::state::lock(&app_state.save);
     match guard.as_ref() {
         Some(Save::Botw(save)) => read_state(save),
         Some(Save::Totk(_)) => Err(ShellError::wrong_game("BOTW")),
@@ -59,7 +59,7 @@ pub fn with_botw<T>(
     app_state: &AppState,
     f: impl FnOnce(&mut BotwSave) -> Result<T, SaveError>,
 ) -> Result<T, ShellError> {
-    let mut guard = app_state.save.lock().unwrap();
+    let mut guard = crate::state::lock(&app_state.save);
     match guard.as_mut() {
         Some(Save::Botw(save)) => f(save).map_err(ShellError::from),
         Some(Save::Totk(_)) => Err(ShellError::wrong_game("BOTW")),
