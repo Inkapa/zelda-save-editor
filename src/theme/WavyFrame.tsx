@@ -5,13 +5,16 @@ import styles from "./WavyFrame.module.css";
 // preserveAspectRatio="none"; the stroke stays crisp via vector-effect non-scaling-stroke, and the
 // waves stretch a little per button width, which reads as organic rather than rigid.
 //
+// Deliberately minimal: a near-rectangle with just a light undulation (a couple of low-amplitude
+// waves per edge) rather than a heavily scalloped border.
+//
 // The same wave is animated by morphing the path through a full phase cycle, which makes the ripple
 // travel slowly around the border. The shape and amplitude are unchanged from the static version;
 // only the phase advances, so it reads as the existing outline gently flowing.
 const W = 100;
 const H = 40;
 const PAD = 4;
-const AMP = 1.6;
+const AMP = 0.8;
 const FRAMES = 12;
 const DURATION = "9s";
 
@@ -35,10 +38,10 @@ function wavyRectPath(phase: number): string {
   const iw = W - 2 * PAD;
   const ih = H - 2 * PAD;
   const pts: [number, number][] = [
-    ...edge(28, 7, (p, o) => [PAD + p * iw, PAD + o], 0, phase), // top
-    ...edge(8, 2, (p, o) => [W - PAD + o, PAD + p * ih], 1, phase), // right
-    ...edge(28, 7, (p, o) => [W - PAD - p * iw, H - PAD + o], 1, phase), // bottom
-    ...edge(8, 2, (p, o) => [PAD + o, H - PAD - p * ih], 1, phase), // left
+    ...edge(16, 2, (p, o) => [PAD + p * iw, PAD + o], 0, phase), // top
+    ...edge(6, 1, (p, o) => [W - PAD + o, PAD + p * ih], 1, phase), // right
+    ...edge(16, 2, (p, o) => [W - PAD - p * iw, H - PAD + o], 1, phase), // bottom
+    ...edge(6, 1, (p, o) => [PAD + o, H - PAD - p * ih], 1, phase), // left
   ];
   return "M" + pts.map(([x, y]) => `${x.toFixed(1)},${y.toFixed(1)}`).join(" L") + " Z";
 }
